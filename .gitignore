@@ -1,0 +1,5 @@
+# pyc files
+*.pyc
+
+# Test db which must be created each time
+experiments/bucketsize/db/test.*
