@@ -115,4 +115,12 @@ if __name__ == "__main__":
     print "==="
     for i in test_query(root):
         print i.title
+    print "==="
+    t1 = time.time()
+
+    obj = Page(title="blah-blah", text="Blah blah 5" * 50)
+    root["pages"][20001] = obj
+    root["catalog"].index_doc(20001, obj)
+    print "===", time.time() - t1
+
     transaction.commit()
