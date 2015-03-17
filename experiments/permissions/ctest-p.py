@@ -59,7 +59,7 @@ class DebugStorage(zc.zlibstorage.ZlibStorage):
     def load(self, oid, version=''):
         data, serial = self.base.load(oid, version)
         obj = self._untransform(data)
-        time.sleep(0.5)
+        # time.sleep(0.5)
         print oid.encode("hex"), loads(obj), len(data), "->", len(obj)
         return obj, serial
 
@@ -90,15 +90,16 @@ def make_zodb():
     conn = db.open()
     root = conn.root()
 
-    if 'catalog' not in root.keys():
-        catalog = MyCatalog()
-        catalog["title"] = MyCatalogFieldIndex("title")
-        catalog["text"] = MyCatalogTextIndex("text")
-        root["catalog"] = catalog
+    with transaction.manager:
+        if 'catalog' not in root.keys():
+            catalog = MyCatalog()
+            catalog["title"] = MyCatalogFieldIndex("title")
+            catalog["text"] = MyCatalogTextIndex("text")
+            root["catalog"] = catalog
 
-    if 'pages' not in root.keys():
-        root["pages"] = MyIOBTree()
-        create_objects(root)
+        if 'pages' not in root.keys():
+            root["pages"] = MyIOBTree()
+            create_objects(root)
 
     return root
 
@@ -115,4 +116,3 @@ if __name__ == "__main__":
     print "==="
     for i in test_query(root):
         print i.title
-    transaction.commit()
