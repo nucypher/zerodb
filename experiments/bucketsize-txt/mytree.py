@@ -5,8 +5,8 @@ from BTrees.IFBTree import *
 
 
 class IFBTree(DefaultIFBTree):
-    max_internal_size = 100000
-    max_leaf_size = 50000
+    max_internal_size = 200000
+    max_leaf_size = 100000
 
 BTree = IFBTree
 

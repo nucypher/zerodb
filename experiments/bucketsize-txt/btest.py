@@ -26,8 +26,8 @@ DEBUG = True
 
 
 class MyIOBTree(IOBTree):
-    max_internal_size = 100000
-    max_leaf_size = 50000
+    max_internal_size = 200000
+    max_leaf_size = 100000
 
 
 class MyTreeFamily(BTrees._Family32):
