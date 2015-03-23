@@ -2,7 +2,8 @@
 *.pyc
 
 # Test db which must be created each time
-experiments/bucketsize/db/test.*
-experiments/permissions/db/test.*
+test.fs.*
+test.fs
 *.db
 *.db.*
+.ropeproject
