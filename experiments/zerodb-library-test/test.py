@@ -93,8 +93,11 @@ def test_query_1(root):
 
 
 def test_query_2(root):
-    from repoze.catalog.query import Lt, Gt
-    return root["salaries_catalog"].query(Gt("salary", 130000) & Lt("salary", 130050))
+    from repoze.catalog.query import InRange
+    # return root["salaries_catalog"].query(Gt("salary", 130000) & Lt("salary", 130050))
+    # logical multiplication of two conditions is totally ineffective, apparently
+    # E.g. handled totally out of db (so, that needs some work, obviously!)
+    return root["salaries_catalog"].query(InRange("salary", 130000, 130050))
 
 
 if __name__ == "__main__":
