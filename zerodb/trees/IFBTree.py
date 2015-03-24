@@ -18,5 +18,11 @@ class TreeSet(TreeModule.TreeSet):
 
 Set = TreeModule.Set
 Bucket = TreeModule.Bucket
+difference = TreeModule.difference
+union = TreeModule.union
+intersection = TreeModule.intersection
+multiunion = TreeModule.multiunion
+weightedUnion = TreeModule.weightedUnion
+weightedIntersection = TreeModule.weightedIntersection
 
 moduleProvides(IBTreeInterface)
