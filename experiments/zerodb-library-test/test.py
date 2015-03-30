@@ -87,7 +87,7 @@ def make_zodb():
 
 def test_query_1(root):
     t1 = time.time()
-    ids = root['pages_catalog'].query(Contains("text", "something"))
+    ids = root['pages_catalog'].query(Contains("text", "something"), sort_index="title", limit=2)
     print "===", time.time() - t1
     return [root["pages"][i] for i in ids[1]]
 
@@ -97,7 +97,7 @@ def test_query_2(root):
     # return root["salaries_catalog"].query(Gt("salary", 130000) & Lt("salary", 130050))
     # logical multiplication of two conditions is totally ineffective, apparently
     # E.g. handled totally out of db (so, that needs some work, obviously!)
-    return root["salaries_catalog"].query(InRange("salary", 130000, 130050))
+    return root["salaries_catalog"].query(InRange("salary", 130000, 130050), sort_index="salary", limit=2)
 
 
 if __name__ == "__main__":
