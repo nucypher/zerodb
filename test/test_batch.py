@@ -27,8 +27,8 @@ def zeo_server(request, tempdir):
 @pytest.fixture(scope="module")
 def zeo_client(request, zeo_server):
     root = db.get_zodb(zeo_server)
-    assert len(root['pages']) == 200
+    return root
 
 
 def test_client(zeo_client):
-    pass
+    assert len(zeo_client['pages']) == 200
