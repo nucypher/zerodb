@@ -12,6 +12,9 @@ import logging
 from zerodb.storage import client_storage
 
 
+logging.basicConfig(level=logging.DEBUG)
+
+
 class Page(persistent.Persistent):
 
     def __init__(self, title="", text=""):
@@ -66,7 +69,7 @@ def create_objects(root, count=200):
 
 
 def get_storage(sock):
-    return client_storage(sock)
+    return client_storage(sock, debug=True)
 
 
 def get_zodb(sock):
