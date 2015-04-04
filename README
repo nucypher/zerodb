@@ -1,5 +1,6 @@
-ZeroDB is an end-to-end encrypted database. Data can be stored on untrusted database servers without ever exposing the encryption key.
-Clients can execute remote queries against the encrypted data without downloading it or suffering an excessive performance hit.
-
+ZeroDB is an end-to-end encrypted database. Data can be stored on untrusted
+database servers without ever exposing the encryption key. Clients can
+execute remote queries against the encrypted data without downloading it or
+suffering an excessive performance hit.
 
 Based on ZODB
