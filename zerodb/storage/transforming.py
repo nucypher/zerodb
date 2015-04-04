@@ -1,10 +1,6 @@
 from zc.zlibstorage import ZlibStorage
 import logging
-
-try:
-    from cPickle import loads
-except:
-    from pickle import loads
+from zerodb.util.debug import debug_loads
 
 
 class TransformingStorage(ZlibStorage):
@@ -31,7 +27,7 @@ class TransformingStorage(ZlibStorage):
         out_data = self._untransform(data)
 
         if self.debug and not in_cache:
-            logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), type(loads(out_data)), len(data), len(out_data)))
+            logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
             self._debug_download_size += len(data)
             self._debug_download_count += 1
 
@@ -49,7 +45,7 @@ class TransformingStorage(ZlibStorage):
             if self.debug:
                 for data, out_data, oid in zip(datas, datas_out, oids):
                     if oid in not_in_cache:
-                        logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), type(loads(out_data)), len(data), len(out_data)))
+                        logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
                         self._debug_download_size += len(data)
                         self._debug_download_count += 1
             if returns:
