@@ -41,7 +41,6 @@ class BatchClientStorage(ClientStorage):
         Storage API to return multiple objects
         We load a unique set of them, just in case
         """
-        oids = set(oids)
 
         # First, try to get whatever possible from cache
         self._load_lock.acquire()

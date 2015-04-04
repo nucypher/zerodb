@@ -42,4 +42,5 @@ class ZEOServer(BaseZEOServer):
 
 def client_storage(*args, **kw):
     TransformingStorage = kw.get('transforming_storage', transforming.TransformingStorage)
-    return TransformingStorage(batch.BatchClientStorage(*args, **kw))
+    debug = kw.pop("debug", False)
+    return TransformingStorage(batch.BatchClientStorage(*args, **kw), debug=debug)
