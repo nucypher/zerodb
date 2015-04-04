@@ -2,8 +2,6 @@
 
 import persistent
 import ZODB
-from ZEO import ClientStorage
-from zc.zlibstorage import ZlibStorage
 import transaction
 from repoze.catalog.query import Contains
 import time
@@ -11,6 +9,8 @@ from zerodb.catalog import Catalog, CatalogTextIndex, CatalogFieldIndex
 from zerodb.trees import family32
 import random
 import logging
+from zerodb.storage.transforming import TransformingStorage
+from zerodb.storage.batch import BatchClientStorage
 
 
 class Page(persistent.Persistent):
@@ -66,22 +66,26 @@ def create_objects(root, count=200):
             s_record_and_index(i, name="John" + str(i), surname="Smith" + str(i), salary=random.randrange(50000, 200000))
 
 
+def get_storage(sock):
+    return TransformingStorage(BatchClientStorage(sock))
+
+
+def get_zodb(sock):
+    db = ZODB.DB(get_storage(sock))
+    conn = db.open()
+    root = conn.root()
+
+    return root
+
+
 def create_objects_and_close(sock):
     logging.debug("Creating test objects")
-    db = ZODB.DB(ZlibStorage(ClientStorage.ClientStorage(sock)))
+    db = ZODB.DB(get_storage(sock))
     conn = db.open()
     root = conn.root()
     create_objects(root)
     transaction.commit()
     conn.close()
-
-
-def get_zodb(sock):
-    db = ZODB.DB(ZlibStorage(ClientStorage.ClientStorage(sock)))
-    conn = db.open()
-    root = conn.root()
-
-    return root
 
 
 def test_query_1(root):
