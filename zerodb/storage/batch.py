@@ -1,5 +1,6 @@
 import itertools
 from ZEO.StorageServer import ZEOStorage, StorageServer
+from ZEO.ClientStorage import ClientStorage
 from ZEO.runzeo import ZEOServer
 from ZEO.runzeo import ZEOOptions
 from ZEO.Exceptions import ClientDisconnected
@@ -38,9 +39,14 @@ class ZEOBatchServer(ZEOServer):
             auth_realm=options.auth_realm)
 
 
-class BatchClientStorageMixin:
-    def __init__(self):
-        """Since it's a mixin, we should explicitly call its __init__ at __init__"""
+class BatchClientStorage(ClientStorage):
+    """
+    Allows to get objects in batches
+    zlibstorage should wrap *after* this
+    """
+
+    def __init__(self, *args, **kw):
+        super(BatchClientStorage, self).__init__(*args, **kw)
         self._load_oids = {}
 
     def _process_invalidations(self, tid, oids):
