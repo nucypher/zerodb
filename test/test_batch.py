@@ -1,6 +1,6 @@
 import pytest
 from os import path
-from zerodb.storage import batch
+from zerodb.storage import ZEOServer
 from multiprocessing import Process
 from pickle import loads
 import db
@@ -11,7 +11,7 @@ def zeo_server(request, tempdir):
     """ Returns a temporary UNIX socket """
     sock = path.join(tempdir, "zeosocket")
     dbfile = path.join(tempdir, "testdb.fs")
-    server = Process(target=batch.zeoserver_main, kwargs={"args": ("-a", sock, "-f", dbfile)})
+    server = Process(target=ZEOServer.run, kwargs={"args": ("-a", sock, "-f", dbfile)})
 
     @request.addfinalizer
     def fin():

@@ -1,8 +1,6 @@
 import itertools
-from ZEO.StorageServer import ZEOStorage, StorageServer
+from ZEO.StorageServer import ZEOStorage
 from ZEO.ClientStorage import ClientStorage
-from ZEO.runzeo import ZEOServer
-from ZEO.runzeo import ZEOOptions
 from ZEO.Exceptions import ClientDisconnected
 
 
@@ -16,27 +14,6 @@ class ZEOBatchStorage(ZEOStorage):
         return [self.loadEx(oid) for oid in oids]
 
     extensions = ZEOStorage.extensions + [loadBulk]
-
-
-class BatchStorageServer(StorageServer):
-    ZEOStorageClass = ZEOBatchStorage
-
-
-class ZEOBatchServer(ZEOServer):
-    def create_server(self):
-        storages = self.storages
-        options = self.options
-        self.server = BatchStorageServer(
-            options.address,
-            storages,
-            read_only=options.read_only,
-            invalidation_queue_size=options.invalidation_queue_size,
-            invalidation_age=options.invalidation_age,
-            transaction_timeout=options.transaction_timeout,
-            monitor_address=options.monitor_address,
-            auth_protocol=options.auth_protocol,
-            auth_database=options.auth_database,
-            auth_realm=options.auth_realm)
 
 
 class BatchClientStorage(ClientStorage):
@@ -106,14 +83,3 @@ class BatchClientStorage(ClientStorage):
             self._load_lock.release()
 
         return result
-
-
-def zeoserver_main(args=None):
-    options = ZEOOptions()
-    options.realize(args=args)
-    s = ZEOBatchServer(options)
-    s.main()
-
-
-if __name__ == "__main__":
-    zeoserver_main()
