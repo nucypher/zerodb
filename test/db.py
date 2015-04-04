@@ -9,8 +9,7 @@ from zerodb.catalog import Catalog, CatalogTextIndex, CatalogFieldIndex
 from zerodb.trees import family32
 import random
 import logging
-from zerodb.storage.transforming import TransformingStorage
-from zerodb.storage.batch import BatchClientStorage
+from zerodb.storage import client_storage
 
 
 class Page(persistent.Persistent):
@@ -67,7 +66,7 @@ def create_objects(root, count=200):
 
 
 def get_storage(sock):
-    return TransformingStorage(BatchClientStorage(sock))
+    return client_storage(sock)
 
 
 def get_zodb(sock):

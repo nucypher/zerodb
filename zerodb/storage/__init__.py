@@ -3,7 +3,7 @@ from ZEO.runzeo import ZEOServer as BaseZEOServer
 from ZEO.runzeo import ZEOOptions
 
 import batch
-
+import transforming
 
 # TODO when it comes to the point we need to,
 # we'll have to configure which classes to use
@@ -38,3 +38,8 @@ class ZEOServer(BaseZEOServer):
         options.realize(args=args)
         s = cls(options)
         s.main()
+
+
+def client_storage(*args, **kw):
+    TransformingStorage = kw.get('transforming_storage', transforming.TransformingStorage)
+    return TransformingStorage(batch.BatchClientStorage(*args, **kw))
