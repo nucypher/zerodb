@@ -47,6 +47,7 @@ class TransformingStorage(ZlibStorage):
                     if oid in not_in_cache:
                         logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
                         self._debug_download_size += len(data)
-                        self._debug_download_count += 1
+            if not_in_cache:
+                self._debug_download_count += 1
             if returns:
                 return out
