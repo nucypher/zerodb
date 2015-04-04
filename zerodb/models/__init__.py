@@ -1,5 +1,5 @@
 import persistent
-import indexable
+import fields
 import exceptions
 
 
@@ -21,7 +21,7 @@ class Model(persistent.Persistent):
         # This set will go to metaclass
         indexed_fields = set(filter(lambda key:
                 not key.startswith("_") and
-                isinstance(getattr(self.__class__, key), indexable.Indexable),
+                isinstance(getattr(self.__class__, key), fields.Indexable),
             self.__class__.__dict__.keys()))
 
         # This set will go to metaclass
@@ -35,7 +35,10 @@ class Model(persistent.Persistent):
             raise exceptions.ModelException("You should provide fields: " + ", ".join(map(str, missed_fields)))
 
         for field in default_fields:
-            setattr(self, field, getattr(self.__class__, field).default)
+            default = getattr(self.__class__, field).default
+            if callable(default):
+                default = default()
+            setattr(self, field, default)
 
         for field, value in kw.iteritems():
             setattr(self, field, value)
