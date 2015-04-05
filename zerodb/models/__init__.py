@@ -3,6 +3,24 @@ import fields
 import exceptions
 
 
+class ModelMeta(type):
+    def __init__(cls, name, bases, dct):
+        indexed_fields = set(filter(lambda key:
+                not key.startswith("_") and
+                isinstance(dct[key], fields.Indexable),
+            dct.keys()))
+
+        required_fields = set(filter(lambda key: dct[key].default is None, indexed_fields))
+
+        default_fields = indexed_fields.difference(required_fields)
+
+        cls._z_indexed_fields = indexed_fields
+        cls._z_required_fields = required_fields
+        cls._z_default_fields = default_fields
+
+        super(ModelMeta, cls).__init__(name, bases, dct)
+
+
 class Model(persistent.Persistent):
     """
     Data model to easily create indexable persistent objects.
@@ -16,25 +34,14 @@ class Model(persistent.Persistent):
 
         ... page = Page(title="Hello", text="World", extra=12345)
     """
+    __metaclass__ = ModelMeta
 
     def __init__(self, **kw):
-        # This set will go to metaclass
-        indexed_fields = set(filter(lambda key:
-                not key.startswith("_") and
-                isinstance(getattr(self.__class__, key), fields.Indexable),
-            self.__class__.__dict__.keys()))
-
-        # This set will go to metaclass
-        required_fields = set(filter(lambda key: getattr(self.__class__, key).default is None, indexed_fields))
-
-        # Indexed fields which have default values
-        default_fields = indexed_fields.difference(required_fields).difference(kw)
-
-        missed_fields = required_fields.difference(kw)
+        missed_fields = self._z_required_fields.difference(kw)
         if missed_fields:
             raise exceptions.ModelException("You should provide fields: " + ", ".join(map(str, missed_fields)))
 
-        for field in default_fields:
+        for field in self._z_default_fields.difference(kw):
             default = getattr(self.__class__, field).default
             if callable(default):
                 default = default()
