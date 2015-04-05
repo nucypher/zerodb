@@ -1,18 +1,22 @@
 import pytest
-from zerodb import models
-from zerodb.models import fields
-from zerodb.models.exceptions import ModelException
 from datetime import datetime
 from datetime import timedelta
 
+from zerodb import models
+import zerodb
+import zerodb.db
+from zerodb.models import fields
+from zerodb.models.exceptions import ModelException
+
+
+class TestMe(models.Model):
+    title = fields.Field()
+    content = fields.Text()
+    age = fields.Field(default=0)
+    timestamp = fields.Field(default=datetime.utcnow)
+
 
 def test_model():
-    class TestMe(models.Model):
-        title = fields.Field()
-        content = fields.Text()
-        age = fields.Field(default=0)
-        timestamp = fields.Field(default=datetime.utcnow)
-
     test_timestamp = datetime(year=1984, month=1, day=1)
     obj1 = TestMe(title="Hello", content="World", age=5, timestamp=test_timestamp)
     obj2 = TestMe(title="Hello world", content="Lorem ipsum")
@@ -36,3 +40,13 @@ def test_model():
     assert obj3.age == 0
     assert (datetime.utcnow() - obj3.timestamp) < timedelta(seconds=1)
     assert obj3.extra == "something"
+
+
+def test_db(zeo_server):
+    db = zerodb.DB(zeo_server, debug=True)
+    assert len(db._models) == 0
+    assert isinstance(db(TestMe), zerodb.db.DbModel)
+    assert len(db._models) == 1
+    assert TestMe in db._models
+    assert db(TestMe)._model == TestMe
+    assert db(TestMe)._db == db
