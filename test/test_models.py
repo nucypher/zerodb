@@ -16,6 +16,12 @@ class TestMe(models.Model):
     timestamp = fields.Field(default=datetime.utcnow)
 
 
+def test_model_metaclass():
+    assert len(TestMe._z_indexed_fields) == 4
+    assert len(TestMe._z_required_fields) == 2
+    assert len(TestMe._z_default_fields) == 2
+
+
 def test_model():
     test_timestamp = datetime(year=1984, month=1, day=1)
     obj1 = TestMe(title="Hello", content="World", age=5, timestamp=test_timestamp)
@@ -48,5 +54,11 @@ def test_db(zeo_server):
     assert isinstance(db(TestMe), zerodb.db.DbModel)
     assert len(db._models) == 1
     assert TestMe in db._models
+
+
+def test_dbmodel(zeo_server):
+    db = zerodb.DB(zeo_server, debug=True)
     assert db(TestMe)._model == TestMe
     assert db(TestMe)._db == db
+    assert db(TestMe)._catalog_name == "catalog__testme"
+    assert db(TestMe)._intid_name == "intid__testme"

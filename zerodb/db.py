@@ -2,6 +2,8 @@ import ZODB
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
+# from zerodb.catalog import Catalog
+# from zope.intid import IntIds
 
 
 class DbModel(object):
@@ -13,6 +15,8 @@ class DbModel(object):
     def __init__(self, db, model):
         self._model = model
         self._db = db
+        self._catalog_name = "catalog__" + model.__modelname__
+        self._intid_name = "intid__" + model.__modelname__
 
 
 class DB(object):

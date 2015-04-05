@@ -5,18 +5,21 @@ import exceptions
 
 class ModelMeta(type):
     def __init__(cls, name, bases, dct):
-        indexed_fields = set(filter(lambda key:
-                not key.startswith("_") and
-                isinstance(dct[key], fields.Indexable),
-            dct.keys()))
+        if bases != (persistent.Persistent,):  # Only subclasses of Model can do it, not Model itself
+            indexed_fields = set(filter(lambda key:
+                    not key.startswith("_") and
+                    isinstance(dct[key], fields.Indexable),
+                dct.keys()))
 
-        required_fields = set(filter(lambda key: dct[key].default is None, indexed_fields))
+            required_fields = set(filter(lambda key: dct[key].default is None, indexed_fields))
 
-        default_fields = indexed_fields.difference(required_fields)
+            default_fields = indexed_fields.difference(required_fields)
 
-        cls._z_indexed_fields = indexed_fields
-        cls._z_required_fields = required_fields
-        cls._z_default_fields = default_fields
+            cls._z_indexed_fields = indexed_fields
+            cls._z_required_fields = required_fields
+            cls._z_default_fields = default_fields
+
+            cls.__modelname__ = cls.__modelname__ or name.lower()
 
         super(ModelMeta, cls).__init__(name, bases, dct)
 
@@ -35,6 +38,7 @@ class Model(persistent.Persistent):
         ... page = Page(title="Hello", text="World", extra=12345)
     """
     __metaclass__ = ModelMeta
+    __modelname__ = None
 
     def __init__(self, **kw):
         missed_fields = self._z_required_fields.difference(kw)
