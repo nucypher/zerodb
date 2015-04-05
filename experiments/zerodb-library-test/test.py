@@ -1,26 +1,22 @@
+import sys
+
+from os.path import abspath, dirname
+parent = dirname(dirname(dirname(abspath(__file__))))
+sys.path.insert(0, parent)
+
 import persistent
 import ZODB
-from ZEO import ClientStorage
-import zc.zlibstorage
 import transaction
 import logging
-from pickle import loads
 from repoze.catalog.query import Contains
 import time
 from zerodb.catalog import Catalog, CatalogTextIndex, CatalogFieldIndex
 from zerodb.trees import family32
+from zerodb.storage import client_storage
 import random
 
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-class DebugStorage(zc.zlibstorage.ZlibStorage):
-    def load(self, oid, version=''):
-        data, serial = self.base.load(oid, version)
-        obj = self._untransform(data)
-        print oid.encode("hex"), loads(obj), len(data), "->", len(obj)
-        return obj, serial
 
 
 class Page(persistent.Persistent):
@@ -60,7 +56,7 @@ def create_objects(root, count=20000):
 
 
 def make_zodb():
-    db = ZODB.DB(DebugStorage(ClientStorage.ClientStorage("/tmp/zeosocket")))
+    db = ZODB.DB(client_storage("/tmp/zeosocket", debug=True))
     conn = db.open()
     root = conn.root()
 
