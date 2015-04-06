@@ -1,6 +1,7 @@
 import persistent
 import fields
 import exceptions
+from zerodb.trees import family32
 
 
 class ModelMeta(type):
@@ -39,6 +40,7 @@ class Model(persistent.Persistent):
     """
     __metaclass__ = ModelMeta
     __modelname__ = None
+    __family__ = family32
 
     def __init__(self, **kw):
         missed_fields = self._z_required_fields.difference(kw)

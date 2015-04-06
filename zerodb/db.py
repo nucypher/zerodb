@@ -1,9 +1,14 @@
 import ZODB
+import transaction
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
-# from zerodb.catalog import Catalog
-# from zope.intid import IntIds
+from zerodb.catalog import Catalog
+from zope.intid import IntIds
+# We don't need two-way references given by IntIds, but we need a primary object storage
+# If we used IntIds and some objects storage we'd have *3* trees
+# But we want to minimize number of calls, so we make one primary IOBTree which has IDs and objects
+# Conflict avoidance method is copied from IntIds._generateId
 
 
 class DbModel(object):
@@ -12,11 +17,21 @@ class DbModel(object):
     All functionality will actually reside here.
     Will contain indexes as well.
     """
-    def __init__(self, db, model):
+    def __init__(self, db, model, commit=True):
         self._model = model
         self._db = db
         self._catalog_name = "catalog__" + model.__modelname__
         self._intid_name = "intid__" + model.__modelname__
+
+        if (self._intid_name not in db._root) or (self._catalog_name not in db._root):
+            if commit:
+                transaction.begin()
+            if self._intid_name not in db._root:
+                db._root[self._intid_name] = IntIds(family=model.__family__)
+            if self._catalog_name not in db._root:
+                db._root[self._catalog_name] = Catalog()  # TODO: specify family as a parameter
+            if commit:
+                transaction.commit()
 
 
 class DB(object):
