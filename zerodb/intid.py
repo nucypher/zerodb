@@ -52,6 +52,7 @@ class IdStore(persistent.Persistent):
             del self.tree[iobj]
         elif isinstance(iobj, Model):
             del self.tree[iobj._v_uid]
+            iobj._v_uid = None
         else:
             raise TypeError("Argument should be either uid or object itself")
 
