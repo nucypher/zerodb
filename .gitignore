@@ -7,3 +7,4 @@ test.fs
 *.db
 *.db.*
 .ropeproject
+.coverage
