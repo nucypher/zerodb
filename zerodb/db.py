@@ -19,6 +19,7 @@ class DbModel(object):
 
         if (self._intid_name not in db._root) or (self._catalog_name not in db._root):
             if commit:
+                # XXX may be we should actually be smart and check if we're inside a transaction manager?
                 transaction.begin()
             if self._intid_name in db._root:
                 self._objects = db._root[self._intid_name]
@@ -39,10 +40,20 @@ class DbModel(object):
         Stores *and* indexes it
         """
         assert obj.__class__ == self._model
+        uid = self._objects.add(obj)
+        self._catalog.index_doc(uid, obj)
+        obj._v_uid = uid
+        return uid
 
     def remove(self, obj):
         """Remove existing object from the database + unindex it"""
         assert obj.__class__ == self._model
+        if type(obj) in (int, long):
+            uid = obj._v_uid
+        else:
+            uid = obj
+        self._catalog.unindex_doc(uid)
+        del self._objects[uid]
 
     def query(self, *args, **kw):
         """Smart proxy to catalog's query"""
@@ -59,6 +70,9 @@ class DB(object):
         self._conn = self._db.open()
         self._root = self._conn.root()
         self._models = {}
+
+    def disconnect(self):
+        self._conn.close()
 
     def __call__(self, model):
         if not issubclass(model, models.Model):
