@@ -1,7 +1,9 @@
 import persistent
 import fields
 import exceptions
+from zerodb.intid import IdStore
 from zerodb.trees import family32
+from zerodb.catalog import Catalog
 
 
 class ModelMeta(type):
@@ -55,3 +57,19 @@ class Model(persistent.Persistent):
 
         for field, value in kw.iteritems():
             setattr(self, field, value)
+
+    @classmethod
+    def create_store(cls):
+        """Returns intid.IdStore storage for this class"""
+        return IdStore(family=cls.__family__)
+
+    @classmethod
+    def create_catalog(cls):
+        """Creates and returns catalog for this model with indexes in it"""
+        catalog = Catalog()  # TODO: specify family as a parameter
+        # XXX discriminator can be callable - we need to make use of it (say, to index lambda obj: "%s: %s" % (obj.title, obj.text)).
+        # Otherwise, it's just a field in the model
+        # Need to make that with callable default
+        for name in cls._z_indexed_fields:
+            catalog[name] = getattr(cls, name).Index(name)
+        return catalog

@@ -61,4 +61,4 @@ def test_dbmodel(zeo_server):
     assert db(TestMe)._model == TestMe
     assert db(TestMe)._db == db
     assert db(TestMe)._catalog_name == "catalog__testme"
-    assert db(TestMe)._intid_name == "intid__testme"
+    assert db(TestMe)._intid_name == "store__testme"

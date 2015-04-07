@@ -3,8 +3,6 @@ import transaction
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
-from zerodb.catalog import Catalog
-from zerodb.intid import IdStore
 
 
 class DbModel(object):
@@ -17,17 +15,38 @@ class DbModel(object):
         self._model = model
         self._db = db
         self._catalog_name = "catalog__" + model.__modelname__
-        self._intid_name = "intid__" + model.__modelname__
+        self._intid_name = "store__" + model.__modelname__
 
         if (self._intid_name not in db._root) or (self._catalog_name not in db._root):
             if commit:
                 transaction.begin()
-            if self._intid_name not in db._root:
-                db._root[self._intid_name] = IdStore(family=model.__family__)
-            if self._catalog_name not in db._root:
-                db._root[self._catalog_name] = Catalog()  # TODO: specify family as a parameter
+            if self._intid_name in db._root:
+                self._objects = db._root[self._intid_name]
+            else:
+                self._objects = model.create_store()
+                db._root[self._intid_name] = self._objects
+            if self._catalog_name in db._root:
+                self._catalog = db._root[self._catalog_name]
+            else:
+                self._catalog = model.create_catalog()
+                db._root[self._catalog_name] = self._catalog
             if commit:
                 transaction.commit()
+
+    def add(self, obj):
+        """
+        Add newly created a Model object to the database
+        Stores *and* indexes it
+        """
+        assert obj.__class__ == self._model
+
+    def remove(self, obj):
+        """Remove existing object from the database + unindex it"""
+        assert obj.__class__ == self._model
+
+    def query(self, *args, **kw):
+        """Smart proxy to catalog's query"""
+        pass
 
 
 class DB(object):

@@ -5,7 +5,6 @@
 import persistent
 import random
 from zerodb.trees import family32
-from zerodb.models import Model
 
 
 class IdStore(persistent.Persistent):
@@ -50,7 +49,7 @@ class IdStore(persistent.Persistent):
     def remove(self, iobj):
         if type(iobj) in (int, long):
             del self.tree[iobj]
-        elif isinstance(iobj, Model):
+        elif hasattr(iobj, "_v_uid"):
             del self.tree[iobj._v_uid]
             iobj._v_uid = None
         else:
