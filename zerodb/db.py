@@ -57,6 +57,11 @@ class DbModel(object):
 
     def query(self, *args, **kw):
         """Smart proxy to catalog's query"""
+        # Catalog's query returns only integers
+        # We must be smart here and return objects
+        # But no, we must be even smarter and batch-preload objects
+        # Most difficult part is preloading TreeSets for index when needed
+        # (when we do complex queries which require composite index)
         pass
 
 
