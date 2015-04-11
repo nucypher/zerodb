@@ -103,6 +103,6 @@ if __name__ == "__main__":
         print i.title
     print "==="
 
-    print test_query_2(root)[1]
+    print test_query_2(root)
 
     transaction.commit()

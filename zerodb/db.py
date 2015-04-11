@@ -3,6 +3,7 @@ import transaction
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
+import itertools
 
 
 class DbModel(object):
@@ -62,7 +63,20 @@ class DbModel(object):
         # But no, we must be even smarter and batch-preload objects
         # Most difficult part is preloading TreeSets for index when needed
         # (when we do complex queries which require composite index)
-        pass
+        # We also probably should do something like lazy query(...)[ofs:...]
+        # if no limit, offset are used
+        offset = kw.pop("offset", 0)  # zope's catalog doesn't support offsets, so using this for now
+        limit = kw.pop("limit", None)
+        if limit:
+            kw["limit"] = offset + limit
+        # XXX pre-load the tree!
+        count, uids = self._catalog.query(*args, **kw)
+        qids = itertools.islice(uids, offset, offset + limit)
+        # No reason to return an iterator as long as we have all pre-loaded
+        objects = [self._objects[uid] for uid in qids]
+        # Pre-load them all (these are lazy objects)
+        self._db._storage.loadBulk([o._p_oid for o in objects])
+        return objects
 
 
 class DB(object):
