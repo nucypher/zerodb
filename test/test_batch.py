@@ -1,11 +1,11 @@
 import pytest
 from pickle import loads
-import db
+from zerodb.storage import client_storage
 
 
 @pytest.fixture(scope="module")
 def zeo_storage(request, zeo_server):
-    return db.get_storage(zeo_server)
+    return client_storage(zeo_server, debug=True)
 
 
 def test_loadBulk(zeo_storage):
