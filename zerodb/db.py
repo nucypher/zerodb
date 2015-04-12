@@ -12,16 +12,18 @@ class DbModel(object):
     All functionality will actually reside here.
     Will contain indexes as well.
     """
-    def __init__(self, db, model, commit=True):
+    def __init__(self, db, model):
         self._model = model
         self._db = db
         self._catalog_name = "catalog__" + model.__modelname__
         self._intid_name = "store__" + model.__modelname__
 
         if (self._intid_name not in db._root) or (self._catalog_name not in db._root):
-            if commit:
-                # XXX may be we should actually be smart and check if we're inside a transaction manager?
+            if not transaction.manager._txn:
                 transaction.begin()
+                commit = True
+            else:
+                commit = False
             if self._intid_name in db._root:
                 self._objects = db._root[self._intid_name]
             else:
@@ -99,3 +101,9 @@ class DB(object):
         if model not in self._models:
             self._models[model] = DbModel(self, model)
         return self._models[model]
+
+    def add(self, obj):
+        self(obj.__class__).add(obj)
+
+    def remove(self, obj):
+        self(obj.__class__).remove(obj)
