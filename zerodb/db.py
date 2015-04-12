@@ -17,25 +17,24 @@ class DbModel(object):
         self._db = db
         self._catalog_name = "catalog__" + model.__modelname__
         self._intid_name = "store__" + model.__modelname__
-
-        if (self._intid_name not in db._root) or (self._catalog_name not in db._root):
-            if not transaction.manager._txn:
-                transaction.begin()
-                commit = True
-            else:
-                commit = False
-            if self._intid_name in db._root:
-                self._objects = db._root[self._intid_name]
-            else:
-                self._objects = model.create_store()
-                db._root[self._intid_name] = self._objects
-            if self._catalog_name in db._root:
-                self._catalog = db._root[self._catalog_name]
-            else:
-                self._catalog = model.create_catalog()
-                db._root[self._catalog_name] = self._catalog
-            if commit:
-                transaction.commit()
+        if not transaction.manager._txn and \
+                (self._intid_name not in db._root or self._catalog_name not in db._root):
+            transaction.begin()
+            commit = True
+        else:
+            commit = False
+        if self._intid_name in db._root:
+            self._objects = db._root[self._intid_name]
+        else:
+            self._objects = model.create_store()
+            db._root[self._intid_name] = self._objects
+        if self._catalog_name in db._root:
+            self._catalog = db._root[self._catalog_name]
+        else:
+            self._catalog = model.create_catalog()
+            db._root[self._catalog_name] = self._catalog
+        if commit:
+            transaction.commit()
 
     def add(self, obj):
         """
@@ -77,14 +76,18 @@ class DbModel(object):
         # No reason to return an iterator as long as we have all pre-loaded
         objects = [self._objects[uid] for uid in qids]
         # Pre-load them all (these are lazy objects)
-        self._db._storage.loadBulk([o._p_oid for o in objects])
+        if objects:
+            self._db._storage.loadBulk([o._p_oid for o in objects])
         return objects
+
+    def __len__(self):
+        return len(self._objects)
 
 
 class DB(object):
     def __init__(self, sock, debug=False):
         """
-        :sock - UNIX or TCP socket
+        sock -- UNIX or TCP socket
         """
         self._storage = client_storage(sock, debug=debug)
         self._db = ZODB.DB(self._storage)
@@ -95,7 +98,11 @@ class DB(object):
     def disconnect(self):
         self._conn.close()
 
-    def __call__(self, model):
+    def __getitem__(self, model):
+        """
+        DbModels (which we query) are accessed by using db as a dictionary
+        """
+        # TODO implement list of keys, writing to arbitrary (new) dbmodel (which is not defined)
         if not issubclass(model, models.Model):
             raise ModelException("Class <%s> is not a Model" % model.__name__)
         if model not in self._models:
@@ -103,7 +110,7 @@ class DB(object):
         return self._models[model]
 
     def add(self, obj):
-        self(obj.__class__).add(obj)
+        self[obj.__class__].add(obj)
 
     def remove(self, obj):
-        self(obj.__class__).remove(obj)
+        self[obj.__class__].remove(obj)

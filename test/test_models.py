@@ -51,7 +51,7 @@ def test_model():
 def test_db(zeo_server):
     db = zerodb.DB(zeo_server, debug=True)
     assert len(db._models) == 0
-    assert isinstance(db(TestMe), zerodb.db.DbModel)
+    assert isinstance(db[TestMe], zerodb.db.DbModel)
     assert len(db._models) == 1
     assert TestMe in db._models
     db.disconnect()
@@ -59,8 +59,8 @@ def test_db(zeo_server):
 
 def test_dbmodel(zeo_server):
     db = zerodb.DB(zeo_server, debug=True)
-    assert db(TestMe)._model == TestMe
-    assert db(TestMe)._db == db
-    assert db(TestMe)._catalog_name == "catalog__testme"
-    assert db(TestMe)._intid_name == "store__testme"
+    assert db[TestMe]._model == TestMe
+    assert db[TestMe]._db == db
+    assert db[TestMe]._catalog_name == "catalog__testme"
+    assert db[TestMe]._intid_name == "store__testme"
     db.disconnect()
