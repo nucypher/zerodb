@@ -72,7 +72,10 @@ class DbModel(object):
             kw["limit"] = offset + limit
         # XXX pre-load the tree!
         count, uids = self._catalog.query(*args, **kw)
-        qids = itertools.islice(uids, offset, offset + limit)
+        if limit:
+            qids = itertools.islice(uids, offset, offset + limit)
+        else:
+            qids = uids
         # No reason to return an iterator as long as we have all pre-loaded
         objects = [self._objects[uid] for uid in qids]
         # Pre-load them all (these are lazy objects)
