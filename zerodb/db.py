@@ -1,5 +1,7 @@
-import ZODB
 import transaction
+import ZODB
+from repoze.catalog.query import optimize
+
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
@@ -57,7 +59,7 @@ class DbModel(object):
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
 
-    def query(self, *args, **kw):
+    def query(self, queryobj, **kw):
         """Smart proxy to catalog's query"""
         # Catalog's query returns only integers
         # We must be smart here and return objects
@@ -71,7 +73,7 @@ class DbModel(object):
         if limit:
             kw["limit"] = offset + limit
         # XXX pre-load the tree!
-        count, uids = self._catalog.query(*args, **kw)
+        count, uids = self._catalog.query(optimize(queryobj), **kw)
         if limit:
             qids = itertools.islice(uids, offset, offset + limit)
         else:
