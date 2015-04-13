@@ -1,6 +1,6 @@
 import pytest
 import zerodb
-from dbm import Page, Salary
+from db import Page, Salary
 from repoze.catalog.query import Contains, InRange
 # Also need to test optimize, Lt(e), Gt(e)
 

@@ -4,7 +4,7 @@ import tempfile
 from multiprocessing import Process
 from os import path
 from zerodb.storage import ZEOServer
-import dbm as db
+import db
 
 
 @pytest.fixture(scope="module")
