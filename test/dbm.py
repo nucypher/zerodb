@@ -4,7 +4,6 @@ import transaction
 from zerodb.models import Model
 from zerodb.models import fields
 import zerodb
-import random
 
 
 class Page(Model):
@@ -29,5 +28,5 @@ def create_objects_and_close(sock, count=200):
             db.add(Salary(
                 name="John-%s" % i,
                 surname="Smith-%i" % i,
-                salary=random.randrange(50000, 200000)))
+                salary=50000 + (200000 - 50000) * i / (count - 1)))
     db.disconnect()
