@@ -1,4 +1,5 @@
-from zerodb.catalog import CatalogTextIndex, CatalogFieldIndex
+from zerodb.catalog.indexes.text import CatalogTextIndex
+from zerodb.catalog.indexes.field import CatalogFieldIndex
 import exceptions
 
 
