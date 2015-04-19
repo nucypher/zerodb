@@ -1,0 +1,7 @@
+Ubuntu:
+    Test environment:
+        sudo apt-get install python-virtualenv python-dev
+        ./virtualenv.sh
+        source .virtual/bin/activate
+    Real installation:
+        python setup.py install
