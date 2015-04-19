@@ -8,3 +8,5 @@ test.fs
 *.db.*
 .ropeproject
 .coverage
+.virtual
+ZeroDB.egg-info
