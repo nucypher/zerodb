@@ -23,6 +23,6 @@ class CatalogFieldIndex(_CatalogFieldIndex):
     def applyInRange(self, start, end, excludemin=False, excludemax=False, prefetch=None):
         # prefetch is a catalog or None
         values = self._fwd_index.values(start, end, excludemin=excludemin, excludemax=excludemax)
-        if prefetch:
+        if prefetch and values:
             prefetch._p_jar._db._storage.loadBulk([i._p_oid for i in values])
         return self.family.IF.multiunion(values)
