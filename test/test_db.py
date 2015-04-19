@@ -1,7 +1,7 @@
 import pytest
 import zerodb
 from db import Page, Salary
-from repoze.catalog.query import Contains, InRange
+from zerodb.catalog.query import Contains, InRange
 # Also need to test optimize, Lt(e), Gt(e)
 
 
