@@ -10,3 +10,4 @@ test.fs
 .coverage
 .virtual
 ZeroDB.egg-info
+server/db
