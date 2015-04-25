@@ -8,7 +8,8 @@ INSTALL_REQUIRES = [
     'zope.index',
     'repoze.catalog',
     'zc.zlibstorage',
-    'pytest']
+    'pytest',
+    'pycrypto']
 
 setup(
     name="ZeroDB",
