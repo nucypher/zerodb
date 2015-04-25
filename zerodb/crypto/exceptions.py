@@ -1,0 +1,2 @@
+class WrongKeyError(Exception):
+    pass

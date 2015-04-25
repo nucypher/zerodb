@@ -1,6 +1,9 @@
 from Crypto.Hash import SHA256
 from Crypto.Cipher import AES as CryptoAES
 from Crypto import Random
+from zerodb.crypto.exceptions import WrongKeyError
+
+HASH_SIZE = 32
 
 
 class AES(object):
@@ -22,11 +25,17 @@ class AES(object):
     def encrypt(self, data):
         iv = self._rand.read(self.iv_size)
         cipher = CryptoAES.new(self.key, self.mode, iv)
-        return cipher.encrypt(data) + iv  # with modes other than CFB we'd need to pad/unpad data
-        # XXX need to error out with "wrong key" if it's wrong, so need to encrypt hash as well
+        h = SHA256.new(data).digest()
+        return cipher.encrypt(data + h) + iv  # with modes other than CFB we'd need to pad/unpad data
 
     def decrypt(self, edata):
         data = edata[:-self.iv_size]
         iv = edata[-self.iv_size:]
         cipher = CryptoAES.new(self.key, self.mode, iv)
-        return cipher.decrypt(data)
+        datah = cipher.decrypt(data)
+        h = datah[-HASH_SIZE:]
+        data = datah[:-HASH_SIZE]
+        if h != SHA256.new(data).digest():
+            raise WrongKeyError("Data couldn't be decrypted. Probably your key is wrong")
+        else:
+            return data
