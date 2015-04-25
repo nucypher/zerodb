@@ -9,7 +9,8 @@ INSTALL_REQUIRES = [
     'repoze.catalog',
     'zc.zlibstorage',
     'pytest',
-    'pycrypto']
+    'pycrypto',
+    'click']
 
 setup(
     name="ZeroDB",
