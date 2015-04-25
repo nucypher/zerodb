@@ -1,13 +1,14 @@
 import pytest
 import zerodb
-from db import Page, Salary
+from zerodb.crypto import AES
+from db import Page, Salary, PASSPHRASE
 from zerodb.catalog.query import Contains, InRange
 # Also need to test optimize, Lt(e), Gt(e)
 
 
 @pytest.fixture(scope="module")
 def db(request, zeo_server):
-    zdb = zerodb.DB(zeo_server, debug=True)
+    zdb = zerodb.DB(zeo_server, cipher=AES(passphrase=PASSPHRASE), debug=True)
 
     @request.addfinalizer
     def fin():

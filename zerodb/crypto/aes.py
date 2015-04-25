@@ -23,6 +23,7 @@ class AES(object):
         iv = self._rand.read(self.iv_size)
         cipher = CryptoAES.new(self.key, self.mode, iv)
         return cipher.encrypt(data) + iv  # with modes other than CFB we'd need to pad/unpad data
+        # XXX need to error out with "wrong key" if it's wrong, so need to encrypt hash as well
 
     def decrypt(self, edata):
         data = edata[:-self.iv_size]

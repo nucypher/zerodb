@@ -90,11 +90,11 @@ class DbModel(object):
 
 
 class DB(object):
-    def __init__(self, sock, debug=False):
+    def __init__(self, sock, debug=False, cipher=None):
         """
         sock -- UNIX or TCP socket
         """
-        self._storage = client_storage(sock, debug=debug)
+        self._storage = client_storage(sock, cipher=cipher, debug=debug)
         self._db = ZODB.DB(self._storage)
         self._conn = self._db.open()
         self._root = self._conn.root()

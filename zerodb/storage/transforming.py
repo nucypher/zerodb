@@ -11,10 +11,17 @@ class TransformingStorage(ZlibStorage):
 
     def __init__(self, *args, **kw):
         self.debug = kw.pop("debug", False)
+        self.cipher = kw.pop("cipher", None)
         if self.debug:
             self._debug_download_size = 0
             self._debug_download_count = 0
         super(TransformingStorage, self).__init__(*args, **kw)
+
+        if self.cipher:
+            _transform = self._transform
+            _untransform = self._untransform
+            self._transform = lambda data: self.cipher.encrypt(_transform(data))
+            self._untransform = lambda data: _untransform(self.cipher.decrypt(data))
 
     def load(self, oid, version=''):
         if self.debug:

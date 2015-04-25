@@ -1,11 +1,13 @@
 import pytest
 from pickle import loads
+from zerodb.crypto import AES
 from zerodb.storage import client_storage
+from db import PASSPHRASE
 
 
 @pytest.fixture(scope="module")
 def zeo_storage(request, zeo_server):
-    return client_storage(zeo_server, debug=True)
+    return client_storage(zeo_server, cipher=AES(passphrase=PASSPHRASE), debug=True)
 
 
 def test_loadBulk(zeo_storage):

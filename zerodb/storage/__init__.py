@@ -43,4 +43,5 @@ class ZEOServer(BaseZEOServer):
 def client_storage(*args, **kw):
     TransformingStorage = kw.get('transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)
-    return TransformingStorage(batch.BatchClientStorage(*args, **kw), debug=debug)
+    cipher = kw.pop("cipher", None)
+    return TransformingStorage(batch.BatchClientStorage(*args, **kw), cipher=cipher, debug=debug)
