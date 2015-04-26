@@ -13,8 +13,12 @@ INSTALL_REQUIRES = [
     'click']
 
 setup(
-    name="ZeroDB",
+    name="zerodb",
     version="0.7",
+    description="End-to-end encrypted database",
+    author="ZeroDB Inc.",
+    author_email="michael@zerodb.io",
+    url="http://zerodb.io",
     packages=find_packages(),
     tests_require=INSTALL_REQUIRES,
     install_requires=INSTALL_REQUIRES,
