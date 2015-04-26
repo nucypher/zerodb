@@ -32,4 +32,8 @@ def create_objects_and_close(sock, count=200):
                 name="John-%s" % i,
                 surname="Smith-%i" % i,
                 salary=50000 + (200000 - 50000) * i / (count - 1)))
+        db.add(Salary(
+            name="Hello",
+            surname="World",
+            salary=1000000))
     db.disconnect()

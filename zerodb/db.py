@@ -2,6 +2,7 @@ import transaction
 import ZODB
 from repoze.catalog.query import optimize
 
+from zerodb.catalog.query import And, Eq
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
@@ -59,7 +60,7 @@ class DbModel(object):
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
 
-    def query(self, queryobj, **kw):
+    def query(self, queryobj=None, offset=0, limit=None, **kw):
         """Smart proxy to catalog's query"""
         # Catalog's query returns only integers
         # We must be smart here and return objects
@@ -68,12 +69,23 @@ class DbModel(object):
         # (when we do complex queries which require composite index)
         # We also probably should do something like lazy query(...)[ofs:...]
         # if no limit, offset are used
-        offset = kw.pop("offset", 0)  # zope's catalog doesn't support offsets, so using this for now
-        limit = kw.pop("limit", None)
+
+        # Work needed on offset and limit because zope didn't well support them...
         if limit:
             kw["limit"] = offset + limit
         # XXX pre-load the tree!
-        count, uids = self._catalog.query(optimize(queryobj), **kw)
+
+        eq_args = []
+        for k in kw.keys():
+            if k not in set(["sort_index", "sort_type", "reverse", "names", "limit"]):
+                eq_args.append(Eq(k, kw.pop(k)))
+
+        if queryobj:
+            Q = optimize(optimize(queryobj) & And(*eq_args))
+        else:
+            Q = And(*eq_args)
+
+        count, uids = self._catalog.query(Q, **kw)
         if limit:
             qids = itertools.islice(uids, offset, offset + limit)
         else:

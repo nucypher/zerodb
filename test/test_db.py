@@ -20,7 +20,7 @@ def db(request, zeo_server):
 def test_query(db):
     pre_request_count = db._storage._debug_download_count
     assert len(db[Page]) == 200
-    assert len(db[Salary]) == 200
+    assert len(db[Salary]) == 201
     test_pages = db[Page].query(Contains("text", "something"))
     pre_range_count = db._storage._debug_download_count
     assert pre_range_count - pre_request_count < 20  # We'll have performance testing separately this way
@@ -35,3 +35,6 @@ def test_query(db):
         assert s.salary <= 180000
     # Check that we pre-downloaded all objects into cache
     assert db._storage._debug_download_count == post_range_count
+    million_employee = db[Salary].query(salary=1000000)
+    assert len(million_employee) == 1
+    assert million_employee[0].name == "Hello"
