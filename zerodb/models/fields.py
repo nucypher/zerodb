@@ -8,8 +8,9 @@ class Indexable(object):
 
     def __init__(self, default=None, virtual=None):
         """
-        default -- default value (which can be callable, like utcnow)
-        virtual -- virtual value which is *only* calculated but is not stored
+        :param default: Default value (which can be callable, like utcnow)
+        :param virtual: Virtual value which is *only* calculated but is not
+            stored. Still, it is indexed
         """
         self.default = default
         self.virtual = virtual
