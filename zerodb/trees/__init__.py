@@ -1,3 +1,7 @@
+"""
+BTrees with modified bucket sizes
+"""
+
 import BTrees
 
 
