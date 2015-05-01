@@ -16,6 +16,10 @@ class DbModel(object):
     Will contain indexes as well.
     """
     def __init__(self, db, model):
+        """
+        :param zerodb.DB db: Database to link model to
+        :param model: Data model (subclass of zerodb.models.Model)
+        """
         self._model = model
         self._db = db
         self._catalog_name = "catalog__" + model.__modelname__
@@ -43,6 +47,10 @@ class DbModel(object):
         """
         Add newly created a Model object to the database
         Stores *and* indexes it
+
+        :param zerodb.models.Model obj: Object to add to the database
+        :return: Added object's uid
+        :rtype: int
         """
         assert obj.__class__ == self._model
         uid = self._objects.add(obj)
@@ -51,7 +59,11 @@ class DbModel(object):
         return uid
 
     def remove(self, obj):
-        """Remove existing object from the database + unindex it"""
+        """
+        Remove existing object from the database + unindex it
+
+        :param zerodb.models.Model obj: Object to add to the database
+        """
         assert obj.__class__ == self._model
         if type(obj) in (int, long):
             uid = obj._v_uid
@@ -61,7 +73,16 @@ class DbModel(object):
         del self._objects[uid]
 
     def query(self, queryobj=None, offset=0, limit=None, **kw):
-        """Smart proxy to catalog's query"""
+        """
+        Smart proxy to catalog's query.
+        One can add <field=...> keyword arguments to make queries where fields
+        are equal to specified values
+
+        :param zerodb.catalog.query.Query queryobj: Query which all sorts of
+            logical, range queries etc
+        :param int offset: Offset to start the result iteration from
+        :param int limit: Limit number of results to this
+        """
         # Catalog's query returns only integers
         # We must be smart here and return objects
         # But no, we must be even smarter and batch-preload objects
@@ -102,9 +123,15 @@ class DbModel(object):
 
 
 class DB(object):
+    """
+    Database for this user. Everything is used through this class
+    """
+
     def __init__(self, sock, debug=False, cipher=None):
         """
-        sock -- UNIX or TCP socket
+        :param str sock: UNIX (str) or TCP ((str, int)) socket
+        :param bool debug: Whether to log debug messages
+        :param cipher: encryption/decryption object (see zerodb.crypto)
         """
         self._storage = client_storage(sock, cipher=cipher, debug=debug)
         self._db = ZODB.DB(self._storage)
@@ -118,6 +145,9 @@ class DB(object):
     def __getitem__(self, model):
         """
         DbModels (which we query) are accessed by using db as a dictionary
+
+        :param model: Subclass of zerodb.models.Model to return or create db entry for
+        :rtype: zerodb.db.DbModel
         """
         # TODO implement list of keys, writing to arbitrary (new) dbmodel (which is not defined)
         if not issubclass(model, models.Model):
@@ -127,7 +157,20 @@ class DB(object):
         return self._models[model]
 
     def add(self, obj):
+        """
+        Add newly created a Model object to the database
+        Stores *and* indexes it
+
+        :param zerodb.models.Model obj: Object to add to the database
+        :return: Added object's uid
+        :rtype: int
+        """
         self[obj.__class__].add(obj)
 
     def remove(self, obj):
+        """
+        Remove existing object from the database + unindex it
+
+        :param zerodb.models.Model obj: Object to add to the database
+        """
         self[obj.__class__].remove(obj)
