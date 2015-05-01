@@ -12,3 +12,4 @@ test.fs
 ZeroDB.egg-info
 zerodb.egg-info
 server/db
+activate
