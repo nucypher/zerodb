@@ -40,8 +40,17 @@ class ZEOServer(BaseZEOServer):
         s.main()
 
 
-def client_storage(*args, **kw):
+def client_storage(sock, *args, **kw):
+    """
+    Storage client
+
+    :param sock: UNIX or TCP socket
+    :param cipher: Encryptor to use (see zerodb.crypto)
+    :param bool debug: Output debug messages to the log
+    :returns: Storage
+    :rtype: TransformingStorage
+    """
     TransformingStorage = kw.get('transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)
     cipher = kw.pop("cipher", None)
-    return TransformingStorage(batch.BatchClientStorage(*args, **kw), cipher=cipher, debug=debug)
+    return TransformingStorage(batch.BatchClientStorage(sock, *args, **kw), cipher=cipher, debug=debug)

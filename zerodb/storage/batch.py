@@ -10,7 +10,13 @@ class ZEOBatchStorage(ZEOStorage):
     """
 
     def loadBulk(self, oids):
-        """ Load multiple oids """
+        """
+        Load multiple oids
+
+        :param list oids: Iterable oids to load at once
+        :return: Loaded oid objects
+        :rtype: list
+        """
         return [self.loadEx(oid) for oid in oids]
 
     extensions = ZEOStorage.extensions + [loadBulk]
@@ -40,6 +46,10 @@ class BatchClientStorage(ClientStorage):
         """
         Storage API to return multiple objects
         We load a unique set of them, just in case
+
+        :param list oids: Iterable oids to load at once
+        :return: Loaded oid objects
+        :rtype: list
         """
 
         # First, try to get whatever possible from cache

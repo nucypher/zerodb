@@ -5,17 +5,22 @@ from zerodb.util.debug import debug_loads
 
 class TransformingStorage(ZlibStorage):
     """
-    We'll put encryption in here.
+    Storage which can transform (encrypt and/or compress) data.
     Also this storge is aware of our loadBulk method
     """
 
-    def __init__(self, *args, **kw):
+    def __init__(self, base, *args, **kw):
+        """
+        :param base: Storage to transform
+        :param cipher: Encryptor to use (see zerodb.crypto)
+        :param bool debug: Output debug log messages
+        """
         self.debug = kw.pop("debug", False)
         self.cipher = kw.pop("cipher", None)
         if self.debug:
             self._debug_download_size = 0
             self._debug_download_count = 0
-        super(TransformingStorage, self).__init__(*args, **kw)
+        super(TransformingStorage, self).__init__(base, *args, **kw)
 
         if self.cipher:
             _transform = self._transform
@@ -24,6 +29,14 @@ class TransformingStorage(ZlibStorage):
             self._untransform = lambda data: _untransform(self.cipher.decrypt(data))
 
     def load(self, oid, version=''):
+        """
+        Load object by oid
+
+        :param str oid: Object ID
+        :param version: Version to load (when we have version control)
+        :return: Object and its serial number
+        :rtype: tuple
+        """
         if self.debug:
             if oid not in self._cache.current:
                 in_cache = False
@@ -41,6 +54,15 @@ class TransformingStorage(ZlibStorage):
         return out_data, serial
 
     def loadBulk(self, oids, returns=True):
+        """
+        Load multiple objects at once
+
+        :param list oids: Iterable of oids to load
+        :param bool returns: When False, we don't return objects but store them
+            in cache
+        :return: List of (object, serial) tuples
+        :rtype: list
+        """
         if self.debug:
             not_in_cache = set(filter(lambda x: x not in self._cache.current, oids))
 
