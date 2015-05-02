@@ -1,6 +1,7 @@
 import pytest
 from zerodb.crypto import AES, rand
 from zerodb.crypto.exceptions import WrongKeyError
+from zerodb.crypto import scrypt_hash
 
 TEST_TEXT = "hello world"
 
@@ -34,3 +35,10 @@ def test_aes_exception():
     cipher2 = AES(passphrase="wrong one")
     with pytest.raises(WrongKeyError):
         cipher2.decrypt(ciphertext)
+
+
+def test_scrypt():
+    password = "no one will guess this password"
+    h = scrypt_hash.hash_password(password)
+    assert scrypt_hash.verify_password(h, password)
+    assert not scrypt_hash.verify_password(h, password + "oops")

@@ -79,5 +79,11 @@ class IdStore(persistent.Persistent):
         """
         return self.tree[uid]
 
+    def __delitem__(self, uid):
+        """
+        :param int uid: Get object by its unique ID
+        """
+        self.remove(uid)
+
     def __len__(self):
         return len(self.tree)

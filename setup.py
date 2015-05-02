@@ -10,7 +10,9 @@ INSTALL_REQUIRES = [
     'zc.zlibstorage',
     'pytest',
     'pycrypto',
-    'click']
+    'click',
+    'bcrypt',
+    'passlib']
 
 setup(
     name="zerodb",
