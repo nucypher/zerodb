@@ -2,6 +2,12 @@ import pyelliptic as pe  # This module re-uses OPENSSL's code
 import ecdsa  # But this one is more functional :-)
 from zerodb.crypto import sha256
 
+# We can get rid of this pure-python ecdsa module and use compressed keys
+# For OpenSSL-based implementation see:
+#   https://github.com/Bitmessage/PyBitmessage/blob/master/src/highlevelcrypto.py
+# For pure python implementation (just in case!) see:
+#   https://github.com/vbuterin/pybitcointools/
+
 
 # We use curve standard for Bitcoin by default
 CURVE = "secp256k1"
