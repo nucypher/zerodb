@@ -1,10 +1,33 @@
 import pytest
 from os import path
-from zerodb.permissions.digest import PermissionsDatabase, passhash
+from multiprocessing import Process
+from zerodb.permissions.sign import\
+        PermissionsDatabase,\
+        ecc,\
+        StorageClass,\
+        register_auth
+from zerodb.storage import ZEOServer
+from zerodb.crypto import AES
+from zerodb.storage import client_storage
 
-TEST_PASSWORD = "v3ry 53cr3t pa$$w0rd"
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
+TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
 TEST_PERMISSIONS = """realm ZERO
-root:%s""" % passhash.encrypt(TEST_PASSWORD)
+root:%s""" % TEST_PUBKEY.encode("hex")
+
+ZEO_CONFIG = """<zeo>
+  address %(sock)s
+  authentication-protocol ecc_auth
+  authentication-database %(pass_file)s
+  authentication-realm ZERO
+</zeo>
+
+<filestorage>
+  path %(dbfile)s
+</filestorage>"""
 
 
 @pytest.fixture(scope="module")
@@ -15,36 +38,67 @@ def pass_file(request, tempdir):
     return filename
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def pass_db(request, pass_file):
     db = PermissionsDatabase(pass_file)
     request.addfinalizer(db.close)
     return db
 
 
-def test_root(pass_db):
-    assert pass_db.verify_password("root", TEST_PASSWORD)
-    assert not pass_db.verify_password("root", "wrong password")
-    assert pass_db["root"].administrator
-    with pytest.raises(LookupError):
-        pass_db["attacker"]
+@pytest.fixture(scope="function")
+def ecc_server(request, pass_file, tempdir):
+    sock = path.join(tempdir, "zeosocket_auth")
+    zeroconf_file = path.join(tempdir, "zeo.config")
+    dbfile = path.join(tempdir, "db2.fs")
+    with open(zeroconf_file, "w") as f:
+        f.write(ZEO_CONFIG % {
+            "sock": sock,
+            "pass_file": pass_file,
+            "dbfile": dbfile})
+    register_auth()
+    server = Process(target=ZEOServer.run, kwargs={"args": ("-C", zeroconf_file)})
+
+    @request.addfinalizer
+    def fin():
+        server.terminate()
+        server.join()
+
+    server.start()
+    return sock
 
 
-def test_new(pass_db):
-    pass_db.add_user("user1", "pass1temp", administrator=True)
-    pass_db.add_user("user2", "pass2temp")
-    pass_db.add_user("user3", "pass3")
+def test_db_rootuser(pass_db):
+    user = pass_db["root"]
+    assert user.administrator
+    assert user.pubkey == TEST_PUBKEY
+
+
+def test_db_users(pass_db):
+    pk1 = ecc.private("pass1").get_pubkey()
+    pk2 = ecc.private("pass2").get_pubkey()
+    pk3 = ecc.private("pass3").get_pubkey()
+    pass_db.add_user("user1", pk1, administrator=True)
+    pass_db.add_user("user2", pk2)
+    pass_db.add_user("user3", pk3)
     pass_db.del_user("user3")
-    pass_db.change_password("user2", "pass2")
-    pass_db._store_password("user4", "pass4")
-    pass_db._store_password("user1", "pass1")
-
-    assert pass_db.verify_password("user1", "pass1")
-    assert pass_db.verify_password("user2", "pass2")
-    with pytest.raises(LookupError):
-        assert pass_db.verify_password("user3", "pass3")
-    assert pass_db.verify_password("user4", "pass4")
+    pass_db.change_key("user2", pk3)
 
     assert pass_db["user1"].administrator
     assert not pass_db["user2"].administrator
-    assert not pass_db["user4"].administrator
+    assert pass_db["user1"].pubkey == pk1
+    assert pass_db["user2"].pubkey == pk3
+
+    with pytest.raises(LookupError):
+        pass_db["user3"]
+
+
+def test_storage_class(pass_db):
+    storage = StorageClass(None, auth_realm="ZERO")
+    storage.set_database(pass_db)
+
+
+def test_ecc_auth(ecc_server):
+    # Presumably, ecc_server already registered auth protocol
+    client_storage(ecc_server,
+            username="root", password=TEST_PASSPHRASE, realm="ZERO",
+            cipher=AES(passphrase=TEST_PASSPHRASE))

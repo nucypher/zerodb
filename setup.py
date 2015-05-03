@@ -11,8 +11,8 @@ INSTALL_REQUIRES = [
     'pytest',
     'pycrypto',
     'click',
-    'bcrypt',
-    'passlib']
+    'pyelliptic',
+    'ecdsa']
 
 setup(
     name="zerodb",

@@ -1,6 +1,7 @@
 from ZEO.StorageServer import StorageServer as BaseStorageServer
 from ZEO.runzeo import ZEOServer as BaseZEOServer
 from ZEO.runzeo import ZEOOptions
+from Crypto.Random import atfork
 
 import batch
 import transforming
@@ -34,6 +35,7 @@ class ZEOServer(BaseZEOServer):
 
     @classmethod
     def run(cls, args=None):
+        atfork()
         options = ZEOOptions()
         options.realize(args=args)
         s = cls(options)
