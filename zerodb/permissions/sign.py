@@ -7,13 +7,18 @@ import ZODB
 from os import path
 from ZEO.auth.base import Client
 from ZEO.auth import register_module
-from ZEO.Exceptions import AuthError
+from ZEO.Exceptions import AuthError, StorageError
+from ZODB.POSException import POSKeyError
 from ZODB import FileStorage
 
 from zerodb.crypto import rand, sha256, sha512
 from zerodb.crypto import ecc
 from zerodb.intid import IdStore as BaseIdStore
 from zerodb.storage import ServerStorage
+
+
+class AccessDeniedError(StorageError):
+    """Attempt to see encrypted data of others"""
 
 
 class IdStore(BaseIdStore):
@@ -57,6 +62,7 @@ class PermissionsDatabase(object):
     """
     realm = None
     family = BTrees.family32
+    uid_pack = "i"  # family32 -> "i", family64 -> "q"
 
     def __init__(self, filename, realm=None):
         """
@@ -229,6 +235,33 @@ class StorageClass(ServerStorage):
             self.noncekey])
         return sha256(s)
 
+    def create_root(self):
+        """This is copied from ZODB.DB.DB.__init__"""
+        from ZODB.DB import z64, Pickler, BytesIO, _protocol
+        try:
+            self.storage.load(z64, '')
+        except KeyError:
+            # Create the database's root in the storage if it doesn't exist
+            from persistent.mapping import PersistentMapping
+            root = PersistentMapping()
+            # Manually create a pickle for the root to put in the storage.
+            # The pickle must be in the special ZODB format.
+            file = BytesIO()
+            p = Pickler(file, _protocol)
+            p.dump((root.__class__, None))
+            p.dump(root.__getstate__())
+            t = transaction.Transaction()
+            t.description = 'initial database creation'
+            self.storage.tpc_begin(t)
+            self.storage.store(z64, None, file.getvalue(), '', t)
+            self.storage.tpc_vote(t)
+            self.storage.tpc_finish(t)
+
+    def setup_delegation(self):
+        # We use insert a hook to create a no-write root here
+        ServerStorage.setup_delegation(self)
+        self.create_root()
+
     def auth_get_challenge(self):
         """Return realm, challenge, and nonce."""
         self._challenge = rand(32)
@@ -251,7 +284,40 @@ class StorageClass(ServerStorage):
         verify = verkey.verify(resp_sig, check)
         if verify:
             self.connection.setSessionKey(session_key(h_up, self._key_nonce))
-        return self._finish_auth(verify)
+        # This class is per-connection, so we're safe to assign attributes
+        authenticated = self._finish_auth(verify)
+        if authenticated:
+            user_id = self.database.db_root["usernames"][username]
+            self.user_id = struct.pack(self.database.uid_pack, user_id)
+        return authenticated
+
+    def _check_permissions(self, data):
+        if not data.endswith(self.user_id):
+            raise AccessDeniedError("Attempt to access encrypted data of others")
+
+    def loadEx(self, oid):
+        data, tid = ServerStorage.loadEx(self, oid)
+        self._check_permissions(data)
+        return data, tid
+
+    def storea(self, oid, serial, data, id):
+        try:
+            old_data, old_tid = ServerStorage.loadEx(self, oid)
+            self._check_permissions(old_data)
+        except POSKeyError:
+            pass
+        data += self.user_id
+        return ServerStorage.storea(self, oid, serial, data, id)
+
+    def loadBulk(self, oids):
+        results = ServerStorage.load(self, oids)
+        for data, _ in results:
+            self._check_permissions(data)
+        return results
+
+    # We certainly need to implement more methods for storage in here:
+    # loadEx, loadBefore, deleteObject, storea, restorea, storeBlobEnd, storeBlobShared,
+    # sendBlob, loadSerial, loadBulk
 
     extensions = [auth_get_challenge, auth_response]
 

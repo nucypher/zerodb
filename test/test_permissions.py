@@ -1,10 +1,11 @@
 import pytest
 from os import path
 from multiprocessing import Process
+from ZODB.DB import z64
 from zerodb.permissions.sign import\
         PermissionsDatabase,\
         ecc,\
-        StorageClass,\
+        AccessDeniedError,\
         register_auth
 from zerodb.storage import ZEOServer
 from zerodb.crypto import AES
@@ -92,13 +93,10 @@ def test_db_users(pass_db):
         pass_db["user3"]
 
 
-def test_storage_class(pass_db):
-    storage = StorageClass(None, auth_realm="ZERO")
-    storage.set_database(pass_db)
-
-
 def test_ecc_auth(ecc_server):
     # Presumably, ecc_server already registered auth protocol
-    client_storage(ecc_server,
+    storage = client_storage(ecc_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO",
             cipher=AES(passphrase=TEST_PASSPHRASE))
+    with pytest.raises(AccessDeniedError):
+        storage.load(z64)
