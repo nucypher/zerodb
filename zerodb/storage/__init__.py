@@ -49,10 +49,11 @@ def client_storage(sock, *args, **kw):
     :param sock: UNIX or TCP socket
     :param cipher: Encryptor to use (see zerodb.crypto)
     :param bool debug: Output debug messages to the log
+    :param transforming_storage: Wrapper-storage to use (TransformingStorage)
     :returns: Storage
     :rtype: TransformingStorage
     """
-    TransformingStorage = kw.get('transforming_storage', transforming.TransformingStorage)
+    TransformingStorage = kw.pop('transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)
     cipher = kw.pop("cipher", None)
     return TransformingStorage(batch.BatchClientStorage(sock, *args, **kw), cipher=cipher, debug=debug)

@@ -10,6 +10,7 @@ from zerodb.permissions.sign import\
 from zerodb.storage import ZEOServer
 from zerodb.crypto import AES
 from zerodb.storage import client_storage
+from zerodb.permissions.sign import DB
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -100,3 +101,8 @@ def test_ecc_auth(ecc_server):
             cipher=AES(passphrase=TEST_PASSPHRASE))
     with pytest.raises(AccessDeniedError):
         storage.load(z64)
+    db = DB(storage)
+    conn = db.open()
+    conn.root  # Do we save data??
+    conn.close()
+    # Now should create a DB and test private root from connection
