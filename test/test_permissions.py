@@ -1,16 +1,14 @@
 import pytest
 from os import path
 from multiprocessing import Process
+import transaction
+from ZEO.Exceptions import StorageError
 from ZODB.DB import z64
-from zerodb.permissions.sign import\
-        PermissionsDatabase,\
-        ecc,\
-        AccessDeniedError,\
-        register_auth
+from zerodb.permissions import elliptic, subdb
+from zerodb.permissions import base as permissions_base
 from zerodb.storage import ZEOServer
-from zerodb.crypto import AES
+from zerodb.crypto import AES, ecc
 from zerodb.storage import client_storage
-from zerodb.permissions.sign import DB
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -42,7 +40,7 @@ def pass_file(request, tempdir):
 
 @pytest.fixture(scope="function")
 def pass_db(request, pass_file):
-    db = PermissionsDatabase(pass_file)
+    db = permissions_base.PermissionsDatabase(pass_file)
     request.addfinalizer(db.close)
     return db
 
@@ -57,7 +55,7 @@ def ecc_server(request, pass_file, tempdir):
             "sock": sock,
             "pass_file": pass_file,
             "dbfile": dbfile})
-    register_auth()
+    elliptic.register_auth()
     server = Process(target=ZEOServer.run, kwargs={"args": ("-C", zeroconf_file)})
 
     @request.addfinalizer
@@ -99,10 +97,18 @@ def test_ecc_auth(ecc_server):
     storage = client_storage(ecc_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO",
             cipher=AES(passphrase=TEST_PASSPHRASE))
-    with pytest.raises(AccessDeniedError):
+
+    with pytest.raises(StorageError):  # Cannot access common root
         storage.load(z64)
-    db = DB(storage)
+
+    db = subdb.DB(storage)
     conn = db.open()
-    conn.root  # Do we save data??
+    root = conn.root()
+
+    assert db._root_oid != z64
+    assert type(db._root_oid) == str
+
+    with transaction.manager:
+        root["hello"] = "world"
+
     conn.close()
-    # Now should create a DB and test private root from connection
