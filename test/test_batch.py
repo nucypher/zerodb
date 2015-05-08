@@ -2,18 +2,21 @@ import pytest
 from pickle import loads
 from zerodb.crypto import AES
 from zerodb.storage import client_storage
-from db import PASSPHRASE
+from db import TEST_PASSPHRASE
 
 
 @pytest.fixture(scope="module")
 def zeo_storage(request, zeo_server):
-    return client_storage(zeo_server, cipher=AES(passphrase=PASSPHRASE), debug=True)
+    return client_storage(zeo_server,
+            username="root", password=TEST_PASSPHRASE, realm="ZERO",
+            cipher=AES(passphrase=TEST_PASSPHRASE), debug=True)
 
 
 def test_loadBulk(zeo_storage):
     # oids in ZODB start from zero, and there are less than 10
+    root_id, _ = zeo_storage.get_root_id()
     count_0 = zeo_storage._debug_download_count
-    oids = [("000000000000000%s" % i).decode('hex') for i in range(10)]
+    oids = [root_id]
     out = zeo_storage.loadBulk(oids)
     count_1 = zeo_storage._debug_download_count
     assert count_1 - count_0 == 1

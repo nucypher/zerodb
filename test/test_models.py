@@ -7,8 +7,7 @@ import zerodb
 import zerodb.db
 from zerodb.models import fields
 from zerodb.models.exceptions import ModelException
-from zerodb.crypto import AES
-from db import PASSPHRASE
+from db import TEST_PASSPHRASE
 
 
 class TestMe(models.Model):
@@ -51,7 +50,7 @@ def test_model():
 
 
 def test_db(zeo_server):
-    db = zerodb.DB(zeo_server, cipher=AES(passphrase=PASSPHRASE), debug=True)
+    db = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
     assert len(db._models) == 0
     assert isinstance(db[TestMe], zerodb.db.DbModel)
     assert len(db._models) == 1
@@ -60,7 +59,7 @@ def test_db(zeo_server):
 
 
 def test_dbmodel(zeo_server):
-    db = zerodb.DB(zeo_server, cipher=AES(passphrase=PASSPHRASE), debug=True)
+    db = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
     assert db[TestMe]._model == TestMe
     assert db[TestMe]._db == db
     assert db[TestMe]._catalog_name == "catalog__testme"

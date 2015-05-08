@@ -1,70 +1,13 @@
 import pytest
-from os import path
-from multiprocessing import Process
-import transaction
 from ZEO.Exceptions import StorageError
 from ZODB.DB import z64
-from zerodb.permissions import elliptic, subdb
-from zerodb.permissions import base as permissions_base
-from zerodb.storage import ZEOServer
+from zerodb.permissions import subdb
 from zerodb.crypto import AES, ecc
 from zerodb.storage import client_storage
+from conftest import TEST_PUBKEY, TEST_PASSPHRASE
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
-TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
-TEST_PERMISSIONS = """realm ZERO
-root:%s""" % TEST_PUBKEY.encode("hex")
-
-ZEO_CONFIG = """<zeo>
-  address %(sock)s
-  authentication-protocol ecc_auth
-  authentication-database %(pass_file)s
-  authentication-realm ZERO
-</zeo>
-
-<filestorage>
-  path %(dbfile)s
-</filestorage>"""
-
-
-@pytest.fixture(scope="module")
-def pass_file(request, tempdir):
-    filename = path.join(tempdir, "authdb.conf")
-    with open(filename, "w") as f:
-        f.write(TEST_PERMISSIONS)
-    return filename
-
-
-@pytest.fixture(scope="function")
-def pass_db(request, pass_file):
-    db = permissions_base.PermissionsDatabase(pass_file)
-    request.addfinalizer(db.close)
-    return db
-
-
-@pytest.fixture(scope="function")
-def ecc_server(request, pass_file, tempdir):
-    sock = path.join(tempdir, "zeosocket_auth")
-    zeroconf_file = path.join(tempdir, "zeo.config")
-    dbfile = path.join(tempdir, "db2.fs")
-    with open(zeroconf_file, "w") as f:
-        f.write(ZEO_CONFIG % {
-            "sock": sock,
-            "pass_file": pass_file,
-            "dbfile": dbfile})
-    elliptic.register_auth()
-    server = Process(target=ZEOServer.run, kwargs={"args": ("-C", zeroconf_file)})
-
-    @request.addfinalizer
-    def fin():
-        server.terminate()
-        server.join()
-
-    server.start()
-    return sock
 
 
 def test_db_rootuser(pass_db):
@@ -92,9 +35,9 @@ def test_db_users(pass_db):
         pass_db["user3"]
 
 
-def test_ecc_auth(ecc_server):
+def test_ecc_auth(zeo_server):
     # Presumably, ecc_server already registered auth protocol
-    storage = client_storage(ecc_server,
+    storage = client_storage(zeo_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO",
             cipher=AES(passphrase=TEST_PASSPHRASE))
 
@@ -103,12 +46,9 @@ def test_ecc_auth(ecc_server):
 
     db = subdb.DB(storage)
     conn = db.open()
-    root = conn.root()
+    conn.root()
 
     assert db._root_oid != z64
     assert type(db._root_oid) == str
-
-    with transaction.manager:
-        root["hello"] = "world"
 
     conn.close()

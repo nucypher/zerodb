@@ -75,13 +75,14 @@ class StorageClass(ServerStorage):
         create_root(self.storage)
 
     def _check_permissions(self, data, oid=None):
+        print self.user_id.encode("hex"), data[-len(self.user_id):].encode("hex")
         if not data.endswith(self.user_id):
             raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, self.user_id.encode("hex")))
 
     def loadEx(self, oid):
         data, tid = ServerStorage.loadEx(self, oid)
         self._check_permissions(data, oid)
-        return data, tid
+        return data[:-len(self.user_id)], tid
 
     def storea(self, oid, serial, data, id):
         try:
@@ -91,12 +92,6 @@ class StorageClass(ServerStorage):
             pass  # We store a new one
         data += self.user_id
         return ServerStorage.storea(self, oid, serial, data, id)
-
-    def loadBulk(self, oids):
-        results = ServerStorage.load(self, oids)
-        for data, _ in results:
-            self._check_permissions(data)
-        return results
 
     def get_root_id(self):
         """
@@ -109,7 +104,10 @@ class StorageClass(ServerStorage):
         if user.root:
             return user.root, False
         else:
-            return self.storage.new_oid(), True
+            oid = self.storage.new_oid()
+            with transaction.manager:
+                user.root = oid
+            return oid, True
 
     extensions = [get_root_id]
 

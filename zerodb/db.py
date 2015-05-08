@@ -1,10 +1,12 @@
 import transaction
-import ZODB
 from repoze.catalog.query import optimize
 
 from zerodb.catalog.query import And, Eq
+from zerodb.crypto.aes import AES
+from zerodb.crypto import sha256
 from zerodb import models
 from zerodb.models.exceptions import ModelException
+from zerodb.permissions import subdb
 from zerodb.storage import client_storage
 import itertools
 
@@ -122,19 +124,27 @@ class DbModel(object):
         return len(self._objects)
 
 
+# Let's wire AES, ECC, permissionDB as interfaces
 class DB(object):
     """
     Database for this user. Everything is used through this class
     """
 
-    def __init__(self, sock, debug=False, cipher=None):
+    db_factory = subdb.DB
+    cipher_factory = AES
+
+    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :param bool debug: Whether to log debug messages
         :param cipher: encryption/decryption object (see zerodb.crypto)
         """
-        self._storage = client_storage(sock, cipher=cipher, debug=debug)
-        self._db = ZODB.DB(self._storage)
+        if not username:
+            username = sha256("username" + sha256(password))
+        self._storage = client_storage(sock,
+                username=username, password=password, realm=realm,
+                cipher=DB.cipher_factory(password), debug=debug)
+        self._db = DB.db_factory(self._storage)
         self._conn = self._db.open()
         self._root = self._conn.root()
         self._models = {}

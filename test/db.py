@@ -4,9 +4,8 @@ import transaction
 from zerodb.models import Model
 from zerodb.models import fields
 import zerodb
-from zerodb.crypto import AES
 
-PASSPHRASE = "very very secret password"
+TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
 
 
 class Page(Model):
@@ -21,7 +20,7 @@ class Salary(Model):
 
 
 def create_objects_and_close(sock, count=200):
-    db = zerodb.DB(sock, cipher=AES(passphrase=PASSPHRASE), debug=True)
+    db = zerodb.DB(sock, username="root", password=TEST_PASSPHRASE, debug=True)
     with transaction.manager:
         for i in range(count / 2) + range(count / 2 + 10, count):
             db.add(Page(title="hello %s" % i, text="lorem ipsum dolor sit amet" * 50))
