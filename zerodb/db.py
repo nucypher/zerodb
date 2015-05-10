@@ -1,5 +1,7 @@
 import transaction
 from repoze.catalog.query import optimize
+from ZEO import auth
+from zerodb.permissions import elliptic
 
 from zerodb.catalog.query import And, Eq
 from zerodb.crypto.aes import AES
@@ -131,13 +133,15 @@ class DB(object):
 
     db_factory = subdb.DB
     cipher_factory = AES
+    auth_module = elliptic
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :param bool debug: Whether to log debug messages
-        :param cipher: encryption/decryption object (see zerodb.crypto)
         """
+        if self.auth_module.__module_name__ not in auth._auth_modules:
+            self.auth_module.register_auth()
         if not username:
             username = sha256("username" + sha256(password))
         self._storage = client_storage(sock,

@@ -13,6 +13,9 @@ from zerodb.crypto import rand, sha256
 from zerodb.crypto import ecc
 
 
+__module_name__ = "ecc_auth"
+
+
 class StorageClass(subdb.StorageClass):
 
     def auth_get_challenge(self):
@@ -69,4 +72,4 @@ class Client(BaseClient):
 
 
 def register_auth():
-    register_module("ecc_auth", StorageClass, Client, base.PermissionsDatabase)
+    register_module(__module_name__, StorageClass, Client, base.PermissionsDatabase)
