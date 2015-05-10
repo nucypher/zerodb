@@ -1,0 +1,10 @@
+<zeo>
+  address /tmp/zerosocket
+  authentication-protocol ecc_auth
+  authentication-database conf/authdb.conf
+  authentication-realm ZERO
+</zeo>
+
+<filestorage>
+    path db/db.fs
+</filestorage>

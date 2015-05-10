@@ -124,7 +124,6 @@ class DbModel(object):
         return len(self._objects)
 
 
-# Let's wire AES, ECC, permissionDB as interfaces
 class DB(object):
     """
     Database for this user. Everything is used through this class

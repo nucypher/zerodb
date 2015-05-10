@@ -11,5 +11,5 @@ test.fs
 .virtual
 ZeroDB.egg-info
 zerodb.egg-info
-server/db
 activate
+server/db/db.*
