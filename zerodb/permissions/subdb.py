@@ -75,7 +75,6 @@ class StorageClass(ServerStorage):
         create_root(self.storage)
 
     def _check_permissions(self, data, oid=None):
-        print self.user_id.encode("hex"), data[-len(self.user_id):].encode("hex")
         if not data.endswith(self.user_id):
             raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, self.user_id.encode("hex")))
 

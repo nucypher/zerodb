@@ -1,12 +1,12 @@
 import zerodb
-from zerodb.crypto import AES
 from zerodb.catalog.query import *
 from models import Employee
 
-PASSPHRASE = "Much secret so secure wow"
-SOCKET = ("ec2-52-10-134-79.us-west-2.compute.amazonaws.com", 3000)  # or "/tmp/zerosocket"
+PASSPHRASE = "very insecure passphrase - never use it"
+# SOCKET = ("ec2-52-10-134-79.us-west-2.compute.amazonaws.com", 3000)  # or "/tmp/zerosocket"
+SOCKET = "/tmp/zerosocket"
 
-db = zerodb.DB(SOCKET, cipher=AES(passphrase=PASSPHRASE))
+db = zerodb.DB(SOCKET, username="root", password=PASSPHRASE)
 print len(db[Employee])
 
 johns = db[Employee].query(name="John", limit=10)
@@ -19,5 +19,6 @@ print rich_johns
 
 presidents = db[Employee].query(Contains("description", "president of United States"))
 print len(presidents)
-print presidents[0]
-print presidents[0].description
+if presidents:
+    print presidents[0]
+    print presidents[0].description
