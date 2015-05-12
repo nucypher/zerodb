@@ -138,6 +138,10 @@ class DB(object):
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
+        :type sock: str or tuple
+        :param str username: Username. Derived from password if not set
+        :param str password: Password or seed for private key
+        :param str realm: ZODB's realm
         :param bool debug: Whether to log debug messages
         """
         if self.auth_module.__module_name__ not in auth._auth_modules:
