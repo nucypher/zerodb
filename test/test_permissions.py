@@ -52,3 +52,20 @@ def test_ecc_auth(zeo_server):
     assert type(db._root_oid) == str
 
     conn.close()
+
+
+def test_user_management(zeo_server):
+    storage = client_storage(zeo_server,
+            username="root", password=TEST_PASSPHRASE, realm="ZERO",
+            cipher=AES(passphrase=TEST_PASSPHRASE))
+
+    pk0 = ecc.private("passY").get_pubkey()
+    pk = ecc.private("passX").get_pubkey()
+    storage.add_user("userX", pk0)
+    storage.change_key("userX", pk)
+
+    storage = client_storage(zeo_server,
+            username="userX", password="passX", realm="ZERO",
+            cipher=AES(passphrase="passX"))
+    with pytest.raises(AssertionError):
+        storage.add_user("shouldfail", pk)

@@ -78,6 +78,11 @@ class StorageClass(ServerStorage):
         if not data.endswith(self.user_id):
             raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, self.user_id.encode("hex")))
 
+    def _check_admin(self):
+        uid = struct.unpack(self.database.uid_pack, self.user_id)[0]
+        user = self.database.db_root["users"][uid]
+        assert user.administrator
+
     def loadEx(self, oid):
         data, tid = ServerStorage.loadEx(self, oid)
         self._check_permissions(data, oid)
@@ -108,10 +113,32 @@ class StorageClass(ServerStorage):
                 user.root = oid
             return oid, True
 
-    extensions = [get_root_id]
+    def add_user(self, username, pubkey, administrator=False):
+        """
+        Adminstrator can add a user
+        """
+        self._check_admin()
+        self.database.add_user(username, pubkey, administrator=administrator)
+
+    def del_user(self, username):
+        """
+        Adminstrator can remove a user
+        """
+        self._check_admin()
+        self.database.del_user(username)
+
+    def change_key(self, username, pubkey):
+        """
+        Administrator can change user's key (not reencrypting the data though!)
+        """
+        self._check_admin()
+        self.database.change_key(username, pubkey)
+
+    extensions = [get_root_id, add_user, del_user, change_key]
 
     # TODO
-    # We certainly need to implement more methods for storage in here:
+    # We certainly need to implement more methods for storage in here
+    # (or check if they re-use loadEx):
     # loadEx, loadBefore, deleteObject, storea, restorea, storeBlobEnd, storeBlobShared,
     # sendBlob, loadSerial, loadBulk
 
