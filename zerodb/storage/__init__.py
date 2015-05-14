@@ -53,6 +53,8 @@ def client_storage(sock, *args, **kw):
     :returns: Storage
     :rtype: TransformingStorage
     """
+    if type(sock) is unicode:
+        sock = str(sock)
     TransformingStorage = kw.pop('transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)
     cipher = kw.pop("cipher", None)
