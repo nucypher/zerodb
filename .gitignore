@@ -13,3 +13,5 @@ test.fs
 /activate
 /server/db/db.*
 /tmp
+/dist
+/build
