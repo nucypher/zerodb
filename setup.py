@@ -1,14 +1,12 @@
 from setuptools import setup, find_packages
 
 INSTALL_REQUIRES = [
-    'setuptools',
     'BTrees',
     'zope.component',
     'ZODB',
     'zope.index',
     'repoze.catalog',
     'zc.zlibstorage',
-    'pytest',
     'pycrypto',
     'click',
     'pyelliptic',
@@ -17,12 +15,12 @@ INSTALL_REQUIRES = [
 
 setup(
     name="zerodb",
-    version="0.7",
+    version="0.8",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
+    license="Proprietary",
     url="http://zerodb.io",
     packages=find_packages(),
-    tests_require=INSTALL_REQUIRES,
     install_requires=INSTALL_REQUIRES,
 )

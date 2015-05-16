@@ -1,15 +1,15 @@
 # pyc files
 *.pyc
-
-# Test db which must be created each time
+*.pyo
 test.fs.*
 test.fs
 *.db
 *.db.*
 .ropeproject
 .coverage
-.virtual
-ZeroDB.egg-info
-zerodb.egg-info
-activate
-server/db/db.*
+/.tox
+/ZeroDB.egg-info
+/zerodb.egg-info
+/activate
+/server/db/db.*
+/tmp

@@ -1,13 +1,18 @@
 #!/bin/bash
 
-if [ ! -d ".virtual" ]
+if [ ! -d ".tox" ]
 then
-    virtualenv -p /usr/bin/python2.7 .virtual
-    source .virtual/bin/activate
-    python setup.py develop
-    if [ ! -e "activate" ]
+    if [ ! -e "$(which tox)" ]
     then
-        ln -s .virtual/bin/activate .
+        echo "You need to install tox"
+        echo "Please do:"
+        echo "  sudo pip install tox"
+    else
+        tox --develop --notest
+        if [ ! -e "activate" ]
+        then
+            ln -s .tox/py27/bin/activate .
+        fi
     fi
 else
     echo "All done already"
