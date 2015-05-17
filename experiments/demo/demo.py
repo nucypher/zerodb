@@ -16,8 +16,8 @@ rich_johns = db[Employee].query(InRange("salary", 195000, 200000), name="John")
 print len(rich_johns)
 print rich_johns
 
-presidents = db[Employee].query(Contains("description", "president of United States"))
-print len(presidents)
-if presidents:
-    print presidents[0]
-    print presidents[0].description
+uk = db[Employee].query(Contains("description", "United Kingdom"))
+print len(uk)
+if uk:
+    print uk[0]
+    print uk[0].description

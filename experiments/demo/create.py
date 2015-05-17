@@ -29,9 +29,9 @@ with transaction.manager:
 
     # One special record
     desc = """A theoretical physicist, cosmologist,
-    author and Director of Research at the Centre for
-    Theoretical Cosmology within the University of Cambridge,
-    Stephen William Hawking resides in the United Kingom."""
+author and Director of Research at the Centre for
+Theoretical Cosmology within the University of Cambridge,
+Stephen William Hawking resides in the United Kingdom."""
     e = models.Employee(name="Stephen", surname="Hawking",
                         salary=400000,
                         description=desc)

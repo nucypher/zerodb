@@ -152,7 +152,7 @@ script)::
     A theoretical physicist, cosmologist,
     author and Director of Research at the Centre for
     Theoretical Cosmology within the University of Cambridge,
-    Stephen William Hawking resides in the United Kingom.
+    Stephen William Hawking resides in the United Kingdom.
     >>> import transaction
     >>> db.remove(from_uk[0])
     >>> transaction.commit()
