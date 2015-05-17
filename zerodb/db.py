@@ -69,10 +69,10 @@ class DbModel(object):
         :param zerodb.models.Model obj: Object to add to the database
         """
         assert obj.__class__ == self._model
-        if type(obj) in (int, long):
-            uid = obj._v_uid
-        else:
+        if isinstance(obj, (int, long)):
             uid = obj
+        else:
+            uid = obj._v_uid
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
 
@@ -120,6 +120,8 @@ class DbModel(object):
         # Pre-load them all (these are lazy objects)
         if objects:
             self._db._storage.loadBulk([o._p_oid for o in objects])
+        for obj, uid in itertools.izip(objects, qids):
+            obj._v_uid = uid
         return objects
 
     def __len__(self):
