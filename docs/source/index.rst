@@ -99,7 +99,33 @@ Press ``Ctrl+D`` to exit ipython terminal when you're done.
 
 Using ZeroDB in Python
 ======================
-pass
+
+Unlike many NoSQL databases, you still define data models in ZeroDB. However,
+these are only for indexing, and they are dynamically typed. All the fields you
+define in data models are indexed, and objects which you store in the database
+can, in fact, contain any fields not included in the index.
+
+Let's start from writing a data model ``models.py`` first:
+
+.. literalinclude:: ../../experiments/demo/models.py
+
+Now, let's assume we already started the database server. The simplest example
+which create records for us would look like this::
+
+    import transaction
+    import zerodb
+    import models
+
+    db = zerodb.DB("/tmp/zerosocket", username="root", password="...")
+    e = models.Employee(name="John", surname="Smith", salary=150000,
+                        description="Coding power")
+    db.add(e)
+    transaction.commit()
+
+Though, let's do something more advanced and populate the database with random
+data by a script like this (``create.py``):
+
+.. literalinclude:: ../../experiments/demo/create.py
 
 Indices and tables
 ==================
