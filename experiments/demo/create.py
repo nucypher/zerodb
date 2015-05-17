@@ -28,10 +28,10 @@ with transaction.manager:
         db.add(e)  # Don't forget to add created object to the db
 
     # One special record
-    desc = """The 44th president of the United States,\\
-author and the most popular person in the world,\\
-Barack Hussein Obama II, has an estimated net worth of\\
-$12.2 million. Excluding the $1.4 million in Nobel Prize\\
+    desc = """The 44th president of the United States,
+author and the most popular person in the world,
+Barack Hussein Obama II, has an estimated net worth of
+$12.2 million. Excluding the $1.4 million in Nobel Prize
 money he donated to charity and his primary home."""
     e = models.Employee(name="Barack", surname="Obama",
                         salary=400000,

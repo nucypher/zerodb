@@ -127,6 +127,40 @@ data by a script like this (``create.py``):
 
 .. literalinclude:: ../../experiments/demo/create.py
 
+Let's play with that data in Python terminal (or you can write your
+script)::
+
+    >>> import zerodb
+    >>> from zerodb.query import *
+    >>> from models import *
+    >>> PASSWORD = "very insecure passphrase - never use it"
+    >>> db = zerodb.DB("/tmp/zerosocket", username="root", password=PASSWORD)
+    >>> len(db[Employee])
+    10001
+    >>> db[Employee].query(name="John", limit=3)
+    [<John Aquirre who earns $147944>, <John Gauthier who earns $169040>, <John
+    Hefner who earns $25895>]
+    >>> rich_johns = db[Employee].query(InRange("salary", 195000, 200000),
+    name="John")
+    >>> len(rich_johns)
+    5
+    >>> from_usa = db[Employee].query(Contains("description", "United States"))
+    >>> from_usa
+    [<Barack Obama who earns $400000>]
+    >>> print from_usa[0].description
+    The 44th president of the United States,
+    author and the most popular person in the world,
+    Barack Hussein Obama II, has an estimated net worth of
+    $12.2 million. Excluding the $1.4 million in Nobel Prize
+    money he donated to charity and his primary home.
+    >>> import transaction
+    >>> db.remove(from_usa[0])
+    >>> transaction.commit()
+    >>> len(db[Employee])
+    10000
+
+You can now do range queries, search the text and remove data from the database.
+
 Indices and tables
 ==================
 

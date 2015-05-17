@@ -1,9 +1,8 @@
 import zerodb
-from zerodb.catalog.query import *
+from zerodb.query import *
 from models import Employee
 
 PASSPHRASE = "very insecure passphrase - never use it"
-# SOCKET = ("ec2-52-10-134-79.us-west-2.compute.amazonaws.com", 3000)  # or "/tmp/zerosocket"
 SOCKET = "/tmp/zerosocket"
 
 db = zerodb.DB(SOCKET, username="root", password=PASSPHRASE)
