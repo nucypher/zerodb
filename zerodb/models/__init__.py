@@ -4,6 +4,7 @@ import exceptions
 from zerodb.intid import IdStore
 from zerodb.trees import family32
 from zerodb.catalog import Catalog
+from zerodb.models.fields import Field, Text
 
 
 class ModelMeta(type):

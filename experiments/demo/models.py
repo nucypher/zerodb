@@ -1,5 +1,4 @@
-from zerodb.models import Model
-from zerodb.models.fields import Field, Text
+from zerodb.models import Model, Field, Text
 
 
 class Employee(Model):
