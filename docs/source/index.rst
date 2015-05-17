@@ -129,22 +129,43 @@ data using the script ``create.py``:
 .. literalinclude:: ../../experiments/demo/create.py
 
 Let's play with that data in the Python terminal (or you can write your
-script)::
+script). We'll need to import ``zerodb`` and query operators from
+``zerodb.query`` (same syntax as in `repoze
+<http://docs.repoze.org/catalog/usage.html#comparators>`_)::
 
     >>> import zerodb
     >>> from zerodb.query import *
+
+And we also import our data models::
+
     >>> from models import *
+
+Let's connect to the database now::
+
     >>> PASSWORD = "very insecure passphrase - never use it"
     >>> db = zerodb.DB("/tmp/zerosocket", username="root", password=PASSWORD)
+
+Number of Employees in the database can be determined by just ``len``::
+
     >>> len(db[Employee])
     10001
+
+One can do range queries. Here we search for name *John* and select three of
+matching items::
     >>> db[Employee].query(name="John", limit=3)
     [<John Aquirre who earns $147944>, <John Gauthier who earns $169040>, <John
     Hefner who earns $25895>]
+
+Now, let's do a range query and select all Johns who have a salary in certain
+range::
+
     >>> rich_johns = db[Employee].query(InRange("salary", 195000, 200000),
     name="John")
     >>> len(rich_johns)
     5
+
+We can also do full-text search::
+
     >>> from_uk = db[Employee].query(Contains("description", "United Kingdom"))
     >>> from_uk
     [<Stephen Hawking who earns $400000>]
@@ -153,13 +174,15 @@ script)::
     author and Director of Research at the Centre for
     Theoretical Cosmology within the University of Cambridge,
     Stephen William Hawking resides in the United Kingdom.
+
+Let's remove the record from last example. We'll need ``tranaction`` module for
+that::
+
     >>> import transaction
     >>> db.remove(from_uk[0])
     >>> transaction.commit()
     >>> len(db[Employee])
     10000
-
-You can do range queries, search the text and remove data from the database.
 
 Indices and tables
 ==================
