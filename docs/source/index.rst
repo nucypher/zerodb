@@ -18,8 +18,8 @@ ZeroDB is an end-to-end encrypted (or "zero knowledge") database. It is based on
 `Python <https://www.python.org/>`_.
 
 In ZeroDB, the client is responsible for the database logic. Data encryption,
-decryption and compression happens on client side. Therefore, the server
-never has any knowledge about the data or its structure/ordering.
+decryption and compression also happens client side. Therefore, the server
+never has any knowledge about the data, including its structure and ordering.
 
 Clients also have an adjustable cache which stores the most used parts of data
 structures and greatly speeds up queries even when its size is small (e.g. 1
@@ -32,7 +32,7 @@ From a developer's perspective, ZeroDB design is greatly inspired by `Django
 
 Starting the ZeroDB server and creating users
 =========================================
-We supply Python scripts to run a server and manage users who use the database.
+We supply Python scripts to run a server and manage users.
 
     | conf/
     |   authdb.conf
@@ -45,9 +45,9 @@ We supply Python scripts to run a server and manage users who use the database.
 Pre-configure authentication
 ----------------------------
 
-Config ``authdb.conf`` contains default administrator users for the DB. They can
-create and remove other users or change their public keys. However, they don't
-know anyone else's private keys.
+Config ``authdb.conf`` contains default administrator users for the database.
+These admins can create and remove other users or change their public keys.
+However, they don't know any other user's private keys.
 
 The default ``authdb.conf`` contains an ECDSA (`secp256k1
 <https://en.bitcoin.it/wiki/Secp256k1>`_) public key for user ``root``. It
