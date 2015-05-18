@@ -29,6 +29,24 @@ From a developer's perspective, ZeroDB design is greatly inspired by `Django
 <https://djangoproject.com>`_'s ORM and `SQLAlchemy
 <http://www.sqlalchemy.org/>`_.
 
+Installation
+============
+We supply ZeroDB in a form of Python egg ``zerodb-0.8-py2.7.egg``. You could
+install it using ``easy_install``.
+
+However, let's install everything in virtual environment to run server and test
+scripts. Check out ``zerodb-server`` repository or unpack it. In a directory
+with it, run in a terminal::
+
+    ./virtualenv.sh
+
+It installs everything into directory ``.venv``. Now, you can activate it::
+
+    source activate
+
+You have ``server`` and ``demo`` directories which scripts can now run in this
+virtual environment.
+
 
 Starting the ZeroDB server and creating users
 =========================================
