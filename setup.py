@@ -10,7 +10,6 @@ INSTALL_REQUIRES = [
     'pycrypto',
     'click',
     'pyelliptic',
-    'IPython',
     'ecdsa']
 
 setup(
