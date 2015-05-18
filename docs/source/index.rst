@@ -18,39 +18,40 @@ ZeroDB is an end-to-end encrypted (or "zero knowledge") database. It is based on
 `Python <https://www.python.org/>`_.
 
 In ZeroDB, the client is responsible for the database logic. Data encryption,
-decryption and compression also happens client side. Therefore, the server
+decryption and compression also happen client side. Therefore, the server
 never has any knowledge about the data, including its structure and ordering.
 
 Clients also have an adjustable cache which stores the most used parts of data
 structures and greatly speeds up queries even when its size is small (e.g. 1
 megabyte).
 
-From a developer's perspective, ZeroDB design is greatly inspired by `Django
-<https://djangoproject.com>`_'s ORM and `SQLAlchemy
+From a developer's perspective, ZeroDB's design is greatly inspired by the `Django
+<https://djangoproject.com>`_ ORM and `SQLAlchemy
 <http://www.sqlalchemy.org/>`_.
 
 Installation
 ============
-We supply ZeroDB in a form of Python egg ``zerodb-0.8-py2.7.egg``. You could
+We supply ZeroDB as a Python egg package ``zerodb-0.8-py2.7.egg``. You could
 install it using ``easy_install``.
 
-However, let's install everything in virtual environment to run server and test
-scripts. Check out ``zerodb-server`` repository or unpack it. In a directory
-with it, run in a terminal::
+However, let's install everything in a virtual environment to run the server and
+test scripts. Clone the ``zerodb-server`` repository, navigate to the
+resulting directory and run::
 
     ./virtualenv.sh
 
-It installs everything into directory ``.venv``. Now, you can activate it::
+This installs everything you need into the directory ``.venv``, which you can
+activate using::
 
     source activate
 
-You have ``server`` and ``demo`` directories which scripts can now run in this
+The scripts in the ``server`` and ``demo`` directories will now run in this
 virtual environment.
-
 
 Starting the ZeroDB server and creating users
 =========================================
-We supply Python scripts to run a server and manage users.
+In the ``server`` directory, we supply Python scripts to run a server and
+manage users.
 
     | conf/
     |   authdb.conf
@@ -63,24 +64,26 @@ We supply Python scripts to run a server and manage users.
 Pre-configure authentication
 ----------------------------
 
-Config ``authdb.conf`` contains default administrator users for the database.
-These admins can create and remove other users or change their public keys.
-However, they don't know any other user's private keys.
+The config file ``authdb.conf`` contains default administrator users for
+the database. These admins can create and remove other users or change their
+public keys. However, they don't know any other user's private keys.
 
 The default ``authdb.conf`` contains an ECDSA (`secp256k1
-<https://en.bitcoin.it/wiki/Secp256k1>`_) public key for user ``root``. It
+<https://en.bitcoin.it/wiki/Secp256k1>`_) public key for the user ``root``. It
 corresponds to the passphrase ``"very insecure passphrase - never use it"``:
 
 .. literalinclude:: ../../server/conf/authdb.conf
 
 In order to have the correct keys from the very beginning, you can generate a hex
-pubkey from any passphrase you like by running ``mkpub.py``.
+pubkey from any passphrase you like by running ``python mkpub.py``. If you do this,
+you'll need to put the resulting pubkey into ``authdb.conf`` yourself, before the running
+ZeroDB for the first time.
 
 Running the ZeroDB server
 ---------------------
 
 Just start ``python runserver.py`` and you'll get the ZeroDB server running on UNIX
-socket ``/tmp/zerosocket``. The file ``server.zcml`` allows you to set socket and
+socket ``/tmp/zerosocket``. The file ``server.zcml`` allows you to set the socket and
 other parameters of the server.
 
 Healthy output of the running server appears as follows::
@@ -122,14 +125,14 @@ Using ZeroDB in Python
 Unlike many NoSQL databases, you still define data models in ZeroDB. However,
 these are only for indexing, and they are dynamically typed. All the fields you
 define in the data models are indexed, but objects which you store in the database
-can, in fact, contain any fields you want (they just won't be included in the index).
+can contain any fields you want (they just won't be indexed).
 
-Let's start by writing a data model ``models.py`` first:
+Let's start by writing a data model in ``demo/models.py`` first:
 
 .. literalinclude:: ../../experiments/demo/models.py
 
-Let's assume we already started the database server. The simplest example
-which create records for us would look like this::
+Let's assume the database server we started before is still running. The simplest example
+which creates records for us would look like this::
 
     import transaction
     import zerodb
@@ -146,7 +149,7 @@ data using the script ``create.py``:
 
 .. literalinclude:: ../../experiments/demo/create.py
 
-Let's play with that data in the Python terminal (or you can write your
+Let's play with that data in the Python terminal (or you can write your own
 script). We'll need to import ``zerodb`` and query operators from
 ``zerodb.query`` (same syntax as in `repoze
 <http://docs.repoze.org/catalog/usage.html#comparators>`_)::
@@ -168,14 +171,14 @@ Number of Employees in the database can be determined by just ``len``::
     >>> len(db[Employee])
     10001
 
-One can do range queries. Here we search for name *John* and select three of
-matching items::
+Let's try a range query. Here we search for the name *John* and select three of
+the matching items::
     >>> db[Employee].query(name="John", limit=3)
     [<John Aquirre who earns $147944>, <John Gauthier who earns $169040>, <John
     Hefner who earns $25895>]
 
-Now, let's do a range query and select all Johns who have a salary in certain
-range::
+Now, let's do another range query and select all *Johns* who have a salary within
+a certain range::
 
     >>> rich_johns = db[Employee].query(InRange("salary", 195000, 200000),
     name="John")
@@ -193,8 +196,8 @@ We can also do full-text search::
     Theoretical Cosmology within the University of Cambridge,
     Stephen William Hawking resides in the United Kingdom.
 
-Let's remove the record from last example. We'll need ``tranaction`` module for
-that::
+Let's remove the record from the last example. We'll need the ``tranaction``
+module for that::
 
     >>> import transaction
     >>> db.remove(from_uk[0])
