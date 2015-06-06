@@ -19,7 +19,7 @@ ZeroDB is an end-to-end encrypted (or "zero knowledge") database. It is based on
 
 In ZeroDB, the client is responsible for the database logic. Data encryption,
 decryption and compression also happen client side. Therefore, the server
-never has any knowledge about the data, including its structure and ordering.
+never has any knowledge about the data, its structure or order.
 
 Clients also have an adjustable cache which stores the most used parts of data
 structures and greatly speeds up queries even when its size is small (e.g. 1
@@ -74,15 +74,14 @@ corresponds to the passphrase ``"very insecure passphrase - never use it"``:
 
 .. literalinclude:: ../../server/conf/authdb.conf
 
-In order to have the correct keys from the very beginning, you can generate a hex
-pubkey from any passphrase you like by running ``python mkpub.py``. If you do this,
-you'll need to put the resulting pubkey into ``authdb.conf`` yourself, before the running
-ZeroDB for the first time.
+In order to create secure keys, you can generate a hex pubkey from any passphrase
+you like by running ``python mkpub.py``. Be sure to put the resulting pubkey into
+``authdb.conf`` yourself, before the running ZeroDB for the first time.
 
 Running the ZeroDB server
 ---------------------
 
-Just start ``python runserver.py`` and you'll get the ZeroDB server running on UNIX
+Just start ``python runserver.py`` and you'll get the ZeroDB server running on a UNIX
 socket ``/tmp/zerosocket``. The file ``server.zcml`` allows you to set the socket and
 other parameters of the server.
 
