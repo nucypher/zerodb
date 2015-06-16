@@ -204,6 +204,53 @@ module for that::
     >>> len(db[Employee])
     10000
 
+Supported Queries
+======================
+The following comparators can be executed in ZeroDB. Please note that not all of these
+have been optimized/tested for performance yet.
+
+Contains(index_name, value)
+    Contains query.
+
+Eq(index_name, value)
+    Equals query.
+
+NotEq(index_name, value)
+    Not equal query.
+
+Gt(index_name, value)
+    Greater than query.
+
+Lt(index_name, value)
+    Less than query.
+
+Ge(index_name, value)
+    Greater (or equal) query.
+
+Le(index_name, value)
+    Less (or equal) query.
+
+DoesNotContain(index_name, value)
+    Does not contain query
+
+Any(index_name, value)
+    Any of query.
+
+NotAny(index_name, value)
+    Not any of query (ie, None of query)
+
+All(index_name, value)
+    All query.
+
+NotAll(index_name, value)
+    NotAll query.
+
+InRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
+    Index value falls within a range.
+
+NotInRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
+    Index value falls outside a range.
+
 Indices and tables
 ==================
 
