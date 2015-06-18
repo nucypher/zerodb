@@ -85,10 +85,3 @@ class CatalogTextIndex(_CatalogTextIndex):
         kw["lexicon"] = Lexicon(Splitter(), CaseNormalizer(), StopWordRemover())
         kw["index"] = OkapiIndex(kw["lexicon"], family=self.family)
         super(CatalogTextIndex, self).__init__(*args, **kw)
-
-    def applyContains(self, value):
-        # XXX
-        # apply -> parsetree.Glob/Phrase/AtomNode -> index.search/search_phrase/..
-        return self.apply(value)
-
-    applyEq = applyContains
