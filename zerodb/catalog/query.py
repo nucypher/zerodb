@@ -1,14 +1,5 @@
 from repoze.catalog import query
-from repoze.catalog.indexes import field
 from zerodb import trees
-
-
-def _prefetch(catalog, index):
-    """This method should be removed once all the fields have prefetch argument"""
-    kw = {}
-    if isinstance(index, field.CatalogFieldIndex):
-        kw["prefetch"] = catalog
-    return kw
 
 
 class LogicMixin:
@@ -29,12 +20,36 @@ class Comparator(LogicMixin, query.Comparator):
     pass
 
 
-class Contains(LogicMixin, query.Contains):
-    pass
+class Contains(LogicMixin, query.Comparator):
+    """Contains query.
+
+    CQE equivalent: 'foo' in index
+    """
+
+    def _apply(self, catalog, names):
+        index = self._get_index(catalog)
+        return index.applyContains(self._get_value(names))
+
+    def __str__(self):
+        return '%s in %s' % (repr(self._value), self.index_name)
+
+    def negate(self):
+        return DoesNotContain(self.index_name, self._value)
 
 
-class DoesNotContain(LogicMixin, query.DoesNotContain):
-    pass
+class DoesNotContain(LogicMixin, query.Comparator):
+    """CQE equivalent: 'foo' not in index
+    """
+
+    def _apply(self, catalog, names):
+        index = self._get_index(catalog)
+        return index.applyDoesNotContain(self._get_value(names))
+
+    def __str__(self):
+        return '%s not in %s' % (repr(self._value), self.index_name)
+
+    def negate(self):
+        return Contains(self.index_name, self._value)
 
 
 class Eq(LogicMixin, query.Eq):
@@ -54,7 +69,7 @@ class Gt(Comparator):
 
     def _apply(self, catalog, names):
         index = self._get_index(catalog)
-        return index.applyGt(self._get_value(names), **_prefetch(catalog, index))
+        return index.applyGt(self._get_value(names))
 
     def negate(self):
         return Le(self.index_name, self._value)
@@ -69,7 +84,7 @@ class Lt(Comparator):
 
     def _apply(self, catalog, names):
         index = self._get_index(catalog)
-        return index.applyLt(self._get_value(names), **_prefetch(catalog, index))
+        return index.applyLt(self._get_value(names))
 
     def negate(self):
         return Ge(self.index_name, self._value)
@@ -84,7 +99,7 @@ class Ge(Comparator):
 
     def _apply(self, catalog, names):
         index = self._get_index(catalog)
-        return index.applyGe(self._get_value(names), **_prefetch(catalog, index))
+        return index.applyGe(self._get_value(names))
 
     def negate(self):
         return Lt(self.index_name, self._value)
@@ -99,7 +114,7 @@ class Le(Comparator):
 
     def _apply(self, catalog, names):
         index = self._get_index(catalog)
-        return index.applyLe(self._get_value(names), **_prefetch(catalog, index))
+        return index.applyLe(self._get_value(names))
 
     def negate(self):
         return Gt(self.index_name, self._value)
@@ -116,7 +131,7 @@ class InRange(LogicMixin, query.InRange):
         index = self._get_index(catalog)
         return index.applyInRange(
             self._get_start(names), self._get_end(names),
-            self.start_exclusive, self.end_exclusive, **_prefetch(catalog, index))
+            self.start_exclusive, self.end_exclusive)
 
     def negate(self):
         return NotInRange(self.index_name, self._start, self._end,
@@ -134,7 +149,7 @@ class NotInRange(LogicMixin, query.NotInRange):
         index = self._get_index(catalog)
         return index.applyNotInRange(
             self._get_start(names), self._get_end(names),
-            self.start_exclusive, self.end_exclusive, **_prefetch(catalog, index))
+            self.start_exclusive, self.end_exclusive)
 
     def negate(self):
         return InRange(self.index_name, self._start, self._end,

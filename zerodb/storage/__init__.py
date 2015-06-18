@@ -59,3 +59,14 @@ def client_storage(sock, *args, **kw):
     debug = kw.pop("debug", False)
     cipher = kw.pop("cipher", None)
     return TransformingStorage(batch.BatchClientStorage(sock, *args, **kw), cipher=cipher, debug=debug)
+
+
+def prefetch(objs):
+    """
+    Bulk-fetch ZODB objects
+    """
+    objs = filter(lambda x: hasattr(x, "_p_oid"), objs)
+    if objs:
+        oids = [y._p_oid for y in objs]
+        if objs[0]._p_jar:
+            objs[0]._p_jar._db._storage.loadBulk(oids)
