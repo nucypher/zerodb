@@ -1,8 +1,12 @@
+import logging
 import pytest
+import transaction
 import zerodb
 from db import Page, Salary, TEST_PASSPHRASE
 from zerodb.catalog.query import Contains, InRange
 # Also need to test optimize, Lt(e), Gt(e)
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture(scope="module")
@@ -37,3 +41,12 @@ def test_query(db):
     million_employee = db[Salary].query(salary=1000000)
     assert len(million_employee) == 1
     assert million_employee[0].name == "Hello"
+
+
+def test_add(db):
+    with transaction.manager:
+        pre_commit_count = db._storage._debug_download_count
+        db.add(Page(title="hello", text="Quick brown lazy fox jumps over lorem  ipsum dolor sit amet"))
+        post_commit_count = db._storage._debug_download_count
+    print "XXX", post_commit_count - pre_commit_count
+    assert post_commit_count - pre_commit_count < 22

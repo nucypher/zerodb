@@ -61,7 +61,7 @@ class OkapiIndex(_OkapiIndex):
         prefetch(map(get_doc2score, wid2weight.keys()))
 
         for wid, weight in wid2weight.items():
-            doc2score = get_doc2score(wid)  # XXX here we need parallel prefetching!
+            doc2score = get_doc2score(wid)
             if doc2score is None:
                 doc2score = {}
                 new_word_count += 1

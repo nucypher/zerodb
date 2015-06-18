@@ -35,4 +35,6 @@ def create_objects_and_close(sock, count=200):
             name="Hello",
             surname="World",
             salary=1000000))
+        db.add(Page(title="one two",
+            text='"The quick brown fox jumps over a lazy dog" is an English-language pangram - a phrase that contains all of the letters of the alphabet.'))
     db.disconnect()
