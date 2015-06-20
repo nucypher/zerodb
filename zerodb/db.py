@@ -76,7 +76,7 @@ class DbModel(object):
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
 
-    def query(self, queryobj=None, offset=0, limit=None, **kw):
+    def query(self, queryobj=None, skip=0, limit=None, **kw):
         """
         Smart proxy to catalog's query.
         One can add <field=...> keyword arguments to make queries where fields
@@ -84,7 +84,7 @@ class DbModel(object):
 
         :param zerodb.catalog.query.Query queryobj: Query which all sorts of
             logical, range queries etc
-        :param int offset: Offset to start the result iteration from
+        :param int skip: Offset to start the result iteration from
         :param int limit: Limit number of results to this
         """
         # Catalog's query returns only integers
@@ -93,11 +93,11 @@ class DbModel(object):
         # Most difficult part is preloading TreeSets for index when needed
         # (when we do complex queries which require composite index)
         # We also probably should do something like lazy query(...)[ofs:...]
-        # if no limit, offset are used
+        # if no limit, skip are used
 
-        # Work needed on offset and limit because zope didn't well support them...
+        # Work needed on skip and limit because zope didn't well support them...
         if limit:
-            kw["limit"] = offset + limit
+            kw["limit"] = skip + limit
         # XXX pre-load the tree!
 
         eq_args = []
@@ -112,7 +112,7 @@ class DbModel(object):
 
         count, uids = self._catalog.query(Q, **kw)
         if limit:
-            qids = itertools.islice(uids, offset, offset + limit)
+            qids = itertools.islice(uids, skip, skip + limit)
         else:
             qids = uids
         # No reason to return an iterator as long as we have all pre-loaded
