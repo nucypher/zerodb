@@ -67,8 +67,10 @@ class PermissionsDatabase(object):
         self.db_root = self.db_conn.root()
         root = self.db_root
         with transaction.manager:
-            root["users"] = IdStore()  # uid -> user
-            root["usernames"] = self.family.OI.BTree()  # username -> uid
+            if not "users" in root:
+                root["users"] = IdStore()  # uid -> user
+            if not "usernames" in root:
+                root["usernames"] = self.family.OI.BTree()  # username -> uid
 
         self.filename = filename
         self.load()
