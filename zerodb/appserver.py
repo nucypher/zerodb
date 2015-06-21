@@ -17,21 +17,24 @@ def connnect():
     if request.method == "GET":
         username = request.args.get("username")
         passphrase = request.args.get("passphrase")
-        socket = request.args.get("socket")
+        host = request.args.get("host")
+        port = request.args.get("port")
 
     elif request.method == "POST":
         username = request.form.get("username")
         passphrase = request.form.get("passphrase")
-        socket = request.form.get("socket")
+        host = request.form.get("host")
+        port = request.form.get("port")
 
     else:
         return jsonify(ok=0)
 
-    if not (username and passphrase and socket):
+    if not (username and passphrase and host and port):
         return jsonify(ok=0, message="Incomplete login information")
 
     try:
-        db = zerodb.DB(socket, username=username, password=passphrase)
+        print host, port, username, passphrase
+        db = zerodb.DB((host, port), username=username, password=passphrase)
     except Exception, e:
         return jsonify(ok=0, message=str(e))
 
