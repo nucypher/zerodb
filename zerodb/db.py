@@ -146,6 +146,15 @@ class DB(object):
         :param str realm: ZODB's realm
         :param bool debug: Whether to log debug messages
         """
+        # ZODB doesn't like unicode here
+        username = str(username)
+        password = str(password)
+        if isinstance(sock, basestring):
+            sock = str(sock)
+        elif type(sock) in (list, tuple):
+            assert len(sock) == 2
+            sock = str(sock[0]), int(sock[1])
+
         if self.auth_module.__module_name__ not in auth._auth_modules:
             self.auth_module.register_auth()
         if not username:

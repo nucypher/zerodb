@@ -22,7 +22,7 @@ def db(request, zeo_server):
 
 def test_query(db):
     pre_request_count = db._storage._debug_download_count
-    assert len(db[Page]) == 200
+    assert len(db[Page]) == 201
     assert len(db[Salary]) == 201
     test_pages = db[Page].query(Contains("text", "something"))
     pre_range_count = db._storage._debug_download_count
@@ -46,7 +46,11 @@ def test_query(db):
 def test_add(db):
     with transaction.manager:
         pre_commit_count = db._storage._debug_download_count
-        db.add(Page(title="hello", text="Quick brown lazy fox jumps over lorem  ipsum dolor sit amet"))
+        page = Page(title="hello", text="Quick brown lazy fox jumps over lorem  ipsum dolor sit amet")
+        db.add(page)
         post_commit_count = db._storage._debug_download_count
     print "Number of requests:", post_commit_count - pre_commit_count
     assert post_commit_count - pre_commit_count < 22
+
+    with transaction.manager:
+        db.remove(page)
