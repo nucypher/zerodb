@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+import imp
+import jsonpickle
 from flask import Flask, jsonify, session, request
 import zerodb
+from zerodb.catalog.query import optimize
+from zerodb.catalog import query_json as qj
 
 try:
     import simplejson as json
@@ -15,6 +19,7 @@ DEV_SECRET_KEY = "development key"
 
 app = Flask(__name__)
 dbs = {}
+models = None
 
 
 @app.route("/_connect", methods=["GET", "POST"])
@@ -48,6 +53,9 @@ def connnect():
 
 @app.route("/<table_name>/_find")
 def find(table_name):
+    db = dbs[session["username"]]
+    model = getattr(models, table_name)
+
     if request.method == "GET":
         req = request.args
     elif request.method == "POST":
@@ -55,7 +63,7 @@ def find(table_name):
     else:
         return jsonify(ok=0)
 
-    criteria = json.loads(req.get("criteria"))
+    criteria = optimize(qj.compile(json.loads(req.get("criteria"))))
 
     skip = req.get("skip")
     if skip:
@@ -64,7 +72,9 @@ def find(table_name):
     if limit:
         limit = int(limit)
 
-    return jsonify(hello="world")
+    result = db[model].query(criteria, skip=skip, limit=limit)
+
+    return jsonpickle.encode(result, unpicklable=False)
 
 
 @app.route("/_disconnect")
@@ -76,6 +86,17 @@ def disconnect():
     return jsonify(ok=1)
 
 
+def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECRET_KEY):
+    global models
+
+    if isinstance(data_models, basestring):
+        models = imp.load_source("models", data_models)
+    else:
+        models = data_models
+
+    app.config["SECRET_KEY"] = secret_key
+    app.run(host=host, port=port, debug=debug)
+
+
 if __name__ == "__main__":
-    app.config["SECRET_KEY"] = DEV_SECRET_KEY
-    app.run(host=HOST, port=PORT, debug=DEBUG)
+    run()
