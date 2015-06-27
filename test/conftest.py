@@ -1,15 +1,16 @@
-import db
 import pytest
 import shutil
 import tempfile
 from multiprocessing import Process
 from os import path
+import zerodb
 from zerodb.crypto import ecc
 from zerodb.permissions import elliptic
 from zerodb.permissions import base as permissions_base
 from zerodb.storage import ZEOServer
 
 from db import TEST_PASSPHRASE
+from db import create_objects_and_close
 TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
 TEST_PERMISSIONS = """realm ZERO
 root:%s""" % TEST_PUBKEY.encode("hex")
@@ -66,7 +67,7 @@ def zeo_server(request, pass_file, tempdir):
 
     server.start()
 
-    db.create_objects_and_close(sock)
+    create_objects_and_close(sock)
 
     return sock
 
@@ -76,3 +77,14 @@ def tempdir(request):
     tmpdir = tempfile.mkdtemp()
     request.addfinalizer(lambda: shutil.rmtree(tmpdir))
     return tmpdir
+
+
+@pytest.fixture(scope="module")
+def db(request, zeo_server):
+    zdb = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+
+    @request.addfinalizer
+    def fin():
+        zdb.disconnect()  # I suppose, it's not really required
+
+    return zdb

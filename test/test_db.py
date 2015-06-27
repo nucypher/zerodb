@@ -1,23 +1,10 @@
 import logging
-import pytest
 import transaction
-import zerodb
-from db import Page, Salary, TEST_PASSPHRASE
+from db import Page, Salary
 from zerodb.catalog.query import Contains, InRange
 # Also need to test optimize, Lt(e), Gt(e)
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(scope="module")
-def db(request, zeo_server):
-    zdb = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
-
-    @request.addfinalizer
-    def fin():
-        zdb.disconnect()  # I suppose, it's not really required
-
-    return zdb
 
 
 def test_query(db):
