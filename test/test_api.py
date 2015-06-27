@@ -2,9 +2,11 @@ import pytest
 import logging
 import requests
 import socket
-from db import TEST_PASSPHRASE
+import time
+from json import loads
 from multiprocessing import Process
 from os import path
+from db import TEST_PASSPHRASE
 from zerodb import api
 
 
@@ -34,6 +36,7 @@ def api_server(request, db):
         server.join()
 
     server.start()
+    time.sleep(0.2)
 
     return {
             "api_uri": "http://localhost:%s" % port,
@@ -41,9 +44,15 @@ def api_server(request, db):
 
 
 def test_connect(api_server):
-    print api_server
     session = requests.Session()
-    session.get(api_server["api_uri"], params={
+
+    # Connect
+    resp = session.get(api_server["api_uri"] + "/_connect", params={
         "username": "root",
         "passphrase": TEST_PASSPHRASE,
         "host": api_server["zeo_uri"]})
+    assert loads(resp.text)["ok"] == 1
+
+    # Disconnect
+    resp = session.get(api_server["api_uri"] + "/_disconnect")
+    assert loads(resp.text)["ok"] == 1
