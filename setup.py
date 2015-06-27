@@ -11,6 +11,7 @@ INSTALL_REQUIRES = [
     'pycrypto',
     'click',
     'flask',
+    'requests',
     'jsonpickle',
     'pyelliptic',
     'ecdsa']
