@@ -66,7 +66,7 @@ def test_connect(api_server):
     assert loads(resp.text)["ok"] == 1
 
 
-def test_insert(api_server):
+def test_insert_get(api_server):
     session = requests.Session()
     docs = [{"title": "test inserting one", "text": "Here we go, test insert"},
             {"title": "test inserting two", "text": "What's going on here?"}]
@@ -78,6 +78,11 @@ def test_insert(api_server):
     resp = loads(resp.text)
 
     assert resp["status"]["ok"] == 1
-    assert all([o["$oid"] for o in resp["oids"]])
+    oids = [o["$oid"] for o in resp["oids"]]
+    assert all(oids)
+
+    resp = session.post(api_server["api_uri"] + "/Page/_get", data={"_id": dumps(oids)})
+    resp = loads(resp.text)
+    assert resp == docs
 
     api_disconnect(api_server, session)
