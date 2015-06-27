@@ -43,16 +43,24 @@ def api_server(request, db):
             "zeo_uri": db._storage._addr}
 
 
+def api_connect(api_server, session):
+    return session.get(api_server["api_uri"] + "/_connect", params={
+        "username": "root",
+        "passphrase": TEST_PASSPHRASE,
+        "host": api_server["zeo_uri"]})
+
+
+def api_disconnect(api_server, session):
+    return session.get(api_server["api_uri"] + "/_disconnect")
+
+
 def test_connect(api_server):
     session = requests.Session()
 
     # Connect
-    resp = session.get(api_server["api_uri"] + "/_connect", params={
-        "username": "root",
-        "passphrase": TEST_PASSPHRASE,
-        "host": api_server["zeo_uri"]})
+    resp = api_connect(api_server, session)
     assert loads(resp.text)["ok"] == 1
 
     # Disconnect
-    resp = session.get(api_server["api_uri"] + "/_disconnect")
+    resp = api_disconnect(api_server, session)
     assert loads(resp.text)["ok"] == 1
