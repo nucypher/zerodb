@@ -73,7 +73,12 @@ def find(table_name):
     else:
         return jsonify(ok=0)
 
-    criteria = optimize(qj.compile(json.loads(req.get("criteria"))))
+    criteria = json.loads(req.get("criteria"))
+    if isinstance(criteria, dict) and (len(criteria) == 1) and "_id" in criteria:
+        ids = [c["$oid"] for c in criteria["_id"]]
+    else:
+        ids = None
+        criteria = optimize(qj.compile(criteria))
 
     skip = req.get("skip")
     if skip:
@@ -82,7 +87,13 @@ def find(table_name):
     if limit:
         limit = int(limit)
 
-    result = db[model].query(criteria, skip=skip, limit=limit)
+    if ids:
+        skip = skip or 0
+        end = skip + limit if limit else None
+        ids = ids[skip:end]
+        result = db[model][ids]
+    else:
+        result = db[model].query(criteria, skip=skip, limit=limit)
 
     return jsonpickle.encode(result, unpicklable=False)
 
