@@ -48,6 +48,20 @@ class DbModel(object):
         if commit:
             transaction.commit()
 
+    def __getitem__(self, oids):
+        """
+        DbModels (which we query) are accessed by using db as a dictionary
+
+        :param int oids: object's uid or list of them
+        :return: Persistent object(s)
+        """
+        if isinstance(oids, (int, long)):
+            return self._objects[oids]
+        elif isinstance(oids, (tuple, list, set)):
+            return [self._objects[oid] for oid in oids]
+        else:
+            raise ModelException("Integer or list of integers is expected")
+
     def add(self, obj):
         """
         Add newly created a Model object to the database
