@@ -36,13 +36,18 @@ def connnect():
     passphrase = req.get("passphrase")
     host = req.get("host")
     port = req.get("port")
+    if host and port:
+        socket = (host, port)
+    elif host:
+        socket = host
+    else:
+        socket = None
 
-    if not (username and passphrase and host and port):
+    if not (username and passphrase and socket):
         return jsonify(ok=0, message="Incomplete login information")
 
     try:
-        print host, port, username, passphrase
-        db = zerodb.DB((host, port), username=username, password=passphrase)
+        db = zerodb.DB(socket, username=username, password=passphrase)
     except Exception, e:
         return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
 

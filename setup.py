@@ -10,6 +10,7 @@ INSTALL_REQUIRES = [
     'zc.zlibstorage',
     'pycrypto',
     'click',
+    'flask',
     'jsonpickle',
     'pyelliptic',
     'ecdsa']
