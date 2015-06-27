@@ -3,7 +3,7 @@ import logging
 import requests
 import socket
 import time
-from json import loads
+from json import loads, dumps
 from multiprocessing import Process
 from os import path
 from db import TEST_PASSPHRASE
@@ -64,3 +64,20 @@ def test_connect(api_server):
     # Disconnect
     resp = api_disconnect(api_server, session)
     assert loads(resp.text)["ok"] == 1
+
+
+def test_insert(api_server):
+    session = requests.Session()
+    docs = [{"title": "test inserting one", "text": "Here we go, test insert"},
+            {"title": "test inserting two", "text": "What's going on here?"}]
+
+    api_connect(api_server, session)
+
+    resp = session.post(api_server["api_uri"] + "/Page/_insert",
+            data={"docs": dumps(docs)})
+    resp = loads(resp.text)
+
+    assert resp["status"]["ok"] == 1
+    assert all([o["$oid"] for o in resp["oids"]])
+
+    api_disconnect(api_server, session)

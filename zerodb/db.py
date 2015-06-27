@@ -1,4 +1,5 @@
 import transaction
+from Crypto import Random
 from repoze.catalog.query import optimize
 from ZEO import auth
 from zerodb.permissions import elliptic
@@ -167,6 +168,8 @@ class DB(object):
         self._root = self._conn.root()
         self._models = {}
 
+        Random.atfork()
+
     def disconnect(self):
         self._conn.close()
 
@@ -193,7 +196,7 @@ class DB(object):
         :return: Added object's uid
         :rtype: int
         """
-        self[obj.__class__].add(obj)
+        return self[obj.__class__].add(obj)
 
     def remove(self, obj):
         """

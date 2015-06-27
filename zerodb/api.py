@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Warning!
+# At the moment, this API is safe to use only on same machine
+# (no https etc)
+
 import imp
 import jsonpickle
 import transaction
@@ -57,7 +61,7 @@ def connnect():
     return jsonify(ok=1)
 
 
-@app.route("/<table_name>/_find")
+@app.route("/<table_name>/_find", methods=["GET", "POST"])
 def find(table_name):
     db = dbs[session["username"]]
     model = getattr(models, table_name)
@@ -83,7 +87,7 @@ def find(table_name):
     return jsonpickle.encode(result, unpicklable=False)
 
 
-@app.route("/<table_name>/_insert")
+@app.route("/<table_name>/_insert", methods=["GET", "POST"])
 def insert(table_name):
     # POST has array of documents or one document
     db = dbs[session["username"]]
@@ -91,7 +95,7 @@ def insert(table_name):
 
     if request.method == "POST":
         try:
-            data = json.loads(request.form.get("data"))
+            data = json.loads(request.form.get("docs"))
             if isinstance(data, dict):
                 data = [data]
             objs = [model(**row) for row in data]
@@ -104,7 +108,7 @@ def insert(table_name):
         return jsonify(ok=0)
 
 
-@app.route("/_disconnect")
+@app.route("/_disconnect", methods=["GET", "POST"])
 def disconnect():
     if "username" in session:
         username = session.pop("username")
