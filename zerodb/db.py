@@ -48,17 +48,19 @@ class DbModel(object):
         if commit:
             transaction.commit()
 
-    def __getitem__(self, oids):
+    def __getitem__(self, uids):
         """
         DbModels (which we query) are accessed by using db as a dictionary
 
-        :param int oids: object's uid or list of them
+        :param int uids: object's uid or list of them
         :return: Persistent object(s)
         """
-        if isinstance(oids, (int, long)):
-            return self._objects[oids]
-        elif isinstance(oids, (tuple, list, set)):
-            return [self._objects[oid] for oid in oids]
+        if isinstance(uids, (int, long)):
+            return self._objects[uids]
+        elif isinstance(uids, (tuple, list, set)):
+            objects = [self._objects[uid] for uid in uids]
+            self._db._storage.loadBulk([o._p_oid for o in objects])
+            return objects
         else:
             raise ModelException("Integer or list of integers is expected")
 

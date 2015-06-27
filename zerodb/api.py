@@ -108,6 +108,23 @@ def insert(table_name):
         return jsonify(ok=0)
 
 
+@app.route("/<table_name>/_get", methods=["GET", "POST"])
+def get(table_name):
+    db = dbs[session["username"]]
+    model = getattr(models, table_name)
+
+    if request.method == "GET":
+        req = request.args
+    elif request.method == "POST":
+        req = request.form
+    else:
+        return jsonify(ok=0)
+
+    data = json.loads(req["_id"])
+
+    return jsonpickle.encode(db[model][data], unpicklable=False)
+
+
 @app.route("/_disconnect", methods=["GET", "POST"])
 def disconnect():
     if "username" in session:
