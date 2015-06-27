@@ -113,7 +113,7 @@ def disconnect():
     return jsonify(ok=1)
 
 
-def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECRET_KEY):
+def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECRET_KEY, **kw):
     global models
 
     if isinstance(data_models, basestring):
@@ -122,8 +122,7 @@ def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECR
         models = data_models
 
     app.config["SECRET_KEY"] = secret_key
-    print "XXX HERE", host, port
-    app.run(host=host, port=port, debug=debug)
+    app.run(host=host, port=port, debug=debug, **kw)
 
 
 if __name__ == "__main__":

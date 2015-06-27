@@ -5,11 +5,14 @@ import socket
 from db import TEST_PASSPHRASE
 from multiprocessing import Process
 from os import path
-from time import sleep
 from zerodb import api
 
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+def api_run(**kw):
+    api.run(use_reloader=False, **kw)
 
 
 @pytest.fixture(scope="module")
@@ -20,7 +23,7 @@ def api_server(request, db):
     _, port = sock.getsockname()
     sock.close()
 
-    server = Process(target=api.run, kwargs={
+    server = Process(target=api_run, kwargs={
         "host": "localhost",
         "port": port,
         "data_models": path.join(path.dirname(__file__), "db.py")})
@@ -31,7 +34,6 @@ def api_server(request, db):
         server.join()
 
     server.start()
-    sleep(0.2)
 
     return {
             "api_uri": "http://localhost:%s" % port,
@@ -45,5 +47,3 @@ def test_connect(api_server):
         "username": "root",
         "passphrase": TEST_PASSPHRASE,
         "host": api_server["zeo_uri"]})
-    print "ZZZ"
-    sleep(0.5)
