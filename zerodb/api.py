@@ -2,8 +2,9 @@
 
 import imp
 import jsonpickle
-from flask import Flask, jsonify, session, request
+import transaction
 import zerodb
+from flask import Flask, jsonify, session, request
 from zerodb.catalog.query import optimize
 from zerodb.catalog import query_json as qj
 
@@ -75,6 +76,27 @@ def find(table_name):
     result = db[model].query(criteria, skip=skip, limit=limit)
 
     return jsonpickle.encode(result, unpicklable=False)
+
+
+@app.route("/<table_name>/_insert")
+def insert(table_name):
+    # POST has array of documents or one document
+    db = dbs[session["username"]]
+    model = getattr(models, table_name)
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.form.get("data"))
+            if isinstance(data, dict):
+                data = [data]
+            objs = [model(**row) for row in data]
+            with transaction.manager:
+                oids = [{"$oid": db.add(o)} for o in objs]
+            return jsonify(status={"ok": 1}, oids=oids)
+        except Exception, e:
+            return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
+    else:
+        return jsonify(ok=0)
 
 
 @app.route("/_disconnect")
