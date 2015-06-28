@@ -83,9 +83,32 @@ def find(table_name):
     skip = req.get("skip")
     if skip:
         skip = int(skip)
+
     limit = req.get("limit")
     if limit:
         limit = int(limit)
+
+    sort = req.get("sort")
+    if sort:
+        try:
+            sort = json.loads(sort)
+        except ValueError:
+            if sort.startswith("-"):
+                sort_index = sort[1:].strip()
+                reverse = True
+            else:
+                sort_index = sort
+                reverse = None
+        if isinstance(sort, dict):
+            assert len(sort) == 1  # Only one field at the moment
+            sort_index, direction = sort.popitem()
+            reverse = (direction >= 0)
+        elif isinstance(sort, list):
+            sort_index = sort[0]
+            reverse = None
+    else:
+        sort_index = None
+        reverse = None
 
     if ids:
         skip = skip or 0
@@ -93,7 +116,7 @@ def find(table_name):
         ids = ids[skip:end]
         result = db[model][ids]
     else:
-        result = db[model].query(criteria, skip=skip, limit=limit)
+        result = db[model].query(criteria, skip=skip, limit=limit, sort_index=sort_index, reverse=reverse)
 
     return jsonpickle.encode(result, unpicklable=False)
 

@@ -93,7 +93,7 @@ class DbModel(object):
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
 
-    def query(self, queryobj=None, skip=0, limit=None, **kw):
+    def query(self, queryobj=None, skip=None, limit=None, **kw):
         """
         Smart proxy to catalog's query.
         One can add <field=...> keyword arguments to make queries where fields
@@ -113,6 +113,7 @@ class DbModel(object):
         # if no limit, skip are used
 
         # Work needed on skip and limit because zope didn't well support them...
+        skip = skip or 0
         if limit:
             kw["limit"] = skip + limit
         # XXX pre-load the tree!

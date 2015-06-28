@@ -86,3 +86,32 @@ def test_insert_get(api_server):
     assert resp == docs
 
     api_disconnect(api_server, session)
+
+
+def test_find(api_server):
+    session = requests.Session()
+    api_connect(api_server, session)
+
+    resp = session.post(api_server["api_uri"] + "/Page/_find", data={
+        "criteria": dumps({"text": {"$text": "something"}})
+        })
+    resp = loads(resp.text)
+    assert len(resp) == 10
+
+    resp = session.post(api_server["api_uri"] + "/Salary/_find", data={
+        "criteria": dumps({"salary": {"$range": [130000, 180000]}}),
+        "limit": 2,
+        "sort": "salary"
+        })
+    resp = loads(resp.text)
+    assert len(resp) == 2
+
+    resp = session.post(api_server["api_uri"] + "/Salary/_find", data={
+        "criteria": dumps({"salary": {"$range": [130000, 130001]}}),
+        "limit": 2,
+        "sort": {"salary": -1}
+        })
+    resp = loads(resp.text)
+    assert len(resp) == 0
+
+    api_disconnect(api_server, session)
