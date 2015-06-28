@@ -115,3 +115,55 @@ def test_find(api_server):
     assert len(resp) == 0
 
     api_disconnect(api_server, session)
+
+
+def test_remove_by_id(api_server):
+    docs = [{"title": "test removing one", "text": "Something to remove 1"},
+            {"title": "test removing two", "text": "Something to remove 2"},
+            {"title": "test removing three", "text": "Something to remove 3"}]
+    session = requests.Session()
+    api_connect(api_server, session)
+
+    resp = session.post(api_server["api_uri"] + "/Page/_insert",
+            data={"docs": dumps(docs)})
+    resp = loads(resp.text)
+    oids = [o["$oid"] for o in resp["oids"]]
+
+    resp = session.post(api_server["api_uri"] + "/Page/_remove",
+            data={"_id": dumps(oids)})
+    resp = loads(resp.text)
+    assert resp["ok"] == 1
+    assert resp["count"] == 3
+
+    resp = session.post(api_server["api_uri"] + "/Page/_find", data={
+        "criteria": dumps({"text": {"$text": "something remove"}})
+        })
+    resp = loads(resp.text)
+    assert len(resp) == 0
+
+    api_disconnect(api_server, session)
+
+
+def test_remove_by_criteria(api_server):
+    docs = [{"title": "test removing one", "text": "Something to remove 1 placeholder"},
+            {"title": "test removing two", "text": "Something to remove 2 placeholder"},
+            {"title": "test removing three", "text": "Something to delete 3 placeholder"}]
+    session = requests.Session()
+    api_connect(api_server, session)
+
+    resp = session.post(api_server["api_uri"] + "/Page/_insert",
+            data={"docs": dumps(docs)})
+
+    resp = session.post(api_server["api_uri"] + "/Page/_remove", data={
+            "criteria": dumps({"text": {"$text": "something remove"}})})
+    resp = loads(resp.text)
+    assert resp["ok"] == 1
+    assert resp["count"] == 2
+
+    resp = session.post(api_server["api_uri"] + "/Page/_find", data={
+        "criteria": dumps({"text": {"$text": "something placeholder"}})
+        })
+    resp = loads(resp.text)
+    assert len(resp) == 1
+
+    api_disconnect(api_server, session)

@@ -151,12 +151,17 @@ def remove(table_name):
 
     try:
         with transaction.manager:
-            for obj in result:
-                db.remove(obj)
+            if isinstance(result, list):
+                for obj in result:
+                    db.remove(obj)
+                count = len(result)
+            else:
+                db.remove(result)
+                count = 1
     except Exception, e:
         return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
 
-    return jsonify(ok=1)
+    return jsonify(ok=1, count=count)
 
 
 @app.route("/<table_name>/_insert", methods=["GET", "POST"])
