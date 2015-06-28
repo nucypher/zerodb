@@ -121,6 +121,44 @@ def find(table_name):
     return jsonpickle.encode(result, unpicklable=False)
 
 
+@app.route("/<table_name>/_remove", methods=["GET", "POST"])
+def remove(table_name):
+    db = dbs[session["username"]]
+    model = getattr(models, table_name)
+
+    if request.method == "GET":
+        req = request.args
+    elif request.method == "POST":
+        req = request.form
+    else:
+        return jsonify(ok=0)
+
+    criteria = req.get("criteria")
+    ids = req.get("_id")
+    if criteria:
+        criteria = json.loads(req.get("criteria"))
+        if isinstance(criteria, dict) and (len(criteria) == 1) and "_id" in criteria:
+            ids = [c["$oid"] for c in criteria["_id"]]
+        else:
+            ids = None
+            criteria = optimize(qj.compile(criteria))
+        result = db[model].query(criteria)
+    elif ids:
+        ids = json.loads(ids)
+        result = db[model][ids]
+    else:
+        return jsonify(ok=0)
+
+    try:
+        with transaction.manager:
+            for obj in result:
+                db.remove(obj)
+    except Exception, e:
+        return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
+
+    return jsonify(ok=1)
+
+
 @app.route("/<table_name>/_insert", methods=["GET", "POST"])
 def insert(table_name):
     # POST has array of documents or one document
