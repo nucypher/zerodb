@@ -28,7 +28,8 @@ def api_server(request, db):
     server = Process(target=api_run, kwargs={
         "host": "localhost",
         "port": port,
-        "data_models": path.join(path.dirname(__file__), "db.py")})
+        "data_models": path.join(path.dirname(__file__), "db.py"),
+        "zeo_socket": db._storage._addr})
 
     @request.addfinalizer
     def fin():
@@ -38,20 +39,17 @@ def api_server(request, db):
     server.start()
     time.sleep(0.2)
 
-    return {
-            "api_uri": "http://localhost:%s" % port,
-            "zeo_uri": db._storage._addr}
+    return "http://localhost:%s" % port
 
 
 def api_connect(api_server, session):
-    return session.get(api_server["api_uri"] + "/_connect", params={
+    return session.get(api_server + "/_connect", params={
         "username": "root",
-        "passphrase": TEST_PASSPHRASE,
-        "host": api_server["zeo_uri"]})
+        "passphrase": TEST_PASSPHRASE})
 
 
 def api_disconnect(api_server, session):
-    return session.get(api_server["api_uri"] + "/_disconnect")
+    return session.get(api_server + "/_disconnect")
 
 
 def test_connect(api_server):
@@ -73,7 +71,7 @@ def test_insert_get(api_server):
 
     api_connect(api_server, session)
 
-    resp = session.post(api_server["api_uri"] + "/Page/_insert",
+    resp = session.post(api_server + "/Page/_insert",
             data={"docs": dumps(docs)})
     resp = loads(resp.text)
 
@@ -81,7 +79,7 @@ def test_insert_get(api_server):
     oids = [o["$oid"] for o in resp["oids"]]
     assert all(oids)
 
-    resp = session.post(api_server["api_uri"] + "/Page/_get", data={"_id": dumps(oids)})
+    resp = session.post(api_server + "/Page/_get", data={"_id": dumps(oids)})
     resp = loads(resp.text)
     assert resp == docs
 
@@ -92,13 +90,13 @@ def test_find(api_server):
     session = requests.Session()
     api_connect(api_server, session)
 
-    resp = session.post(api_server["api_uri"] + "/Page/_find", data={
+    resp = session.post(api_server + "/Page/_find", data={
         "criteria": dumps({"text": {"$text": "something"}})
         })
     resp = loads(resp.text)
     assert len(resp) == 10
 
-    resp = session.post(api_server["api_uri"] + "/Salary/_find", data={
+    resp = session.post(api_server + "/Salary/_find", data={
         "criteria": dumps({"salary": {"$range": [130000, 180000]}}),
         "limit": 2,
         "sort": "salary"
@@ -106,7 +104,7 @@ def test_find(api_server):
     resp = loads(resp.text)
     assert len(resp) == 2
 
-    resp = session.post(api_server["api_uri"] + "/Salary/_find", data={
+    resp = session.post(api_server + "/Salary/_find", data={
         "criteria": dumps({"salary": {"$range": [130000, 130001]}}),
         "limit": 2,
         "sort": {"salary": -1}
@@ -124,18 +122,18 @@ def test_remove_by_id(api_server):
     session = requests.Session()
     api_connect(api_server, session)
 
-    resp = session.post(api_server["api_uri"] + "/Page/_insert",
+    resp = session.post(api_server + "/Page/_insert",
             data={"docs": dumps(docs)})
     resp = loads(resp.text)
     oids = [o["$oid"] for o in resp["oids"]]
 
-    resp = session.post(api_server["api_uri"] + "/Page/_remove",
+    resp = session.post(api_server + "/Page/_remove",
             data={"_id": dumps(oids)})
     resp = loads(resp.text)
     assert resp["ok"] == 1
     assert resp["count"] == 3
 
-    resp = session.post(api_server["api_uri"] + "/Page/_find", data={
+    resp = session.post(api_server + "/Page/_find", data={
         "criteria": dumps({"text": {"$text": "something remove"}})
         })
     resp = loads(resp.text)
@@ -151,16 +149,16 @@ def test_remove_by_criteria(api_server):
     session = requests.Session()
     api_connect(api_server, session)
 
-    resp = session.post(api_server["api_uri"] + "/Page/_insert",
+    resp = session.post(api_server + "/Page/_insert",
             data={"docs": dumps(docs)})
 
-    resp = session.post(api_server["api_uri"] + "/Page/_remove", data={
+    resp = session.post(api_server + "/Page/_remove", data={
             "criteria": dumps({"text": {"$text": "something remove"}})})
     resp = loads(resp.text)
     assert resp["ok"] == 1
     assert resp["count"] == 2
 
-    resp = session.post(api_server["api_uri"] + "/Page/_find", data={
+    resp = session.post(api_server + "/Page/_find", data={
         "criteria": dumps({"text": {"$text": "something placeholder"}})
         })
     resp = loads(resp.text)

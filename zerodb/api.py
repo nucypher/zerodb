@@ -25,6 +25,7 @@ DEV_SECRET_KEY = "development key"
 app = Flask(__name__)
 dbs = {}
 models = None
+zeosocket = None
 
 
 @app.route("/_connect", methods=["GET", "POST"])
@@ -38,14 +39,17 @@ def connnect():
 
     username = req.get("username")
     passphrase = req.get("passphrase")
-    host = req.get("host")
-    port = req.get("port")
-    if host and port:
-        socket = (host, port)
-    elif host:
-        socket = host
+    if zeosocket:
+        socket = zeosocket
     else:
-        socket = None
+        host = req.get("host")
+        port = req.get("port")
+        if host and port:
+            socket = (host, port)
+        elif host:
+            socket = host
+        else:
+            socket = None
 
     if not (username and passphrase and socket):
         return jsonify(ok=0, message="Incomplete login information")
@@ -211,13 +215,16 @@ def disconnect():
     return jsonify(ok=1)
 
 
-def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECRET_KEY, **kw):
+def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECRET_KEY, zeo_socket=None, **kw):
     global models
+    global zeosocket
 
     if isinstance(data_models, basestring):
         models = imp.load_source("models", data_models)
     else:
         models = data_models
+
+    zeosocket = zeo_socket
 
     app.config["SECRET_KEY"] = secret_key
     app.run(host=host, port=port, debug=debug, **kw)
