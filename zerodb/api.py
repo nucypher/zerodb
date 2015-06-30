@@ -9,6 +9,7 @@ import jsonpickle
 import transaction
 import zerodb
 from flask import Flask, jsonify, session, request
+from flask.ext.cors import CORS
 from zerodb.catalog.query import optimize
 from zerodb.catalog import query_json as qj
 
@@ -23,6 +24,7 @@ DEBUG = True
 DEV_SECRET_KEY = "development key"
 
 app = Flask(__name__)
+cors = CORS(app)
 dbs = {}
 models = None
 zeosocket = None

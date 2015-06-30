@@ -10,6 +10,7 @@ INSTALL_REQUIRES = [
     'zc.zlibstorage',
     'pycrypto',
     'click',
+    'flask-cors',
     'flask',
     'requests',
     'jsonpickle',
@@ -18,7 +19,7 @@ INSTALL_REQUIRES = [
 
 setup(
     name="zerodb",
-    version="0.91",
+    version="0.91.1",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
