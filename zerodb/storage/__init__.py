@@ -1,6 +1,7 @@
 from ZEO.StorageServer import StorageServer as BaseStorageServer
 from ZEO.runzeo import ZEOServer as BaseZEOServer
 from ZEO.runzeo import ZEOOptions
+import ZEO.zrpc.error
 from Crypto.Random import atfork
 
 import batch
@@ -15,6 +16,26 @@ ServerStorage = batch.ZEOBatchStorage
 
 class StorageServer(BaseStorageServer):
     ZEOStorageClass = ServerStorage
+
+    def invalidate(self, conn, storage_id, tid, invalidated=(), info=None):
+        """ Internal: broadcast info and invalidations to clients. """
+
+        # Same as in the base class
+        if invalidated:
+            invq = self.invq[storage_id]
+            if len(invq) >= self.invq_bound:
+                invq.pop()
+            invq.insert(0, (tid, invalidated))
+
+        for p in self.connections[storage_id]:
+            if getattr(p, 'user_id', None) == getattr(conn, 'user_id', None):
+                try:
+                    if invalidated and p is not conn:
+                        p.client.invalidateTransaction(tid, invalidated)
+                    elif info is not None:
+                        p.client.info(info)
+                except ZEO.zrpc.error.DisconnectedError:
+                    pass
 
 
 class ZEOServer(BaseZEOServer):
