@@ -75,11 +75,15 @@ def find(table_name):
     if request.method == "GET":
         req = request.args
     elif request.method == "POST":
-        req = json.loads(request.data)
+        req = request.form
     else:
         return jsonify(ok=0)
 
-    criteria = req.get("criteria")
+    if req.get("criteria") is None:
+        criteria = json.loads(request.data).get("criteria")
+    else:
+        criteria = json.loads(req.get("criteria"))
+
     if isinstance(criteria, dict) and (len(criteria) == 1) and "_id" in criteria:
         ids = [c["$oid"] for c in criteria["_id"]]
     else:
