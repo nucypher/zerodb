@@ -24,7 +24,7 @@ DEBUG = True
 DEV_SECRET_KEY = "development key"
 
 app = Flask(__name__)
-cors = CORS(app)
+cors = CORS(app, supports_credentials=True)
 dbs = {}
 models = None
 zeosocket = None
@@ -75,11 +75,11 @@ def find(table_name):
     if request.method == "GET":
         req = request.args
     elif request.method == "POST":
-        req = request.form
+        req = json.loads(request.data)
     else:
         return jsonify(ok=0)
 
-    criteria = json.loads(req.get("criteria"))
+    criteria = req.get("criteria")
     if isinstance(criteria, dict) and (len(criteria) == 1) and "_id" in criteria:
         ids = [c["$oid"] for c in criteria["_id"]]
     else:
