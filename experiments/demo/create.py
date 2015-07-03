@@ -10,7 +10,7 @@ import random
 username = "root"
 passphrase = "very insecure passphrase - never use it"
 
-db = zerodb.DB("/tmp/zerosocket", username=username, password=passphrase)
+db = zerodb.DB(("localhost", 8001), username=username, password=passphrase)
 
 # Everything we record should be within a transaction manager
 # or be ended with transaction.commit()
