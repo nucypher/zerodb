@@ -31,7 +31,7 @@ From a developer's perspective, ZeroDB's design is greatly inspired by the `Djan
 
 Installation
 ============
-We supply ZeroDB as a Python egg package ``zerodb-0.8-py2.7.egg``. You could
+We supply ZeroDB as a Python egg package ``zerodb-0.91.1-py2.7.egg``. You could
 install it using ``easy_install``.
 
 However, let's install everything in a virtual environment to run the server and
@@ -81,9 +81,8 @@ you like by running ``python mkpub.py``. Be sure to put the resulting pubkey int
 Running the ZeroDB server
 ---------------------
 
-Just start ``python runserver.py`` and you'll get the ZeroDB server running on a UNIX
-socket ``/tmp/zerosocket``. The file ``server.zcml`` allows you to set the socket and
-other parameters of the server.
+Just start ``python runserver.py`` and you'll get the ZeroDB server running on the
+``localhost``. The file ``server.zcml`` allows you to set the parameters of the server.
 
 Healthy output of the running server appears as follows::
 
@@ -96,7 +95,7 @@ Healthy output of the running server appears as follows::
     2015-05-16T16:01:53 INFO ZEO.StorageServer StorageServer: using auth protocol:
     ecc_auth
     ------
-    2015-05-16T16:01:53 INFO ZEO.zrpc (6580) listening on /tmp/zerosocket
+    2015-05-16T16:01:53 INFO ZEO.zrpc (6580) listening on ('localhost', 8001)
 
 Adding more users
 -----------------
@@ -104,7 +103,7 @@ Adding more users
 Instead of being stored in config files, users are normally stored in a
 database. In order to manage these users start the zerodb server and run::
 
-    python manage.py --username root --passphrase "..." --sock /tmp/zerosocket
+    python manage.py --username root --passphrase "..." --sock localhost:8001
 
 This will run an ipython terminal where you can manage users::
 
@@ -137,7 +136,7 @@ which creates records for us would look like this::
     import zerodb
     import models
 
-    db = zerodb.DB("/tmp/zerosocket", username="root", password="...")
+    db = zerodb.DB(("localhost", 8001), username="root", password="<your passphrase>")
     e = models.Employee(name="John", surname="Smith", salary=150000,
                         description="Coding power")
     db.add(e)
@@ -163,7 +162,7 @@ And we also import our data models::
 Let's connect to the database now::
 
     >>> PASSWORD = "very insecure passphrase - never use it"
-    >>> db = zerodb.DB("/tmp/zerosocket", username="root", password=PASSWORD)
+    >>> db = zerodb.DB(("localhost", 8001), username="root", password=PASSWORD)
 
 Number of Employees in the database can be determined by just ``len``::
 
@@ -195,7 +194,7 @@ We can also do full-text search::
     Theoretical Cosmology within the University of Cambridge,
     Stephen William Hawking resides in the United Kingdom.
 
-Let's remove the record from the last example. We'll need the ``tranaction``
+Let's remove the record from the last example. We'll need the ``transaction``
 module for that::
 
     >>> import transaction
