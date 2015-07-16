@@ -1,3 +1,5 @@
+import os
+import threading
 import transaction
 from Crypto import Random
 from repoze.catalog.query import optimize
@@ -196,6 +198,10 @@ class DB(object):
 
         Random.atfork()
 
+        # For multi-threading
+        self.__thread_local = threading.local()
+        self.__pid = os.getpid()
+
         self._init_db()
         self._models = {}
 
@@ -203,14 +209,28 @@ class DB(object):
         """We need this to be executed each time we are in a new process"""
         self._storage = client_storage(**self.__storage_kwargs)
         self._db = DB.db_factory(self._storage, **self.__db_kwargs)
-        self._conn = self._db.open()
+        self.__thread_local.conn = self._db.open()
+        # conn.opened is not None
 
     @property
     def _root(self):
-        return self._conn.root()
+        """Access database root for this user"""
+
+        if os.getpid() != self.__pid:
+            # If a new process spins up, we need to re-initialize everything
+            self.__pid = os.getpid()
+            self._init_db()
+        else:
+            # Open connections from the pool when new threads spin up
+            # Should be closed when old thread-locals get garbage collected
+            if not hasattr(self.__thread_local, "conn"):
+                self.__thread_local.conn = self._db.open()
+
+        return self.__thread_local.conn.root()
 
     def disconnect(self):
-        self._conn.close()
+        if hasattr(self.__thread_local, "conn"):
+            self.__thread_local.conn.close()
 
     def __getitem__(self, model):
         """
