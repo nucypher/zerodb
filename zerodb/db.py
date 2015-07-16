@@ -228,6 +228,10 @@ class DB(object):
 
         return self.__thread_local.conn.root()
 
+    @property
+    def _connection(self):
+        return self.__thread_local.conn
+
     def disconnect(self):
         if hasattr(self.__thread_local, "conn"):
             self.__thread_local.conn.close()
