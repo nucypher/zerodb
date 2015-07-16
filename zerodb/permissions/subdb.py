@@ -151,9 +151,6 @@ class Connection(BaseConnection):
 
 class DB(BaseDB):
     klass = Connection
-    # TODO make serious change to __init__ here:
-    # Create *private* root and save its oid
-    # Use saved root oid after that
 
     # The __init__ method is largely replication of original ZODB.DB.DB.__init__
     # with the exception of root creation

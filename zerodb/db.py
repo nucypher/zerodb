@@ -155,7 +155,7 @@ class DB(object):
     cipher_factory = AES
     auth_module = elliptic
 
-    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False):
+    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
@@ -164,9 +164,11 @@ class DB(object):
         :param str realm: ZODB's realm
         :param bool debug: Whether to log debug messages
         """
+
         # ZODB doesn't like unicode here
         username = str(username)
         password = str(password)
+
         if isinstance(sock, basestring):
             sock = str(sock)
         elif type(sock) in (list, tuple):
@@ -177,15 +179,35 @@ class DB(object):
             self.auth_module.register_auth()
         if not username:
             username = sha256("username" + sha256(password))
-        self._storage = client_storage(sock,
-                username=username, password=password, realm=realm,
-                cipher=DB.cipher_factory(password), debug=debug)
-        self._db = DB.db_factory(self._storage)
-        self._conn = self._db.open()
-        self._root = self._conn.root()
-        self._models = {}
+
+        # Store all the arguments necessary for login in this instance
+        self.__storage_kwargs = {
+                "sock": sock,
+                "username": username,
+                "password": password,
+                "realm": realm,
+                "cipher": DB.cipher_factory(password),
+                "debug": debug}
+
+        self.__db_kwargs = {
+                "pool_size": pool_size,
+                "pool_timeout": pool_timeout}
+        self.__db_kwargs.update(kw)
 
         Random.atfork()
+
+        self._init_db()
+        self._models = {}
+
+    def _init_db(self):
+        """We need this to be executed each time we are in a new process"""
+        self._storage = client_storage(**self.__storage_kwargs)
+        self._db = DB.db_factory(self._storage, **self.__db_kwargs)
+        self._conn = self._db.open()
+
+    @property
+    def _root(self):
+        return self._conn.root()
 
     def disconnect(self):
         self._conn.close()
