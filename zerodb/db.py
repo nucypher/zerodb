@@ -210,7 +210,6 @@ class DB(object):
         self._storage = client_storage(**self.__storage_kwargs)
         self._db = DB.db_factory(self._storage, **self.__db_kwargs)
         self.__thread_local.conn = self._db.open()
-        # conn.opened is not None
 
     @property
     def _root(self):
@@ -223,7 +222,8 @@ class DB(object):
         else:
             # Open connections from the pool when new threads spin up
             # Should be closed when old thread-locals get garbage collected
-            if not hasattr(self.__thread_local, "conn"):
+            if not hasattr(self.__thread_local, "conn") or\
+                    self.__thread_local.conn.opened is None:
                 self.__thread_local.conn = self._db.open()
 
         return self.__thread_local.conn.root()
