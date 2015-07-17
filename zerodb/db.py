@@ -1,6 +1,8 @@
+import itertools
 import os
 import threading
 import transaction
+
 from Crypto import Random
 from repoze.catalog.query import optimize
 from ZEO import auth
@@ -13,7 +15,7 @@ from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.permissions import subdb
 from zerodb.storage import client_storage
-import itertools
+from zerodb.util.thread_watcher import ThreadWatcher
 
 
 class DbModel(object):
@@ -37,18 +39,25 @@ class DbModel(object):
             commit = True
         else:
             commit = False
-        if self._intid_name in db._root:
-            self._objects = db._root[self._intid_name]
-        else:
-            self._objects = model.create_store()
-            db._root[self._intid_name] = self._objects
-        if self._catalog_name in db._root:
-            self._catalog = db._root[self._catalog_name]
-        else:
-            self._catalog = model.create_catalog()
-            db._root[self._catalog_name] = self._catalog
+
+        if self._intid_name not in db._root:
+            _objects = model.create_store()
+            db._root[self._intid_name] = _objects
+
+        if self._catalog_name not in db._root:
+            _catalog = model.create_catalog()
+            db._root[self._catalog_name] = _catalog
+
         if commit:
             transaction.commit()
+
+    @property
+    def _catalog(self):
+        return self._db._root[self._catalog_name]
+
+    @property
+    def _objects(self):
+        return self._db._root[self._intid_name]
 
     def __getitem__(self, uids):
         """
@@ -199,7 +208,6 @@ class DB(object):
         Random.atfork()
 
         # For multi-threading
-        self.__thread_local = threading.local()
         self.__pid = os.getpid()
 
         self._init_db()
@@ -207,9 +215,26 @@ class DB(object):
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
+        self.__conn_refs = {}
+        self.__thread_local = threading.local()
+        self.__thread_watcher = ThreadWatcher()
         self._storage = client_storage(**self.__storage_kwargs)
         self._db = DB.db_factory(self._storage, **self.__db_kwargs)
-        self.__thread_local.conn = self._db.open()
+        self._conn_open()
+
+    def _conn_open(self):
+        """Opens db connection and registers a destuction callback"""
+
+        self.__thread_local.conn = conn = self._db.open()
+
+        def destructor(conn_id):
+            conn = self._db.pool.all.data.get(conn_id, None)
+            if conn:
+                # Hack to make it not closing TM which is already removed
+                conn.opened = 0
+                conn.close()
+
+        self.__thread_watcher.watch(destructor, id(conn))
 
     @property
     def _root(self):
@@ -224,7 +249,7 @@ class DB(object):
             # Should be closed when old thread-locals get garbage collected
             if not hasattr(self.__thread_local, "conn") or\
                     self.__thread_local.conn.opened is None:
-                self.__thread_local.conn = self._db.open()
+                self._conn_open()
 
         return self.__thread_local.conn.root()
 

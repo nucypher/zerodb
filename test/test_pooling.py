@@ -2,6 +2,8 @@ import ctypes
 import multiprocessing
 import threading
 
+from time import sleep
+
 from db import Page
 
 id_conn_child = None
@@ -13,18 +15,22 @@ def test_thread_pooling(db):
     def f():
         global id_conn_child
 
-        db._root  # connect automatically
+        assert len(db[Page]) > 0  # connect automatically
         id_conn_child = id(db._connection)
+        sleep(0.2)
 
     thread = threading.Thread(target=f)
     thread.start()
+    sleep(0.1)
+    assert len(db._db.pool.all) - len(db._db.pool.available) == 2
+
     thread.join()
 
     # Threadlocals die only when another thread accesses them
     db._root
 
     # TODO: close connection when thread dies
-    # assert len(db._db.pool.all) == 1
+    assert len(db._db.pool.all) - len(db._db.pool.available) == 1
 
     # Test that child used connection other than parent
     assert id_conn_child != id_conn_parent
@@ -43,6 +49,6 @@ def test_forking(db):
     p.start()
     p.join()
 
-    # Teest that child used connection other than parent
+    # Test that child used connection other than parent
     assert id_conn_child.value != 0
     assert id_conn_child.value != id_conn_parent
