@@ -1,6 +1,8 @@
 # pyc files
 *.pyc
 *.pyo
+*.swn
+*.swo
 *.swp
 test.fs.*
 test.fs

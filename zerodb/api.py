@@ -182,7 +182,7 @@ def insert(table_name):
 
     if request.method == "POST":
         try:
-            data = json.loads(request.form.get("docs"))
+            data = json.loads(request.data).get("docs")
             if isinstance(data, dict):
                 data = [data]
             objs = [model(**row) for row in data]
