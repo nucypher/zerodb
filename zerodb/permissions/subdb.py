@@ -106,12 +106,16 @@ class StorageClass(ServerStorage):
         uid = struct.unpack(self.database.uid_pack, self.user_id)[0]
         user = self.database.db_root["users"][uid]
         if user.root:
-            return user.root, False
-        else:
-            oid = self.storage.new_oid()
-            with transaction.manager:
-                user.root = oid
-            return oid, True
+            try:
+                self.storage.load(user.root, '')
+                return user.root, False
+            except KeyError:
+                pass
+
+        oid = self.storage.new_oid()
+        with transaction.manager:
+            user.root = oid
+        return oid, True
 
     def add_user(self, username, pubkey, administrator=False):
         """
