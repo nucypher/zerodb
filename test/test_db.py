@@ -48,5 +48,5 @@ def test_add(db):
         pre_commit_count = db._storage._debug_download_count
         db.add(Page(title="hello", text="Quick brown lazy fox jumps over lorem  ipsum dolor sit amet"))
         post_commit_count = db._storage._debug_download_count
-    print "XXX", post_commit_count - pre_commit_count
+    print "Number of requests:", post_commit_count - pre_commit_count
     assert post_commit_count - pre_commit_count < 22

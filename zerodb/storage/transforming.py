@@ -47,7 +47,7 @@ class TransformingStorage(ZlibStorage):
         out_data = self._untransform(data)
 
         if self.debug and not in_cache:
-            logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
+            logging.debug("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
             self._debug_download_size += len(data)
             self._debug_download_count += 1
 
@@ -64,19 +64,26 @@ class TransformingStorage(ZlibStorage):
         :rtype: list
         """
         if self.debug:
-            not_in_cache = set(filter(lambda x: x not in self._cache.current, oids))
-
+            in_cache_before = {oid: oid in self._cache.current for oid in oids}
         base_result = self.base.loadBulk(oids)
+        if self.debug:
+            in_cache_after = {oid: oid in self._cache.current for oid in oids}
         if returns or self.debug:
             datas, serials = zip(*base_result)
             datas_out = map(self._untransform, datas)
             out = zip(datas_out, serials)
             if self.debug:
-                for data, out_data, oid in zip(datas, datas_out, oids):
-                    if oid in not_in_cache:
-                        logging.info("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
-                        self._debug_download_size += len(data)
-                if not_in_cache:
+                if datas:
                     self._debug_download_count += 1
+                for data, out_data, oid in zip(datas, datas_out, oids):
+                    logline_prefix = ""
+                    if not in_cache_before[oid]:
+                        self._debug_download_size += len(data)
+                        if not in_cache_after[oid]:
+                            self._debug_download_count += 1
+                        else:
+                            logline_prefix = "(from bulk) "
+                        logging.debug("%sid:%s, type:%s, transform: %s->%s" %
+                                (logline_prefix, oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
             if returns:
                 return out

@@ -1,4 +1,5 @@
 import itertools
+import logging
 from ZEO.StorageServer import ZEOStorage
 from ZEO.ClientStorage import ClientStorage
 from ZEO.Exceptions import ClientDisconnected
@@ -51,7 +52,6 @@ class BatchClientStorage(ClientStorage):
         :return: Loaded oid objects
         :rtype: list
         """
-
         # First, try to get whatever possible from cache
         self._load_lock.acquire()
         try:
@@ -77,9 +77,11 @@ class BatchClientStorage(ClientStorage):
             load_oids = self._load_oids.keys()
 
             # [(data, tid), (data, tid), ...]
-            bulk_data = self._server.rpc.call('loadBulk', load_oids)
+            bulk_data = self._server.rpc.call("loadBulk", load_oids)
 
+            data_size = 0
             for oid, (data, tid) in itertools.izip(load_oids, bulk_data):
+                data_size += len(data)
                 self._lock.acquire()    # for atomic processing of invalidations
                 try:
                     if self._load_oids[oid]:  # Update cache only when there was no invalidation
@@ -88,6 +90,7 @@ class BatchClientStorage(ClientStorage):
                     result.append((data, tid))  # XXX shouldn't we provide a recent value from cache then?
                 finally:
                     self._lock.release()
+            logging.debug("Bulk-loaded {0} objects of size {1}".format(len(load_oids), data_size))
         finally:
             self._load_lock.release()
 
