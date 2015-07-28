@@ -1,5 +1,5 @@
 from BTrees.Length import Length
-from copy import copy
+from zope.index.text import TextIndex as ZopeTextIndex
 from zope.index.text.lexicon import CaseNormalizer
 from zope.index.text.lexicon import Lexicon as _Lexicon
 from zope.index.text.lexicon import Splitter
@@ -7,6 +7,7 @@ from zope.index.text.lexicon import StopWordRemover
 from zope.index.text.okapiindex import OkapiIndex as _OkapiIndex
 from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
 from zerodb import trees
+from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.storage import prefetch
 
 
@@ -77,11 +78,16 @@ class OkapiIndex(_OkapiIndex):
             self.wordCount = Length(len(self._wordinfo))
 
 
-class CatalogTextIndex(_CatalogTextIndex):
+class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
     family = trees.family32
 
-    def __init__(self, *args, **kw):
-        kw = copy(kw)
-        kw["lexicon"] = Lexicon(Splitter(), CaseNormalizer(), StopWordRemover())
-        kw["index"] = OkapiIndex(kw["lexicon"], family=self.family)
-        super(CatalogTextIndex, self).__init__(*args, **kw)
+    def __init__(self, discriminator, lexicon=None, index=None):
+        self._init_discriminator(discriminator)
+
+        self._not_indexed = self.family.IF.Set()
+
+        lexicon = lexicon or Lexicon(Splitter(), CaseNormalizer(), StopWordRemover())
+        index = index or OkapiIndex(lexicon, family=self.family)
+
+        ZopeTextIndex.__init__(self, lexicon, index)
+        self.clear()

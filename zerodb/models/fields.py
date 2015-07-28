@@ -15,8 +15,9 @@ class Indexable(object):
         self.default = default
         self.virtual = virtual
 
-        if (self.default is not None) and (self.virtual is not None):
-            raise exceptions.FieldException("One cannot simultaneously set the default value and claim that the field is derived by calculation only")
+        if (default is not None) and (virtual is not None):
+            raise exceptions.FieldException("One cannot simultaneously set the default value"
+                    "and claim that the field is derived by calculation only")
 
     def __repr__(self):
         return "Indexable field <%s>" % self.__class__.__name__

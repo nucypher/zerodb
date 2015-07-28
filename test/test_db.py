@@ -25,9 +25,16 @@ def test_query(db):
         assert s.salary <= 180000
     # Check that we pre-downloaded all objects into cache
     assert db._storage._debug_download_count == post_range_count
+
     million_employee = db[Salary].query(salary=1000000)
     assert len(million_employee) == 1
     assert million_employee[0].name == "Hello"
+
+    assert len(db[Salary].query(full_name="Hello World")) == 1
+    assert len(db[Salary].query(full_name="Hell? Wor*")) == 1
+    assert db[Salary].query(Contains("full_name", "Hello"))[0] == million_employee[0]
+
+    assert db[Salary].query(future_salary=2000000)[0] == million_employee[0]
 
 
 def test_add(db):

@@ -17,6 +17,8 @@ class Salary(Model):
     name = fields.Field()
     surname = fields.Field()
     salary = fields.Field()
+    full_name = fields.Text(virtual=lambda x: x.name + " " + x.surname)
+    future_salary = fields.Field(virtual=lambda x: x.salary * 2)
 
 
 def create_objects_and_close(sock, count=200):

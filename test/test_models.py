@@ -15,12 +15,14 @@ class TestMe(models.Model):
     content = fields.Text()
     age = fields.Field(default=0)
     timestamp = fields.Field(default=datetime.utcnow)
+    all_text = fields.Text(virtual=lambda o: o.title + " " + o.content)
 
 
 def test_model_metaclass():
-    assert len(TestMe._z_indexed_fields) == 4
+    assert len(TestMe._z_indexed_fields) == 5
     assert len(TestMe._z_required_fields) == 2
     assert len(TestMe._z_default_fields) == 2
+    assert TestMe._z_virtual_fields.keys() == ["all_text"]
 
 
 def test_model():
@@ -36,6 +38,8 @@ def test_model():
     assert obj1.content == "World"
     assert obj1.age == 5
     assert obj1.timestamp == test_timestamp
+
+    assert obj1._z_virtual_fields["all_text"](obj1) == "Hello World"
 
     assert obj2.title == "Hello world"
     assert obj2.content == "Lorem ipsum"
