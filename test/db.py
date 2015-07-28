@@ -13,6 +13,24 @@ class Page(Model):
     text = fields.Text()
 
 
+# This is to test foreign relationships and, importantly, backrefs as well
+# This class if for one-to-many (1 department -> many salaries)
+# and salary -> department
+#
+# What do we need to do for that:
+# * indexing weakrefs
+# * having a field which is a collection of objects, e.g.:
+#       department.salaries.add(salary_object) where salaries is catalog
+#           that said, if catalog is too heavy (Salary example):
+#               * pickle: 1219 (zlib 668)
+#               * json: 3382 (zlib 504)
+#               * msgpack: 2658 (zlib 528)
+#       department_salaries can be a many-to-many connector
+# * and we need some tracking of relationships consistency (hello NoSQL)
+class Department(Model):
+    name = fields.Field()
+
+
 class Salary(Model):
     name = fields.Field()
     surname = fields.Field()
