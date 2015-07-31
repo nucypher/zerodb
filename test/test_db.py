@@ -1,6 +1,6 @@
 import logging
 import transaction
-from db import Page, Salary
+from db import Page, Salary, Department
 from zerodb.catalog.query import Contains, InRange
 # Also need to test optimize, Lt(e), Gt(e)
 
@@ -35,6 +35,10 @@ def test_query(db):
     assert db[Salary].query(Contains("full_name", "Hello"))[0] == million_employee[0]
 
     assert db[Salary].query(future_salary=2000000)[0] == million_employee[0]
+
+    assert len(db[Salary].query(department_name="Mobile")) > 0
+    department = db[Department].query(name="Money")[0]
+    assert len(db[Salary].query(department_id=department._v_uid)) > 0
 
 
 def test_add(db):

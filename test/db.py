@@ -1,6 +1,8 @@
 """ Test database """
 
+import random
 import transaction
+
 from zerodb.models import Model
 from zerodb.models import fields
 import zerodb
@@ -28,7 +30,7 @@ class Page(Model):
 #       department_salaries can be a many-to-many connector
 # * and we need some tracking of relationships consistency (hello NoSQL)
 class Department(Model):
-    name = fields.Field()
+    name = fields.Text()
 
 
 class Salary(Model):
@@ -38,9 +40,19 @@ class Salary(Model):
     full_name = fields.Text(virtual=lambda x: x.name + " " + x.surname)
     future_salary = fields.Field(virtual=lambda x: x.salary * 2)
 
+    # Foreign relationships
+    department_name = fields.Field(virtual=lambda o: o.department.name)  # Enable looking up Salary by department
+    department_id = fields.Field(virtual=lambda o: o.department._v_uid)  # Department ID
+
 
 def create_objects_and_close(sock, count=200):
     db = zerodb.DB(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+    with transaction.manager:
+        # Initialize departments
+        departments = [Department(name="Mobile"), Department(name="Web"), Department(name="Tools"),
+                       Department(name="Money"), Department(name="Human Resources")]
+        db.add(departments)
+
     with transaction.manager:
         for i in range(count / 2) + range(count / 2 + 10, count):
             db.add(Page(title="hello %s" % i, text="lorem ipsum dolor sit amet" * 50))
@@ -50,11 +62,13 @@ def create_objects_and_close(sock, count=200):
             db.add(Salary(
                 name="John-%s" % i,
                 surname="Smith-%i" % i,
-                salary=50000 + (200000 - 50000) * i / (count - 1)))
+                salary=50000 + (200000 - 50000) * i / (count - 1),
+                department=random.choice(departments)))
         db.add(Salary(
             name="Hello",
             surname="World",
-            salary=1000000))
+            salary=1000000,
+            department=random.choice(departments)))
         db.add(Page(title="one two",
             text='"The quick brown fox jumps over a lazy dog" is an English-language pangram - a phrase that contains all of the letters of the alphabet.'))
     db.disconnect()
