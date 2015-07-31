@@ -284,7 +284,10 @@ class DB(object):
         :return: Added object's uid
         :rtype: int
         """
-        return self[obj.__class__].add(obj)
+        if isinstance(obj, (list, set, tuple)):
+            return [self[o.__class__].add(o) for o in obj]
+        else:
+            return self[obj.__class__].add(obj)
 
     def remove(self, obj):
         """
