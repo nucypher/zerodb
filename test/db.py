@@ -31,6 +31,8 @@ class Page(Model):
 # * and we need some tracking of relationships consistency (hello NoSQL)
 class Department(Model):
     name = fields.Text()
+    # TODO Need to make a backref to Salary
+    # in order to reindex once Department is changed
 
 
 class Salary(Model):
