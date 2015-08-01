@@ -1,3 +1,4 @@
+import collections
 import itertools
 import os
 import threading
@@ -106,6 +107,10 @@ class DbModel(object):
         """
         if isinstance(obj, (int, long)):
             uid = obj
+        elif isinstance(obj, collections.Iterable):
+            for i in list(obj):
+                self.remove(i)
+            return
         else:
             assert obj.__class__ == self._model
             uid = obj._v_uid
