@@ -141,9 +141,9 @@ class DbModel(object):
 
         count, uids = self._catalog.query(Q, **kw)
         if limit:
-            qids = itertools.islice(uids, skip, skip + limit)
+            qids = list(itertools.islice(uids, skip, skip + limit))
         else:
-            qids = uids
+            qids = list(uids)
         # No reason to return an iterator as long as we have all pre-loaded
         objects = [self._objects[uid] for uid in qids]
         # Pre-load them all (these are lazy objects)
