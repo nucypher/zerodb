@@ -75,6 +75,14 @@ class DbModel(object):
         else:
             raise ModelException("Integer or list of integers is expected")
 
+    def all_uids(self):
+        for i in self._objects.tree:
+            yield i
+
+    def all(self):
+        for i in self.all_uids():
+            yield self._objects[i]
+
     def add(self, obj):
         """
         Add newly created a Model object to the database
@@ -96,10 +104,10 @@ class DbModel(object):
 
         :param zerodb.models.Model obj: Object to add to the database
         """
-        assert obj.__class__ == self._model
         if isinstance(obj, (int, long)):
             uid = obj
         else:
+            assert obj.__class__ == self._model
             uid = obj._v_uid
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
