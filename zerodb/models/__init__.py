@@ -10,18 +10,18 @@ from zerodb.models.fields import Field, Text
 class ModelMeta(type):
     def __init__(cls, name, bases, dct):
         if bases != (persistent.Persistent,):  # Only subclasses of Model can do it, not Model itself
-            indexed_fields = set(filter(lambda key:
+            used_fields = set(filter(lambda key:
                     not key.startswith("_") and
                     isinstance(dct[key], fields.Indexable),
                 dct.keys()))
 
-            required_fields = set(filter(lambda key: dct[key].default is None, indexed_fields))
-            virtual_fields = {key: dct[key].virtual for key in indexed_fields
+            required_fields = set(filter(lambda key: dct[key].default is None, used_fields))
+            virtual_fields = {key: dct[key].virtual for key in used_fields
                     if dct[key].virtual is not None}
 
-            default_fields = indexed_fields - required_fields
+            default_fields = used_fields - required_fields
 
-            cls._z_indexed_fields = indexed_fields
+            cls._z_indexed_fields = set(filter(lambda key: dct[key].indexed, used_fields))
             cls._z_default_fields = default_fields.difference(virtual_fields)
             cls._z_virtual_fields = virtual_fields
             cls._z_required_fields = required_fields.difference(virtual_fields)
@@ -29,7 +29,7 @@ class ModelMeta(type):
             cls.__modelname__ = cls.__modelname__ or name.lower()
 
             # Clean up all the fields we've used
-            dct = {k: dct[k] for k in dct.keys() if k not in indexed_fields}
+            dct = {k: dct[k] for k in dct.keys() if k not in used_fields}
 
         super(ModelMeta, cls).__init__(name, bases, dct)
 

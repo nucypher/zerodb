@@ -6,14 +6,16 @@ import exceptions
 class Indexable(object):
     Index = None
 
-    def __init__(self, default=None, virtual=None):
+    def __init__(self, default=None, virtual=None, index=True):
         """
         :param default: Default value (which can be callable, like utcnow)
         :param virtual: Virtual value which is *only* calculated but is not
             stored. Still, it is indexed
+        :param bool index: If False, we just use schema for validation
         """
         self.default = default
         self.virtual = virtual
+        self.indexed = index
 
         if (default is not None) and (virtual is not None):
             raise exceptions.FieldException("One cannot simultaneously set the default value"

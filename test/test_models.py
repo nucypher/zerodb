@@ -11,15 +11,15 @@ from db import TEST_PASSPHRASE
 
 
 class TestMe(models.Model):
-    title = fields.Field()
-    content = fields.Text()
+    title = fields.Field(index=False)
+    content = fields.Text(index=False)
     age = fields.Field(default=0)
     timestamp = fields.Field(default=datetime.utcnow)
     all_text = fields.Text(virtual=lambda o: o.title + " " + o.content)
 
 
 def test_model_metaclass():
-    assert len(TestMe._z_indexed_fields) == 5
+    assert len(TestMe._z_indexed_fields) == 3
     assert len(TestMe._z_required_fields) == 2
     assert len(TestMe._z_default_fields) == 2
     assert TestMe._z_virtual_fields.keys() == ["all_text"]
