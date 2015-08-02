@@ -14,6 +14,7 @@ INSTALL_REQUIRES = [
     'flask',
     'requests',
     'jsonpickle',
+    'JPype1',
     'pyelliptic',
     'ecdsa']
 
