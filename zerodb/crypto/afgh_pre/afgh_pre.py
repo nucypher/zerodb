@@ -1,8 +1,8 @@
-import array
 import jpype
 import os
 import struct
 
+from array import array
 from os.path import dirname, abspath
 
 
@@ -37,31 +37,31 @@ init()
 
 def load_priv(s):
     Zq = params.getZq()
-    return Zq.newElement(jpype.java.math.BigInteger(array.array("b", s)))
+    return Zq.newElement(jpype.java.math.BigInteger(array("b", s)))
 
 
 def dump_priv(priv):
-    return jpype.java.math.BigInteger.toByteArray(priv.toBigInteger()).tostring()
+    return array("b", jpype.java.math.BigInteger.toByteArray(priv.toBigInteger())).tostring()
 
 
 def load_pub(s):
     """Works for both public and re-encryption keys"""
     el = CurveElement(params.getG1())
-    el.setFromBytesCompressed(array.array("b", s))
+    el.setFromBytesCompressed(array("b", s))
     return el
 
 
 def dump_pub(pub):
-    return pub.toBytesCompressed().tostring()
+    return array("b", pub.toBytesCompressed()).tostring()
 
 
 def dump_gtf(el):
-    return el.toBytes().tostring()
+    return array("b", el.toBytes()).tostring()
 
 
 def load_gtf(m):
     x = GTFiniteElement(params.getZ()).duplicate()
-    b = array.array("b", m)
+    b = array("b", m)
     x.setFromBytes(b)
     return x
 
@@ -139,19 +139,19 @@ class Key(object):
         return cls(pub=load_pub(s))
 
     def encrypt(self, message):
-        e = AFGHProxyReEncryption.stringToElement(message, params.getG2())
+        e = AFGHProxyReEncryption.bytesToElement(array("b", message), params.getG2())
         c_a = AFGHProxyReEncryption.secondLevelEncryption(e, self.pub_pow, params)
         return dump_e_message(c_a)
 
     def decrypt_my(self, s):
         c_a = load_e_message(s)
         m = AFGHProxyReEncryption.secondLevelDecryption(c_a, self.priv, params)
-        return String(m.toBytes()).trim()
+        return array("b", m.toBytes()).tostring().strip("\x00")
 
     def decrypt_re(self, s):
         c_b = load_re_message(s)
         m = AFGHProxyReEncryption.firstLevelDecryptionPreProcessing(c_b, self.priv_invert, params)
-        return String(m.toBytes()).trim()
+        return array("b", m.toBytes()).tostring().strip("\x00")
 
     def re_key(self, pub):
         if isinstance(pub, Key):
