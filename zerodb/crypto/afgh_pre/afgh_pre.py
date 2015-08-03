@@ -1,3 +1,4 @@
+import hashlib
 import jpype
 import os
 import struct
@@ -116,6 +117,10 @@ class Key(object):
             pub = None
 
         return cls(priv=priv, pub=pub)
+
+    @classmethod
+    def from_passphrase(cls, passphrase, generate_pub=True):
+        return cls.load_priv(hashlib.sha256(passphrase).digest(), generate_pub=generate_pub)
 
     def dump_priv(self):
         return dump_priv(self.priv)

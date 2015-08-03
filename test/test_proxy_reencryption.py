@@ -13,7 +13,7 @@ def init():
     if afgh_pre is None:
         from zerodb.crypto.afgh_pre import afgh_pre
         alice = afgh_pre.Key.make_priv()
-        bob = afgh_pre.Key.make_priv()
+        bob = afgh_pre.Key.from_passphrase("Bob's passphrase")
 
 
 def test_encrypt_decrypt():
