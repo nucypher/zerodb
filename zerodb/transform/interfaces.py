@@ -17,6 +17,10 @@ class ICompressor(Interface):
         """Register utility"""
 
 
+class IEncrypterClass(Interface):
+    """Class which marks encrypting interface, not encrypting object"""
+
+
 class IEncrypter(Interface):
     """Encrypting or decrypting data"""
     name = Attribute("Signature that object is encrypted with this algorithm. Recorded as '.ename$'")
@@ -27,3 +31,12 @@ class IEncrypter(Interface):
 
     def decrypt(data):
         """Decrypts data"""
+
+    def _encrypt(data):
+        """Low level encrypt interface"""
+
+    def _decrypt(data):
+        """Low level decrypt interface"""
+
+    def _init_encryption(**kw):
+        """Extra functions to init encryption"""

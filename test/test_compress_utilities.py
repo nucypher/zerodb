@@ -14,6 +14,8 @@ def test_utilities():
 
     assert compressed_default == compressed_lz4
     assert compressed_default != compressed_zlib
+    assert compressed_default != test_string
+    assert compressed_zlib != test_string
 
     assert decompress(compressed_default) == test_string
     assert decompress(compressed_zlib) == test_string
