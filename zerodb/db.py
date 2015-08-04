@@ -190,7 +190,7 @@ class DB(object):
         """
 
         # ZODB doesn't like unicode here
-        username = str(username)
+        username = username and str(username)
         password = str(password)
 
         if isinstance(sock, basestring):
