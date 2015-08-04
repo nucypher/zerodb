@@ -7,6 +7,7 @@ INSTALL_REQUIRES = [
     'ZODB',
     'zope.index',
     'repoze.catalog',
+    'lz4',
     'zc.zlibstorage',
     'pycrypto',
     'click',
