@@ -1,5 +1,6 @@
 from zc.zlibstorage import ZlibStorage
 import logging
+from zerodb.transform import encrypt, decrypt, compress, decompress
 from zerodb.util.debug import debug_loads
 
 
@@ -12,21 +13,16 @@ class TransformingStorage(ZlibStorage):
     def __init__(self, base, *args, **kw):
         """
         :param base: Storage to transform
-        :param cipher: Encryptor to use (see zerodb.crypto)
         :param bool debug: Output debug log messages
         """
         self.debug = kw.pop("debug", False)
-        self.cipher = kw.pop("cipher", None)
         if self.debug:
             self._debug_download_size = 0
             self._debug_download_count = 0
         super(TransformingStorage, self).__init__(base, *args, **kw)
 
-        if self.cipher:
-            _transform = self._transform
-            _untransform = self._untransform
-            self._transform = lambda data: self.cipher.encrypt(_transform(data))
-            self._untransform = lambda data: _untransform(self.cipher.decrypt(data))
+        self._transform = lambda data: encrypt(compress(data))
+        self._untransform = lambda data: decompress(decrypt(data))
 
     def load(self, oid, version=''):
         """

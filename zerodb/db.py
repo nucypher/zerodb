@@ -5,18 +5,21 @@ import threading
 import transaction
 
 from Crypto import Random
+from hashlib import sha256
 from repoze.catalog.query import optimize
 from ZEO import auth
 from zerodb.permissions import elliptic
 
 from zerodb.catalog.query import And, Eq
-from zerodb.crypto.aes import AES
-from zerodb.crypto import sha256
 from zerodb import models
 from zerodb.models.exceptions import ModelException
 from zerodb.permissions import subdb
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
+
+from zerodb.transform.compress_lz4 import lz4_compressor
+from zerodb.transform.encrypt_aes import AES256Encrypter
+from zerodb.transform import init_crypto
 
 
 class DbModel(object):
@@ -176,7 +179,6 @@ class DB(object):
     """
 
     db_factory = subdb.DB
-    cipher_factory = AES
     auth_module = elliptic
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
@@ -202,7 +204,9 @@ class DB(object):
         if self.auth_module.__module_name__ not in auth._auth_modules:
             self.auth_module.register_auth()
         if not username:
-            username = sha256("username" + sha256(password))
+            username = sha256("username" + sha256(password).digest()).digest()
+
+        self._init_default_crypto(passphrase=password)
 
         # Store all the arguments necessary for login in this instance
         self.__storage_kwargs = {
@@ -210,7 +214,6 @@ class DB(object):
                 "username": username,
                 "password": password,
                 "realm": realm,
-                "cipher": DB.cipher_factory(password),
                 "debug": debug}
 
         self.__db_kwargs = {
@@ -225,6 +228,11 @@ class DB(object):
 
         self._init_db()
         self._models = {}
+
+    def _init_default_crypto(self, passphrase=None):
+        AES256Encrypter.register_class(default=True)
+        lz4_compressor.register(default=True)
+        init_crypto(passphrase=passphrase)
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""

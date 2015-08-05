@@ -78,8 +78,7 @@ def client_storage(sock, *args, **kw):
         sock = str(sock)
     TransformingStorage = kw.pop('transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)
-    cipher = kw.pop("cipher", None)
-    return TransformingStorage(batch.BatchClientStorage(sock, *args, **kw), cipher=cipher, debug=debug)
+    return TransformingStorage(batch.BatchClientStorage(sock, *args, **kw), debug=debug)
 
 
 def prefetch(objs):
