@@ -177,7 +177,7 @@ class ReKey(object):
             priv = priv.priv
         if isinstance(pub, Key):
             pub = pub.pub
-        key = AFGHProxyReEncryption.generateReEncryptionKey(pub, priv)
+        key = AFGHProxyReEncryption.generateReEncryptionKey(pub.duplicate(), priv.duplicate())
         return cls(key)
 
     def dump(self):

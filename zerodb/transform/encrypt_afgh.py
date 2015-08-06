@@ -55,6 +55,8 @@ class AFGHEncrypter(CommonEncrypter):
         adata = edata[len_kdata + 2:-self.iv_size]
         iv = edata[-self.iv_size:]
         aes_key = self._decrypt_method(kdata)
+        if len(aes_key) != self.aes_key_size:
+            raise WrongKeyError("Data couldn't be decrypted. Probably your key is wrong")
         aes_cipher = CryptoAES.new(aes_key, self.aes_mode, iv)
         datah = aes_cipher.decrypt(adata)
         h = datah[-self.hash_size:]
@@ -64,6 +66,12 @@ class AFGHEncrypter(CommonEncrypter):
         else:
             raise WrongKeyError("Data couldn't be decrypted. Probably your key is wrong")
 
+    def get_pubkey(self):
+        return self.afgh_key.dump_pub()
+
+    def get_re_key(self, pub):
+        return self.afgh_key.re_key(pub).dump()
+
 
 class AFGHEncrypterRe(AFGHEncrypter):
     name = "afgh2-aes"
@@ -71,3 +79,23 @@ class AFGHEncrypterRe(AFGHEncrypter):
 
     def _encrypt(self, data):
         raise NotImplementedError("This is used only to decrypt re-encrypted data")
+
+
+class AFGHReEncryption(object):
+    sig1 = ".eafgh1-aes$"
+    sig2 = ".eafgh2-aes$"
+
+    def __init__(self, re_key_dump):
+        self.key = afgh_pre.ReKey.load(re_key_dump)
+
+    def reencrypt(self, edata):
+        if edata.startswith(self.sig1):
+            edata = edata[len(self.sig1):]
+            len_kdata, = struct.unpack("H", edata[:2])
+            kdata = edata[2:len_kdata + 2]
+            tail = edata[len_kdata + 2:]
+            kdata = self.key.reencrypt(kdata)
+            len_kdata = struct.pack("H", len(kdata))
+            return self.sig2 + len_kdata + kdata + tail
+        else:
+            raise ValueError("Not encrypted with AFGH algoithm")

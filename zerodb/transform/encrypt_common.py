@@ -36,9 +36,12 @@ class CommonEncrypter(object):
             return data
 
     def register(self):
-        _gsm.registerUtility(self, name=self.name)
-        if _gsm.getUtility(IEncrypterClass) is self.__class__:
-            _gsm.registerUtility(self)
+        try:
+            if _gsm.getUtility(IEncrypterClass) is self.__class__:
+                _gsm.registerUtility(self)
+            _gsm.registerUtility(self, name=self.name)
+        except ComponentLookupError:
+            pass
 
     @classmethod
     def register_class(self, default=False):
