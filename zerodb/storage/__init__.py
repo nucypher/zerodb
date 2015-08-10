@@ -5,13 +5,14 @@ import ZEO.zrpc.error
 from Crypto.Random import atfork
 
 import batch
+import premade
 import transforming
 
 # TODO when it comes to the point we need to,
 # we'll have to configure which classes to use
 # with Zope interfaces
 
-ServerStorage = batch.ZEOBatchStorage
+ServerStorage = premade.DefaultServerStorage
 
 
 class StorageServer(BaseStorageServer):

@@ -1,11 +1,10 @@
 import itertools
 import logging
-from ZEO.StorageServer import ZEOStorage
 from ZEO.ClientStorage import ClientStorage
 from ZEO.Exceptions import ClientDisconnected
 
 
-class ZEOBatchStorage(ZEOStorage):
+class ZEOBatchStorage(object):
     """
     ZEOStorage which loadEx object can return many oids at once
     """
@@ -19,8 +18,6 @@ class ZEOBatchStorage(ZEOStorage):
         :rtype: list
         """
         return [self.loadEx(oid) for oid in oids]
-
-    extensions = ZEOStorage.extensions + [loadBulk]
 
 
 class BatchClientStorage(ClientStorage):
