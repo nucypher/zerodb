@@ -1,5 +1,6 @@
 from zc.zlibstorage import ZlibStorage
 import logging
+import zope.interface
 from zerodb.transform import encrypt, decrypt, compress, decompress
 from zerodb.util.debug import debug_loads
 
@@ -15,11 +16,21 @@ class TransformingStorage(ZlibStorage):
         :param base: Storage to transform
         :param bool debug: Output debug log messages
         """
+        self.base = base
+
         self.debug = kw.pop("debug", False)
         if self.debug:
             self._debug_download_size = 0
             self._debug_download_count = 0
-        super(TransformingStorage, self).__init__(base, *args, **kw)
+
+        for name in self.copied_methods:
+            v = getattr(base, name, None)
+            if v is not None:
+                setattr(self, name, v)
+
+        zope.interface.directlyProvides(self, zope.interface.providedBy(base))
+
+        base.registerDB(self)
 
         self._transform = lambda data: encrypt(compress(data))
         self._untransform = lambda data: decompress(decrypt(data))
