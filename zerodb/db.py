@@ -7,7 +7,6 @@ import transaction
 from Crypto import Random
 from hashlib import sha256
 from repoze.catalog.query import optimize
-from ZEO import auth
 from zerodb.permissions import elliptic
 
 from zerodb.catalog.query import And, Eq
@@ -201,8 +200,9 @@ class DB(object):
             assert len(sock) == 2
             sock = str(sock[0]), int(sock[1])
 
-        if self.auth_module.__module_name__ not in auth._auth_modules:
-            self.auth_module.register_auth()
+        self.auth_module = kw.pop("auth_module", self.auth_module)
+
+        self.auth_module.register_auth()
         if not username:
             username = sha256("username" + sha256(password).digest()).digest()
 

@@ -71,7 +71,7 @@ class StorageClass(ServerStorage):
 
     def setup_delegation(self):
         # We use insert a hook to create a no-write root here
-        ServerStorage.setup_delegation(self)
+        super(StorageClass, self).setup_delegation()
         create_root(self.storage)
 
     def _check_permissions(self, data, oid=None):

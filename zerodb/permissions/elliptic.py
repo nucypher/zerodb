@@ -3,6 +3,7 @@ Module for auth with elliptic curve cryptography
 """
 
 import struct
+from ZEO import auth
 from ZEO.auth.base import Client as BaseClient
 from ZEO.auth import register_module
 from ZEO.Exceptions import AuthError
@@ -16,7 +17,7 @@ from zerodb.crypto import ecc
 __module_name__ = "ecc_auth"
 
 
-class StorageClass(subdb.StorageClass):
+class ServerStorageMixin(object):
 
     def auth_get_challenge(self):
         """Return realm, challenge, and nonce."""
@@ -47,7 +48,9 @@ class StorageClass(subdb.StorageClass):
             self.user_id = struct.pack(self.database.uid_pack, user_id)
         return authenticated
 
-    extensions = [auth_get_challenge, auth_response] + subdb.StorageClass.extensions
+
+class StorageClass(ServerStorageMixin, subdb.StorageClass):
+    pass
 
 
 class Client(BaseClient):
@@ -72,4 +75,5 @@ class Client(BaseClient):
 
 
 def register_auth():
-    register_module(__module_name__, StorageClass, Client, base.PermissionsDatabase)
+    if __module_name__ not in auth._auth_modules:
+        register_module(__module_name__, StorageClass, Client, base.PermissionsDatabase)
