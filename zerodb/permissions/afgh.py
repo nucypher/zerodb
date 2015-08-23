@@ -1,13 +1,21 @@
 import struct
 import transaction
+from cachetools import TTLCache
 from ZEO import auth
 
 import base
 import subdb
+# from zerodb.tranform import decrypt
 from elliptic import ServerStorageMixin, Client
 from ZEO.Exceptions import StorageError
+from zerodb.transform.encrypt_afgh import AFGHReEncryption
 
 __module_name__ = "afgh_elliptic_auth"
+
+PRE_CACHE_SIZE = 10000
+PRE_CACHE_TTL = 3600
+
+pre_cache = TTLCache(PRE_CACHE_SIZE, PRE_CACHE_TTL)
 
 
 class StorageClass(ServerStorageMixin, subdb.StorageClass):
@@ -57,9 +65,7 @@ class StorageClass(ServerStorageMixin, subdb.StorageClass):
 
         root = self.storage.load(u.root, '')
 
-        # Now root is encrypted with user's key, need to re-encrypt for us
-
-        return root
+        return self._reencrypt(root, user)
 
     def storea(self, oid, serial, data, id):
         raise NotImplementedError("We implement sharing read-only first")
@@ -71,12 +77,23 @@ class StorageClass(ServerStorageMixin, subdb.StorageClass):
             return data[:-len(self.user_id)], tid
 
         else:
+            return self._reencrypt(data[:-len(self.user_id)], uid), tid
+
+    def _reencrypt(self, data, uid):
+        if isinstance(uid, basestring):
             uid = struct.unpack(self.database.uid_pack, uid)[0]
-            if not uid in self.allowed_dbs:
-                raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, self.user_id.encode("hex")))
-            # To be continued
-            # - in-memmory cache of opened proxy re-encryption keys
-            # - reencrypt on the fly
+        this_user = self.database.db_root["users"][struct.unpack(self.database.uid_pack, self.user_id)[0]]
+        if not uid in this_user.allowed_dbs:
+            raise StorageError("Attempt to access encrypted data of others by <%s>" % self.user_id.encode("hex"))
+
+        # Prepare reencryption key
+        re_dump = this_user.allowed_dbs[uid]
+        re_key = pre_cache.get(re_dump, None)
+        if not re_key:
+            re_key = AFGHReEncryption(re_dump)
+            pre_cache[re_dump] = re_key
+
+        return re_key.reencrypt(data)
 
 
 def register_auth():
