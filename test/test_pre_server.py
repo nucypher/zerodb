@@ -4,7 +4,6 @@ from os import path
 from zerodb.storage import ZEOServer
 
 import zerodb
-from zerodb.permissions import afgh
 from db import create_objects_and_close
 
 
@@ -20,16 +19,17 @@ ZEO_CONFIG = """<zeo>
 </filestorage>"""
 
 
-class ReDB(zerodb.DB):
-    auth_module = afgh
-
-
 @pytest.fixture(scope="module")
 def zeo_server_pre(request, pass_file, tempdir):
     """
     :return: Temporary UNIX socket
     :rtype: str
     """
+    from zerodb.permissions import afgh
+
+    class ReDB(zerodb.DB):
+        auth_module = afgh
+
     afgh.register_auth()
 
     sock = path.join(tempdir, "zeosocket_auth_pre")
