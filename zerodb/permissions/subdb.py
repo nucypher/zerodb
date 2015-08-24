@@ -25,6 +25,7 @@ def create_root(storage, oid=z64, check_new=True):
     :param str oid: Object id to give to the root (z64 is global root)
     :param bool check_new: If True, do nothing if the root exists
     """
+
     if check_new:
         try:
             storage.load(oid, '')

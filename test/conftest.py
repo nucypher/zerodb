@@ -12,8 +12,10 @@ from zerodb.storage import ZEOServer
 from db import TEST_PASSPHRASE
 from db import create_objects_and_close
 TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
+TEST_PUBKEY_3 = ecc.private(TEST_PASSPHRASE + " third").get_pubkey()
 TEST_PERMISSIONS = """realm ZERO
-root:%s""" % TEST_PUBKEY.encode("hex")
+root:%s
+third:%s""" % (TEST_PUBKEY.encode("hex"), TEST_PUBKEY_3.encode("hex"))
 
 ZEO_CONFIG = """<zeo>
   address %(sock)s

@@ -17,6 +17,7 @@ INSTALL_REQUIRES = [
     'jsonpickle',
     'JPype1',
     'pyelliptic',
+    'cachetools',
     'ecdsa']
 
 setup(

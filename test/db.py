@@ -47,8 +47,8 @@ class Salary(Model):
     department_id = fields.Field(virtual=lambda o: o.department._v_uid)  # Department ID
 
 
-def create_objects_and_close(sock, count=200):
-    db = zerodb.DB(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
+    db = dbclass(sock, username="root", password=TEST_PASSPHRASE, debug=True)
     with transaction.manager:
         # Initialize departments
         departments = [Department(name="Mobile"), Department(name="Web"), Department(name="Tools"),

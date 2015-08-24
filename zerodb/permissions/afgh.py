@@ -68,7 +68,11 @@ class StorageClass(ServerStorageMixin, subdb.StorageClass):
         return self._reencrypt(root, user)
 
     def storea(self, oid, serial, data, id):
-        raise NotImplementedError("We implement sharing read-only first")
+        try:
+            return subdb.StorageClass.storea(self, oid, serial, data, id)
+        except StorageError:
+            # We end up here if we try to write data of others
+            raise NotImplementedError("We implement sharing read-only first")
 
     def loadEx(self, oid):
         data, tid = super(StorageClass, self).loadEx(oid)
