@@ -5,7 +5,7 @@ from ZEO import auth
 
 import base
 import subdb
-# from zerodb.tranform import decrypt
+import zerodb.storage
 from elliptic import ServerStorageMixin, Client
 from ZEO.Exceptions import StorageError
 from zerodb.transform.encrypt_afgh import AFGHReEncryption
@@ -75,7 +75,7 @@ class StorageClass(ServerStorageMixin, subdb.StorageClass):
             raise NotImplementedError("We implement sharing read-only first")
 
     def loadEx(self, oid):
-        data, tid = super(StorageClass, self).loadEx(oid)
+        data, tid = zerodb.storage.ServerStorage.loadEx(self, oid)
         uid = data[-len(self.user_id):]
         if self.user_id == uid:
             return data[:-len(self.user_id)], tid

@@ -5,7 +5,10 @@ from zerodb.storage import ZEOServer
 
 import zerodb
 from db import create_objects_and_close
+from db import TEST_PASSPHRASE
+from db import Page
 
+DB = None
 
 ZEO_CONFIG = """<zeo>
   address %(sock)s
@@ -25,10 +28,14 @@ def zeo_server_pre(request, pass_file, tempdir):
     :return: Temporary UNIX socket
     :rtype: str
     """
+    global DB
+
     from zerodb.permissions import afgh
 
     class ReDB(zerodb.DB):
         auth_module = afgh
+
+    DB = ReDB
 
     afgh.register_auth()
 
@@ -55,4 +62,7 @@ def zeo_server_pre(request, pass_file, tempdir):
 
 
 def test_zeo(zeo_server_pre):
-    pass
+    # Can we read our database ourselves?
+    db = DB(zeo_server_pre, username="root", password=TEST_PASSPHRASE, debug=True)
+    assert len(db[Page]) == 21
+    db.disconnect()
