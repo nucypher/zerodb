@@ -15,14 +15,12 @@ INSTALL_REQUIRES = [
     'flask',
     'requests',
     'jsonpickle',
-    'JPype1',
     'pyelliptic',
-    'cachetools',
     'ecdsa']
 
 setup(
     name="zerodb",
-    version="0.93",
+    version="0.94",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
