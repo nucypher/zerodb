@@ -4,6 +4,7 @@ import threading
 import time
 import transaction
 import warnings
+from copy import copy
 from ZODB.DB import Pickler, BytesIO, _protocol, z64,\
         ConnectionPool, KeyedConnectionPool, IMVCCStorage
 from ZODB.DB import DB as BaseDB
@@ -193,6 +194,8 @@ class DB(BaseDB):
           - `xrefs` - Boolian flag indicating whether implicit cross-database
             references are allowed
         """
+        storage_args = copy(storage_args)
+
         if isinstance(storage, six.string_types):
             import ZODB.FileStorage
             storage = ZODB.FileStorage.FileStorage(storage, **storage_args)
@@ -236,10 +239,7 @@ class DB(BaseDB):
         else:
             temp_storage = storage
         try:
-            oid, new = temp_storage.get_root_id()
-            if new:
-                create_root(temp_storage, oid=oid, check_new=False)
-            self._root_oid = oid
+            self._init_root(temp_storage, **storage_args)
         finally:
             if IMVCCStorage.providedBy(temp_storage):
                 temp_storage.release()
@@ -256,3 +256,9 @@ class DB(BaseDB):
         self.xrefs = xrefs
 
         self.large_record_size = large_record_size
+
+    def _init_root(self, storage, **kw):
+        oid, new = storage.get_root_id()
+        if new:
+            create_root(storage, oid=oid, check_new=False)
+        self._root_oid = oid

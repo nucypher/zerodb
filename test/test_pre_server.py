@@ -33,7 +33,9 @@ def zeo_server_pre(request, pass_file, tempdir):
     from zerodb.permissions import afgh
 
     class ReDB(zerodb.DB):
+        # This should go into a separate module, along with afgh plugin
         auth_module = afgh
+        db_factory = afgh.DbFactory
 
     DB = ReDB
 

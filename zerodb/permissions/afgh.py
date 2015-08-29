@@ -18,6 +18,18 @@ PRE_CACHE_TTL = 3600
 pre_cache = TTLCache(PRE_CACHE_SIZE, PRE_CACHE_TTL)
 
 
+class DbFactory(subdb.DB):
+    def _init_root(self, storage, **kw):
+        if 'shared_user' in kw:
+            uid = kw['shared_user']
+            self._root_oid = storage.get_shared_root_id(uid)
+        else:
+            oid, new = storage.get_root_id()
+            if new:
+                subdb.create_root(storage, oid=oid, check_new=False)
+            self._root_oid = oid
+
+
 class StorageClass(ServerStorageMixin, subdb.StorageClass):
 
     def share_db(self, username, re_key):
@@ -63,9 +75,7 @@ class StorageClass(ServerStorageMixin, subdb.StorageClass):
         if this_uid not in getattr(u, "allowed_dbs", {}):
             raise KeyError("Access denied")
 
-        root = self.storage.load(u.root, '')
-
-        return self._reencrypt(root, user)
+        return u.root
 
     def storea(self, oid, serial, data, id):
         try:
