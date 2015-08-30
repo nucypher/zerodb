@@ -1,5 +1,6 @@
 import pytest
-from zerodb.crypto import AES, rand
+from zerodb.crypto import rand
+from zerodb.transform.encrypt_aes import AES256Encrypter as AES
 from zerodb.crypto.exceptions import WrongKeyError
 
 TEST_TEXT = "hello world"

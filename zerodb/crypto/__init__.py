@@ -1,4 +1,3 @@
-from aes import AES
 from Crypto.Hash import SHA256, SHA512
 from Crypto import Random
 
