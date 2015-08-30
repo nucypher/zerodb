@@ -179,6 +179,8 @@ class DB(object):
 
     db_factory = subdb.DB
     auth_module = elliptic
+    encrypter = AES256Encrypter
+    compressor = lz4_compressor
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
         """
@@ -230,8 +232,8 @@ class DB(object):
         self._models = {}
 
     def _init_default_crypto(self, passphrase=None):
-        AES256Encrypter.register_class(default=True)
-        lz4_compressor.register(default=True)
+        self.encrypter.register_class(default=True)
+        self.compressor.register(default=True)
         init_crypto(passphrase=passphrase)
 
     def _init_db(self):
