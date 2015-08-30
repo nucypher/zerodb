@@ -16,7 +16,6 @@ from zerodb.permissions import subdb
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
 
-from zerodb.transform.compress_lz4 import lz4_compressor
 from zerodb.transform.encrypt_aes import AES256Encrypter
 from zerodb.transform import init_crypto
 
@@ -180,7 +179,7 @@ class DB(object):
     db_factory = subdb.DB
     auth_module = elliptic
     encrypter = AES256Encrypter
-    compressor = lz4_compressor
+    compressor = None
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
         """
@@ -232,8 +231,10 @@ class DB(object):
         self._models = {}
 
     def _init_default_crypto(self, passphrase=None):
-        self.encrypter.register_class(default=True)
-        self.compressor.register(default=True)
+        if self.encrypter:
+            self.encrypter.register_class(default=True)
+        if self.compressor:
+            self.compressor.register(default=True)
         init_crypto(passphrase=passphrase)
 
     def _init_db(self):
