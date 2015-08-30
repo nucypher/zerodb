@@ -1,6 +1,0 @@
-Here we play with bucket sizes and test the private db using zlibstorage for "encryption" (not quite encryption, but the server never unpacks) and full text search as an example of queries.
-
-Good thing here is that computation is fully the client's responsibility. So, a million clients connecting in parallel would, most probably, still have the same performance.
-
-Using lkml email archive for tests. So far, 1 s per query (can be optimized by optimizing bucket sizes of other, untouched trees)
-https://dl.dropboxusercontent.com/u/8278261/lkml.tar.gz

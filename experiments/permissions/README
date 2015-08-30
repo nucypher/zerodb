@@ -1,3 +1,0 @@
-Here I make it possible to have granular permissions for the users connecting to the DB.
-
-Apparently ZODB doesn't allow that by default (and if you connect, you have all the permissions to everything). So, let's fix that
