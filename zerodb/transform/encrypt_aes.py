@@ -1,5 +1,5 @@
-from Crypto.Cipher import AES as CryptoAES
 from Crypto import Random
+from M2Crypto.EVP import Cipher
 from hashlib import sha256
 
 from encrypt_common import CommonEncrypter
@@ -15,7 +15,7 @@ class AES256Encrypter(CommonEncrypter):
     iv_size = 16
     key_size = 32
     hash_size = 32
-    mode = CryptoAES.MODE_CFB
+    alg = "aes_256_ofb"
 
     def _init_encryption(self, passphrase=None, key=None):
         """
@@ -37,10 +37,12 @@ class AES256Encrypter(CommonEncrypter):
         :rtype: str
         """
         iv = self._rand.read(self.iv_size)
-        cipher = CryptoAES.new(self.key, self.mode, iv)
+        cipher = Cipher(alg=self.alg, key=self.key, iv=iv, op=1)
         h = sha256(data).digest()
-        # with modes other than CFB we'd need to pad/unpad data
-        return cipher.encrypt(data + h) + iv
+        edata = cipher.update(data + h)
+        edata += cipher.final()
+        del cipher
+        return edata + iv
 
     def _decrypt(self, edata):
         """
@@ -50,8 +52,10 @@ class AES256Encrypter(CommonEncrypter):
         """
         data = edata[:-self.iv_size]
         iv = edata[-self.iv_size:]
-        cipher = CryptoAES.new(self.key, self.mode, iv)
-        datah = cipher.decrypt(data)
+        cipher = Cipher(alg=self.alg, key=self.key, iv=iv, op=0)
+        datah = cipher.update(data)
+        datah += cipher.final()
+        del cipher
         h = datah[-self.hash_size:]
         data = datah[:-self.hash_size]
         if h != sha256(data).digest():

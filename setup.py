@@ -10,6 +10,7 @@ INSTALL_REQUIRES = [
     'lz4',
     'zc.zlibstorage',
     'pycrypto',
+    'M2Crypto',
     'click',
     'flask-cors',
     'flask',
