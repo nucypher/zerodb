@@ -1,3 +1,4 @@
+import hashlib
 import six
 import struct
 import threading
@@ -13,7 +14,6 @@ from ZODB.POSException import POSKeyError
 from ZODB.Connection import Connection as BaseConnection
 from ZODB.Connection import RootConvenience
 import base
-from zerodb.crypto import sha256
 from zerodb.storage import ServerStorage
 
 
@@ -69,7 +69,7 @@ class StorageClass(ServerStorage):
             str(self.connection.addr),
             self._get_time(),
             self.noncekey])
-        return sha256(s)
+        return hashlib.sha256(s).digest()
 
     def setup_delegation(self):
         # We use insert a hook to create a no-write root here

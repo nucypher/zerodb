@@ -1,4 +1,5 @@
 import BTrees
+import hashlib
 import persistent
 import transaction
 import ZODB
@@ -6,7 +7,7 @@ import ZODB
 from os import path
 from ZODB import FileStorage
 
-from zerodb.crypto import rand, sha512
+from zerodb.crypto import rand
 from zerodb.intid import IdStore as BaseIdStore
 
 
@@ -36,7 +37,7 @@ class User(persistent.Persistent):
 
 
 def session_key(h_up, nonce):
-    return sha512(h_up + ":" + nonce)
+    return hashlib.sha512(h_up + ":" + nonce).digest()
 
 
 class PermissionsDatabase(object):
