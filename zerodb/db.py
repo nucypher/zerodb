@@ -4,13 +4,12 @@ import os
 import threading
 import transaction
 
-from Crypto import Random
 from hashlib import sha256
 from repoze.catalog.query import optimize
 from zerodb.permissions import elliptic
 
-from zerodb.catalog.query import And, Eq
 from zerodb import models
+from zerodb.catalog.query import And, Eq
 from zerodb.models.exceptions import ModelException
 from zerodb.permissions import subdb
 from zerodb.storage import client_storage
@@ -221,8 +220,6 @@ class DB(object):
                 "pool_size": pool_size,
                 "pool_timeout": pool_timeout}
         self.__db_kwargs.update(kw)
-
-        Random.atfork()
 
         # For multi-threading
         self.__pid = os.getpid()

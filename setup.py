@@ -9,7 +9,6 @@ INSTALL_REQUIRES = [
     'repoze.catalog',
     'lz4',
     'zc.zlibstorage',
-    'pycrypto',
     'M2Crypto',
     'click',
     'flask-cors',

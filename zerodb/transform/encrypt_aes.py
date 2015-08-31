@@ -1,8 +1,8 @@
-from Crypto import Random
 from M2Crypto.EVP import Cipher
 from hashlib import sha256
 
 from encrypt_common import CommonEncrypter
+from zerodb.crypto import rand
 from zerodb.crypto.exceptions import WrongKeyError
 
 
@@ -28,7 +28,6 @@ class AES256Encrypter(CommonEncrypter):
         elif key is not None:
             assert len(key) == self.key_size
             self.key = key
-        self._rand = Random.new()
 
     def _encrypt(self, data):
         """
@@ -36,7 +35,7 @@ class AES256Encrypter(CommonEncrypter):
         :return: Encrypted data with hash inside and IV outside
         :rtype: str
         """
-        iv = self._rand.read(self.iv_size)
+        iv = rand(self.iv_size)
         cipher = Cipher(alg=self.alg, key=self.key, iv=iv, op=1)
         h = sha256(data).digest()
         edata = cipher.update(data + h)

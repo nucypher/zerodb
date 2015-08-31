@@ -1,14 +1,5 @@
-from Crypto import Random
+from os import urandom
 
-_rng = Random.new()
-
-
-def rand(size):
-    """
-    Generate a random string. In a cryptographically secure way
-
-    :param int size: How many bytes to generate
-    :return: Random string
-    :rtype: str
-    """
-    return _rng.read(size)
+# Will be changed when using pypyjs
+# For all other cases, equivalent to urandom
+rand = urandom
