@@ -1,6 +1,23 @@
 #!/bin/bash
 
-if [ ! -d ".tox" ]
+if [ "$1" == "pypy" ]
+then
+    if [ ! -d "download" ]
+    then
+        mkdir download
+        pushd download
+        # We can probably download some other version for non-64 bits
+        # http://pypy.org/download.html#default-with-a-jit-compiler
+        wget https://bitbucket.org/pypy/pypy/downloads/pypy-2.6.0-linux64.tar.bz2 -O pypy.tar.bz2
+        tar -xvjpf pypy.tar.bz2
+        popd
+    fi
+    TOX_E="pypy"
+else
+    TOX_E="py27"
+fi
+
+if [ ! -d ".tox/$TOX_E" ]
 then
     if [ ! -e "$(which tox)" ]
     then
@@ -8,11 +25,12 @@ then
         echo "Please do:"
         echo "  sudo pip install tox"
     else
-        tox --develop --notest
-        if [ ! -e "activate" ]
+        tox --develop --notest -e $TOX_E
+        if [ -e "activate" ]
         then
-            ln -s .tox/py27/bin/activate .
+            rm activate
         fi
+        ln -s ".tox/$TOX_E/bin/activate" .
     fi
 else
     echo "All done already"
