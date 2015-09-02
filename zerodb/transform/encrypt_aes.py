@@ -1,4 +1,4 @@
-from M2Crypto.EVP import Cipher
+from Crypto.Cipher import AES
 from hashlib import sha256
 
 from encrypt_common import CommonEncrypter
@@ -15,7 +15,7 @@ class AES256Encrypter(CommonEncrypter):
     iv_size = 16
     key_size = 32
     hash_size = 32
-    alg = "aes_256_ofb"
+    mode = AES.MODE_OFB
 
     def _init_encryption(self, passphrase=None, key=None):
         """
@@ -36,12 +36,9 @@ class AES256Encrypter(CommonEncrypter):
         :rtype: str
         """
         iv = rand(self.iv_size)
-        cipher = Cipher(alg=self.alg, key=self.key, iv=iv, op=1)
+        cipher = AES.new(self.key, self.mode, iv)
         h = sha256(data).digest()
-        edata = cipher.update(data + h)
-        edata += cipher.final()
-        del cipher
-        return edata + iv
+        return cipher.encrypt(data + h) + iv
 
     def _decrypt(self, edata):
         """
@@ -51,10 +48,8 @@ class AES256Encrypter(CommonEncrypter):
         """
         data = edata[:-self.iv_size]
         iv = edata[-self.iv_size:]
-        cipher = Cipher(alg=self.alg, key=self.key, iv=iv, op=0)
-        datah = cipher.update(data)
-        datah += cipher.final()
-        del cipher
+        cipher = AES.new(self.key, self.mode, iv)
+        datah = cipher.decrypt(data)
         h = datah[-self.hash_size:]
         data = datah[:-self.hash_size]
         if h != sha256(data).digest():

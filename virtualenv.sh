@@ -26,10 +26,7 @@ then
         echo "  sudo pip install tox"
     else
         tox --develop --notest -e $TOX_E
-        if [ -e "activate" ]
-        then
-            rm activate
-        fi
+        rm activate
         ln -s ".tox/$TOX_E/bin/activate" .
     fi
 else
