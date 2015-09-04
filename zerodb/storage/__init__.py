@@ -86,6 +86,6 @@ def prefetch(objs):
     """
     objs = filter(lambda x: hasattr(x, "_p_oid"), objs)
     if objs:
-        oids = [y._p_oid for y in objs]
+        oids = [y._p_oid for y in objs if y._p_oid is not None]
         if objs[0]._p_jar:
             objs[0]._p_jar._db._storage.loadBulk(oids)
