@@ -2,8 +2,8 @@ from BTrees.Interfaces import IObjectObjectBTreeModule as IBTreeInterface
 import BTrees.OOBTree as TreeModule
 from zope.interface import moduleProvides
 
-max_internal_size = 100000
-max_leaf_size = 50000
+max_internal_size = 1000
+max_leaf_size = 500
 
 
 class BTree(TreeModule.BTree):
