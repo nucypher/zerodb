@@ -218,7 +218,9 @@ class DB(object):
 
         self.__db_kwargs = {
                 "pool_size": pool_size,
-                "pool_timeout": pool_timeout}
+                "pool_timeout": pool_timeout,
+                "cache_size": 50000,
+                "cache_size_bytes": 2 ** 30}
         self.__db_kwargs.update(kw)
 
         # For multi-threading
