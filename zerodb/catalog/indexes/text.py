@@ -9,6 +9,7 @@ from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.storage import prefetch
+from zerodb.catalog.indexes.pwid import PersistentWid
 
 
 class Lexicon(_Lexicon):
@@ -76,6 +77,65 @@ class OkapiIndex(_OkapiIndex):
         except AttributeError:
             # upgrade wordCount to Length object
             self.wordCount = Length(len(self._wordinfo))
+
+    def index_doc(self, docid, text):
+        if docid in self._docwords:
+            return self._reindex_doc(docid, text)
+        wids = self._lexicon.sourceToWordIds(text)
+        wid2weight, docweight = self._get_frequencies(wids)
+        self._mass_add_wordinfo(wid2weight, docid)
+        self._docweight[docid] = docweight
+        self._docwords[docid] = PersistentWid.encode_wid(wids)
+        try:
+            self.documentCount.change(1)
+        except AttributeError:
+            # upgrade documentCount to Length object
+            self.documentCount = Length.Length(len(self._docweight))
+        count = len(wids)
+        self._change_doc_len(count)
+        return count
+
+    def _reindex_doc(self, docid, text):
+        # Touch as few docid->w(docid, score) maps in ._wordinfo as possible.
+        self._change_doc_len(-self._docweight[docid])
+
+        old_wids = self.get_words(docid)
+        old_wid2w, old_docw = self._get_frequencies(old_wids)
+
+        new_wids = self._lexicon.sourceToWordIds(text)
+        new_wid2w, new_docw = self._get_frequencies(new_wids)
+
+        old_widset = self.family.IF.TreeSet(old_wid2w.keys())
+        new_widset = self.family.IF.TreeSet(new_wid2w.keys())
+
+        IF = self.family.IF
+        in_both_widset = IF.intersection(old_widset, new_widset)
+        only_old_widset = IF.difference(old_widset, in_both_widset)
+        only_new_widset = IF.difference(new_widset, in_both_widset)
+        del old_widset, new_widset
+
+        for wid in only_old_widset.keys():
+            self._del_wordinfo(wid, docid)
+
+        for wid in only_new_widset.keys():
+            self._add_wordinfo(wid, new_wid2w[wid], docid)
+
+        for wid in in_both_widset.keys():
+            # For the Okapi indexer, the "if" will trigger only for words
+            # whose counts have changed.  For the cosine indexer, the "if"
+            # may trigger for every wid, since W(d) probably changed and
+            # W(d) is divided into every score.
+            newscore = new_wid2w[wid]
+            if old_wid2w[wid] != newscore:
+                self._add_wordinfo(wid, newscore, docid)
+
+        self._docweight[docid] = new_docw
+        self._docwords[docid] = PersistentWid.encode_wid(new_wids)
+        return len(new_wids)
+
+    def get_words(self, docid):
+        """Return a list of the wordids for a given docid."""
+        return self._docwords[docid].decode_wid()
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
