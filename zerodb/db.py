@@ -117,7 +117,7 @@ class DbModel(object):
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
 
-    def query(self, queryobj=None, skip=None, limit=None, **kw):
+    def query(self, queryobj=None, skip=None, limit=None, prefetch=True, **kw):
         """
         Smart proxy to catalog's query.
         One can add <field=...> keyword arguments to make queries where fields
@@ -160,7 +160,7 @@ class DbModel(object):
         # No reason to return an iterator as long as we have all pre-loaded
         objects = [self._objects[uid] for uid in qids]
         # Pre-load them all (these are lazy objects)
-        if objects:
+        if objects and prefetch:
             self._db._storage.loadBulk([o._p_oid for o in objects])
         for obj, uid in itertools.izip(objects, qids):
             obj._v_uid = uid
