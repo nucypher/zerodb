@@ -8,7 +8,7 @@ from zope.index.text.okapiindex import OkapiIndex as _OkapiIndex
 from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
-from zerodb.storage import prefetch
+from zerodb.storage import prefetch, prefetch_trees
 from zerodb.catalog.indexes.pwid import PersistentWid
 
 
@@ -58,8 +58,7 @@ class OkapiIndex(_OkapiIndex):
         get_doc2score = self._wordinfo.get
         new_word_count = 0
 
-        # oids of all dictionaries (or BTree tops) to prefetch
-        # do we get them? - test
+        # This must be replaced with parallel tree traversal
         prefetch(map(get_doc2score, wid2weight.keys()))
 
         for wid, weight in wid2weight.items():
@@ -136,6 +135,10 @@ class OkapiIndex(_OkapiIndex):
     def get_words(self, docid):
         """Return a list of the wordids for a given docid."""
         return self._docwords[docid].decode_wid()
+
+    def _search_wids(self, wids):
+        prefetch_trees([self._wordinfo[wid] for wid in wids])
+        return super(OkapiIndex, self)._search_wids(wids)
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):

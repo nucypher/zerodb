@@ -2,6 +2,7 @@ from ZEO.StorageServer import StorageServer as BaseStorageServer
 from ZEO.runzeo import ZEOServer as BaseZEOServer
 from ZEO.runzeo import ZEOOptions
 import ZEO.zrpc.error
+from persistent import Persistent
 
 import batch
 import premade
@@ -89,3 +90,25 @@ def prefetch(objs):
         oids = [y._p_oid for y in objs if y._p_oid is not None]
         if objs[0]._p_jar:
             objs[0]._p_jar._db._storage.loadBulk(oids)
+
+
+def prefetch_trees(trees, depth=10, bucket_types=()):
+    """
+    Bulk-fetch specified trees or buckets in logarithmic number of steps
+    """
+    if len(trees) == 0 or depth == 0:
+        # If someone inserts an infinite loop, we shouldn't go for that
+        return
+
+    trees = [t for t in trees if isinstance(t, Persistent)]
+
+    prefetch(trees)
+
+    if not bucket_types:
+        bucket_types = tuple(set([t._bucket_type for t in trees if hasattr(t, "_bucket_type")]))
+
+    children = []
+    for tree in trees:
+        children += [o for o in tree.__getstate__()[0] if isinstance(o, bucket_types)]
+
+    prefetch_trees(children, depth=(depth - 1), bucket_types=bucket_types)
