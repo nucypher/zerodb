@@ -92,15 +92,20 @@ def prefetch(objs):
             objs[0]._p_jar._db._storage.loadBulk(oids)
 
 
-def prefetch_trees(trees, depth=10, bucket_types=()):
+def prefetch_trees(trees, depth=10, bucket_types=(), shallow=True):
     """
     Bulk-fetch specified trees or buckets in logarithmic number of steps
     """
+    trees = [t for t in trees if isinstance(t, Persistent) and hasattr(t, "_p_oid")]
+
     if len(trees) == 0 or depth == 0:
         # If someone inserts an infinite loop, we shouldn't go for that
         return
 
-    trees = [t for t in trees if isinstance(t, Persistent)]
+    if shallow:  # For performance once we have everything in cache
+        cache_load = trees[0]._p_jar._db._storage._cache.load
+        if not [True for o in trees if cache_load(o._p_oid) is None]:
+            return
 
     prefetch(trees)
 
