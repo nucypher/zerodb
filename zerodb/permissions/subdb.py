@@ -90,6 +90,25 @@ class StorageClass(ServerStorage):
         self._check_permissions(data, oid)
         return data[:-len(self.user_id)], tid
 
+    def load(self, oid, version=''):
+        data, tid = ServerStorage.load(self, oid, version)
+        self._check_permissions(data, oid)
+        return data[:-len(self.user_id)], tid
+
+    def loadBefore(self, oid, tid):
+        r = ServerStorage.loadBefore(self, oid, tid)
+        if r is not None:
+            data, serial, after = r
+            self._check_permissions(data, oid)
+            return data[:-len(self.user_id)], serial, after
+        else:
+            return r
+
+    def loadSerial(self, oid, serial):
+        data = ServerStorage.loadSerial(self, oid, serial)
+        self._check_permissions(data, oid)
+        return data[:-len(self.user_id)]
+
     def storea(self, oid, serial, data, id):
         try:
             old_data, old_tid = ServerStorage.loadEx(self, oid)
@@ -145,8 +164,8 @@ class StorageClass(ServerStorage):
     # TODO
     # We certainly need to implement more methods for storage in here
     # (or check if they re-use loadEx):
-    # loadEx, loadBefore, deleteObject, storea, restorea, storeBlobEnd, storeBlobShared,
-    # sendBlob, loadSerial, loadBulk
+    # deleteObject, storea, restorea, storeBlobEnd, storeBlobShared,
+    # sendBlob, loadBulk
 
 
 class Connection(BaseConnection):
