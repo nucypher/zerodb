@@ -2,6 +2,7 @@ from ZEO.StorageServer import StorageServer as BaseStorageServer
 from ZEO.runzeo import ZEOServer as BaseZEOServer
 from ZEO.runzeo import ZEOOptions
 import ZEO.zrpc.error
+from itertools import chain
 from persistent import Persistent
 
 import batch
@@ -110,10 +111,12 @@ def prefetch_trees(trees, depth=10, bucket_types=(), shallow=True):
     prefetch(trees)
 
     if not bucket_types:
-        bucket_types = tuple(set([t._bucket_type for t in trees if hasattr(t, "_bucket_type")]))
+        bucket_types = tuple(set(chain(*[(type(t), t._bucket_type) for t in trees if hasattr(t, "_bucket_type")])))
 
     children = []
     for tree in trees:
-        children += [o for o in tree.__getstate__()[0] if isinstance(o, bucket_types)]
+        state = tree.__getstate__()
+        if state:
+            children += [o for o in state[0] if isinstance(o, bucket_types)]
 
     prefetch_trees(children, depth=(depth - 1), bucket_types=bucket_types)
