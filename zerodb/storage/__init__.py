@@ -120,3 +120,56 @@ def prefetch_trees(trees, depth=10, bucket_types=(), shallow=True):
             children += [o for o in state[0] if isinstance(o, bucket_types)]
 
     prefetch_trees(children, depth=(depth - 1), bucket_types=bucket_types)
+
+
+def btree_state_search(state, key):
+    """
+    Search in raw state of BTree.
+    state = ((branch, key, branch, key, ... , key, branch), 1st_bucket) or None
+    """
+    if not state:
+        return -1, None
+
+    L = (len(state[0]) + 1) / 2
+
+    get_key = lambda i: state[0][i * 2 - 1] if i > 0 else None
+
+    # Copy of python BTree logic
+    lo = 0
+    hi = L
+    i = hi // 2
+    while i > lo:
+        cmp_ = cmp(get_key(i), key)
+        if cmp_ < 0:
+            lo = i
+        elif cmp_ > 0:
+            hi = i
+        else:
+            break
+        i = (lo + hi) // 2
+    return i, state[0][i * 2]
+
+
+def parallel_traversal(trees, keys):
+    """
+    Traverse trees in parallel to fill up cache
+    """
+    if not isinstance(trees, (list, tuple)):
+        to_fetch = [trees]
+        trees = [trees] * len(keys)
+    else:
+        to_fetch = list(set(t for t in trees if isinstance(t, Persistent) and hasattr(t, "_p_oid")))
+
+    prefetch(to_fetch)
+
+    nxt_trees = []
+    nxt_keys = []
+    for key, tree in zip(keys, trees):
+        if isinstance(tree, Persistent) and hasattr(tree, "_bucket_type"):
+            _, nxt = btree_state_search(tree.__getstate__(), key)
+            if isinstance(nxt, (type(tree), tree._bucket_type)):
+                nxt_keys.append(key)
+                nxt_trees.append(nxt)
+
+    if nxt_keys:
+        parallel_traversal(nxt_trees, nxt_keys)

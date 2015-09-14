@@ -3,12 +3,13 @@ from zope.index.text import TextIndex as ZopeTextIndex
 from zope.index.text.lexicon import CaseNormalizer
 from zope.index.text.lexicon import Lexicon as _Lexicon
 from zope.index.text.lexicon import Splitter
+from zope.index.text.lexicon import _text2list
 from zope.index.text.lexicon import StopWordRemover
 from zope.index.text.okapiindex import OkapiIndex as _OkapiIndex
 from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
-from zerodb.storage import prefetch, prefetch_trees
+from zerodb.storage import prefetch, prefetch_trees, parallel_traversal
 from zerodb.catalog.indexes.pwid import PersistentWid
 
 
@@ -21,7 +22,22 @@ class Lexicon(_Lexicon):
         self.wordCount = Length()
         self._pipeline = pipeline
 
-    # TODO ideally, we should do parallel traversal here, however this tree is small, so ok for now
+    def sourceToWordIds(self, text):
+        if text is None:
+            text = ''
+        last = _text2list(text)
+        for element in self._pipeline:
+            last = element.process(last)
+        if not isinstance(self.wordCount, Length):
+            # Make sure wordCount is overridden with a BTrees.Length.Length
+            self.wordCount = Length(self.wordCount())
+        # Strategically unload the length value so that we get the most
+        # recent value written to the database to minimize conflicting wids
+        # Because length is independent, this will load the most
+        # recent value stored, regardless of whether MVCC is enabled
+        self.wordCount._p_deactivate()
+        parallel_traversal(self._wids, last)
+        return list(map(self._getWordIdCreate, last))
 
 
 class OkapiIndex(_OkapiIndex):
@@ -55,12 +71,16 @@ class OkapiIndex(_OkapiIndex):
 
     def _mass_add_wordinfo(self, wid2weight, docid):
         dicttype = type({})
+        # self._wordinfo - IOBTree of docid -> weight trees
         get_doc2score = self._wordinfo.get
         new_word_count = 0
 
-        # This must be replaced with parallel tree traversal
-        prefetch(map(get_doc2score, wid2weight.keys()))
+        # Fill up cache for performance over the network
+        wids = wid2weight.keys()
+        parallel_traversal(self._wordinfo, wids)
+        parallel_traversal(map(get_doc2score, wids), [docid] * len(wids))
 
+        from time import time
         for wid, weight in wid2weight.items():
             doc2score = get_doc2score(wid)
             if doc2score is None:
