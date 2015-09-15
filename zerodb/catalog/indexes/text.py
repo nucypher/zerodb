@@ -1,3 +1,4 @@
+import itertools
 from BTrees.Length import Length
 from zope.index.text import TextIndex as ZopeTextIndex
 from zope.index.text.lexicon import CaseNormalizer
@@ -157,7 +158,16 @@ class OkapiIndex(_OkapiIndex):
         return self._docwords[docid].decode_wid()
 
     def _search_wids(self, wids):
+        # Bulk-fetch all the info we want to use
+        if len(wids) > 1:
+            parallel_traversal(self._wordinfo, wids)
         prefetch_trees([self._wordinfo[wid] for wid in wids])
+
+        docids = list(set(itertools.chain(
+            *[self._wordinfo[wid].keys() for wid in wids])))
+        if len(docids) > 1:
+            parallel_traversal(self._docweight, docids)
+
         return super(OkapiIndex, self)._search_wids(wids)
 
 
