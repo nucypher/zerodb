@@ -11,6 +11,7 @@ test.fs
 *.db.*
 .ropeproject
 .coverage
+/.cache
 /.tox
 /ZeroDB.egg-info
 /zerodb.egg-info
@@ -21,3 +22,5 @@ test.fs
 /download
 /build
 /docs/build
+/zerodb/server.*
+/zerodb/*.pem

@@ -17,6 +17,15 @@ else
     TOX_E="py27"
 fi
 
+if [ ! -e "zerodb/cert.pem" ]
+then
+  echo "Generating new self-signed SSL certificates"
+  echo "Please complete the following..."
+  openssl ecparam -genkey -name secp256k1 -out zerodb/key.pem
+  openssl req -new -key zerodb/key.pem -out zerodb/cert.pem -x509 -days 1000
+  echo "Self-signed SSL certificates generated"
+fi
+
 if [ ! -d ".tox/$TOX_E" ]
 then
     if [ ! -e "$(which tox)" ]
@@ -34,3 +43,4 @@ else
     echo "  source activate -- activate virtual environment"
     echo "  deactivate      -- leave virtual environment"
 fi
+

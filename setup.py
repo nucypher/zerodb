@@ -16,7 +16,8 @@ INSTALL_REQUIRES = [
     'requests',
     'jsonpickle',
     'pyelliptic',
-    'ecdsa']
+    'ecdsa',
+    'pyOpenSSL']
 
 setup(
     name="zerodb",

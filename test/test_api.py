@@ -39,13 +39,15 @@ def api_server(request, db):
     server.start()
     time.sleep(0.2)
 
-    return "http://localhost:%s" % port
+    return "https://localhost:%s" % port
 
 
 def api_connect(api_server, session):
-    return session.get(api_server + "/_connect", params={
-        "username": "root",
-        "passphrase": TEST_PASSPHRASE})
+    return session.get(api_server + "/_connect",
+        params={
+            "username": "root",
+            "passphrase": TEST_PASSPHRASE},
+        verify=path.join(path.dirname(__file__), "../zerodb/cert.pem"))
 
 
 def api_disconnect(api_server, session):

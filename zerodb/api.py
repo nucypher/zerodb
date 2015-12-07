@@ -6,10 +6,12 @@
 
 import imp
 import jsonpickle
+import ssl
 import transaction
 import zerodb
 from flask import Flask, jsonify, session, request
 from flask.ext.cors import CORS
+from os import path
 from zerodb.catalog.query import optimize
 from zerodb.catalog import query_json as qj
 
@@ -22,6 +24,8 @@ PORT = 2015
 HOST = "127.0.0.1"
 DEBUG = True
 DEV_SECRET_KEY = "development key"
+SSL_CONTEXT=(path.join(path.dirname(__file__), "cert.pem"),
+        path.join(path.dirname(__file__), "key.pem"))
 
 app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
@@ -224,7 +228,7 @@ def disconnect():
     return jsonify(ok=1)
 
 
-def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECRET_KEY, zeo_socket=None, **kw):
+def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, ssl_context=SSL_CONTEXT, secret_key=DEV_SECRET_KEY, zeo_socket=None, **kw):
     global models
     global zeosocket
 
@@ -236,7 +240,9 @@ def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECR
     zeosocket = zeo_socket
 
     app.config["SECRET_KEY"] = secret_key
-    app.run(host=host, port=port, debug=debug, **kw)
+    app.run(host=host, port=port, debug=debug,
+            ssl_context=ssl_context,
+            **kw)
 
 
 if __name__ == "__main__":
