@@ -24,7 +24,7 @@ setup(
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
-    license="Proprietary",
+    license="AGPLv3",
     url="http://zerodb.io",
     packages=find_packages(),
     install_requires=INSTALL_REQUIRES,
