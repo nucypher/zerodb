@@ -13,7 +13,7 @@ Contents:
 
 Overview
 ========
-ZeroDB is an end-to-end encrypted (or "zero knowledge") database. It is based on
+ZeroDB is an end-to-end encrypted database. It is based on
 `ZODB <http://en.wikipedia.org/wiki/Zope_Object_Database>`_ and written in
 `Python <https://www.python.org/>`_.
 
