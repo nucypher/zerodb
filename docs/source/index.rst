@@ -252,6 +252,9 @@ NotInRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
 
 JSON API
 ======================
+To start the api server, make sure you’ve activated the virtual environment and the ZeroDB server is running.
+Navigate to the `api_server` directory, and run `python api_server.py`.
+
 Query examples (similar to http://docs.mongodb.org/manual/reference/operator/query/)::
 
     {"$and": [{"field1": {"$gt": 10}}, {"field2": {"$text": "hello"}}]}
