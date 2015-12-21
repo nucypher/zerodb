@@ -20,7 +20,7 @@ class CallableDiscriminatorMixin(object):
 
     def index_doc(self, docid, obj):
         if self.discriminator_callable:
-            # Model class definition has a list of firtual fields
+            # Model class definition has a list of virtual fields
             virtuals = getattr(obj.__class__, "_z_virtual_fields", {})
             value = virtuals.get(self.discriminator, _marker)
             if value != _marker:
