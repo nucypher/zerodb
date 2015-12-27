@@ -18,8 +18,8 @@ ZeroDB is an end-to-end encrypted database. It is based on
 `Python <https://www.python.org/>`_.
 
 In ZeroDB, the client is responsible for the database logic. Data encryption,
-decryption and compression also happen client side. Therefore, the server
-never has any knowledge about the data, its structure or order.
+decryption, and compression also happen client side. Therefore, the server
+never has any knowledge about the data, its structure, or its order.
 
 Clients also have an adjustable cache which stores the most used parts of data
 structures and greatly speeds up queries even when its size is small (e.g. 1
@@ -31,58 +31,53 @@ From a developer's perspective, ZeroDB's design is greatly inspired by the `Djan
 
 Installation
 ============
-We supply ZeroDB as a Python egg package ``zerodb-0.91.1-py2.7.egg``. You could
-install it using ``easy_install``.
+We supply ZeroDB as a Python Pakcage ``zerodb-0.96.5``, installable via ``pip``.
 
-However, let's install everything in a virtual environment to run the server and
-test scripts. Clone the ``zerodb-server`` repository, navigate to the
-resulting directory and run::
+To run the server and test scripts, clone the ``zerodb-server`` repository,
+navigate to the resulting directory and (optionally) create a virtual environment::
 
-    ./virtualenv.sh
+    virtualenv .demo
 
-This installs everything you need into the directory ``.venv``, which you can
+This creates a fresh virtual environment in the directory ``.demo``, which you can
 activate using::
 
-    source activate
+    source .demo/bin/activate
 
-The scripts in the ``server`` and ``demo`` directories will now run in this
-virtual environment.
+Navigate to the ``demo`` directory and install the necessary packages::
+
+    pip install -r requirements.txt
+
 
 Starting the ZeroDB server and creating users
 =========================================
-In the ``server`` directory, we supply Python scripts to run a server and
+In the ``zerodbext/server`` directory, we supply Python scripts to run a server and
 manage users.
 
-    | conf/
-    |   authdb.conf
-    |   server.zcml
-    | db/
+    | api.py
     | manage.py
-    | mkpub.py
-    | runserver.py
+    | run.py
 
-Pre-configure authentication
-----------------------------
-
-The config file ``authdb.conf`` contains default administrator users for
-the database. These admins can create and remove other users or change their
-public keys. However, they don't know any other user's private keys.
-
-The default ``authdb.conf`` contains an ECDSA (`secp256k1
-<https://en.bitcoin.it/wiki/Secp256k1>`_) public key for the user ``root``. It
-corresponds to the passphrase ``"very insecure passphrase - never use it"``:
-
-.. literalinclude:: ../../server/conf/authdb.conf
-
-In order to create secure keys, you can generate a hex pubkey from any passphrase
-you like by running ``python mkpub.py``. Be sure to put the resulting pubkey into
-``authdb.conf`` yourself, before the running ZeroDB for the first time.
-
-Running the ZeroDB server
+Initializing and Running the ZeroDB server
 ---------------------
 
-Just start ``python runserver.py`` and you'll get the ZeroDB server running on the
-``localhost``. The file ``server.zcml`` allows you to set the parameters of the server.
+When you ran ``pip install`` previously, the following console scripts were created::
+
+    zerodb-server
+    zerodb-manage
+    zerodb-api
+
+These map to the files in the ``zerodbext/server`` directory.
+
+So, to initialize a database, just run ``zerodb-manage init_db``.
+Enter your username (``root`` by default) and passphrase.
+
+This will create the appropriate database file structure and config file
+``authdb.conf`` located in the ``demo/conf`` directory. The default administrator
+user can create and remove other users or change their public keys.
+However, it doesn't know any other user's private keys.
+
+Run ``zerodb-server`` and you'll get the ZeroDB server running on the host specified
+in the file ``demo/conf/server.zcml``.
 
 Healthy output of the running server appears as follows::
 
@@ -101,11 +96,12 @@ Adding more users
 -----------------
 
 Instead of being stored in config files, users are normally stored in a
-database. In order to manage these users start the zerodb server and run::
+database. In order to manage these users start the zerodb server and open the
+admin console::
 
-    python manage.py --username root --passphrase "..." --sock localhost:8001
+    zerodb-manage console
 
-This will run an ipython terminal where you can manage users::
+This will launch an ipython terminal where you can manage users::
 
     In [1]: useradd("jamesbond", "secure password")
     In [2]: chpass("jamesbond", "even more secure password")
@@ -127,7 +123,7 @@ can contain any fields you want (they just won't be indexed).
 
 Let's start by writing a data model in ``demo/models.py`` first:
 
-.. literalinclude:: ../../experiments/demo/models.py
+.. literalinclude:: ../../../zerodb-server/demo/models.py
 
 Let's assume the database server we started before is still running. The simplest example
 which creates records for us would look like this::
@@ -145,7 +141,7 @@ which creates records for us would look like this::
 Now, let's do something more advanced and populate the database with random
 data using the script ``create.py``:
 
-.. literalinclude:: ../../experiments/demo/create.py
+.. literalinclude:: ../../../zerodb-server/demo/create.py
 
 Let's play with that data in the Python terminal (or you can write your own
 script). We'll need to import ``zerodb`` and query operators from
