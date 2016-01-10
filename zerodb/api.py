@@ -128,7 +128,7 @@ def find(table_name):
     else:
         result = db[model].query(criteria, skip=skip, limit=limit, sort_index=sort_index, reverse=reverse)
 
-    return jsonpickle.encode(result, unpicklable=False)
+    return jsonpickle.encode(list(result), unpicklable=False)
 
 
 @app.route("/<table_name>/_remove", methods=["GET", "POST"])
@@ -161,13 +161,7 @@ def remove(table_name):
 
     try:
         with transaction.manager:
-            if isinstance(result, list):
-                for obj in result:
-                    db.remove(obj)
-                count = len(result)
-            else:
-                db.remove(result)
-                count = 1
+            count = db.remove(result)
     except Exception, e:
         return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
 

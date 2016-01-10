@@ -40,6 +40,9 @@ def test_query(db):
     department = db[Department].query(name="Money")[0]
     assert len(db[Salary].query(department_id=department._v_uid)) > 0
 
+    test_pages = db[Page].query(Contains("text", "something"))[:5]
+    assert len(test_pages) == 5
+
 
 def test_add(db):
     with transaction.manager:

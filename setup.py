@@ -7,6 +7,7 @@ INSTALL_REQUIRES = [
     'ZODB',
     'zope.index',
     'repoze.catalog',
+    'cachetools',
     'lz4-cffi',
     'zc.zlibstorage',
     'pycryptodome',
@@ -20,7 +21,7 @@ INSTALL_REQUIRES = [
 
 setup(
     name="zerodb",
-    version="0.96.5",
+    version="0.96.6",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",

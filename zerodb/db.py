@@ -14,6 +14,7 @@ from zerodb.models.exceptions import ModelException
 from zerodb.permissions import subdb
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
+from zerodb.util.iter import DBList, DBListPrefetch
 
 from zerodb.transform.encrypt_aes import AES256Encrypter
 from zerodb.transform import init_crypto
@@ -107,15 +108,18 @@ class DbModel(object):
         """
         if isinstance(obj, (int, long)):
             uid = obj
-        elif isinstance(obj, collections.Iterable):
+        elif hasattr(obj, "__iter__"):
+            ctr = 0
             for i in list(obj):
                 self.remove(i)
-            return
+                ctr += 1
+            return ctr
         else:
             assert obj.__class__ == self._model
             uid = obj._v_uid
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
+        return 1
 
     def query(self, queryobj=None, skip=None, limit=None, prefetch=True, **kw):
         """
@@ -140,7 +144,6 @@ class DbModel(object):
         skip = skip or 0
         if limit:
             kw["limit"] = skip + limit
-        # XXX pre-load the tree!
 
         eq_args = []
         for k in kw.keys():
@@ -152,19 +155,21 @@ class DbModel(object):
         else:
             Q = And(*eq_args)
 
-        count, uids = self._catalog.query(Q, **kw)
+        q = lambda: self._catalog.query(Q, **kw)
+
         if limit:
-            qids = list(itertools.islice(uids, skip, skip + limit))
+            _, q = q()
+            qids = list(itertools.islice(q, skip, skip + limit))
+            objects = [self._objects[uid] for uid in qids]
+            if objects and prefetch:
+                self._db._storage.loadBulk([o._p_oid for o in objects])
+            for obj, uid in itertools.izip(objects, qids):
+                obj._v_uid = uid
+            return objects
+
         else:
-            qids = list(uids)
-        # No reason to return an iterator as long as we have all pre-loaded
-        objects = [self._objects[uid] for uid in qids]
-        # Pre-load them all (these are lazy objects)
-        if objects and prefetch:
-            self._db._storage.loadBulk([o._p_oid for o in objects])
-        for obj, uid in itertools.izip(objects, qids):
-            obj._v_uid = uid
-        return objects
+            db_list = DBListPrefetch if prefetch else DBList
+            return db_list(q, self)
 
     def __len__(self):
         return len(self._objects)
@@ -318,4 +323,14 @@ class DB(object):
 
         :param zerodb.models.Model obj: Object to add to the database
         """
-        self[obj.__class__].remove(obj)
+        if isinstance(obj, models.Model):
+            self[obj.__class__].remove(obj)
+            return 1
+        elif hasattr(obj, "__iter__"):
+            ctr = 0
+            for o in obj:
+                ctr += 1
+                self[o.__class__].remove(o)
+            return ctr
+        else:
+            raise ModelException("Class <%s> is not a Model or iterable" % obj.__class__.__name__)
