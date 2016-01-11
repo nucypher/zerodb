@@ -57,7 +57,10 @@ class IdStore(persistent.Persistent):
         while True:
             uid = self._generateId()
             if self.tree.insert(uid, obj):  # We use this feature of BTrees to avoid conflicts
-                obj._v_uid = uid
+                # _v_* and _p_* are not saved in the database
+                # However assigning _v_* unghostifies the object while _p_* doesn't
+                # We don't want to force-unghostify the object in some cases
+                obj._p_uid = uid
                 return uid
 
     def remove(self, iobj):
@@ -67,9 +70,9 @@ class IdStore(persistent.Persistent):
         """
         if type(iobj) in (int, long):
             del self.tree[iobj]
-        elif hasattr(iobj, "_v_uid"):
-            del self.tree[iobj._v_uid]
-            iobj._v_uid = None
+        elif hasattr(iobj, "_p_uid"):
+            del self.tree[iobj._p_uid]
+            iobj._p_uid = None
         else:
             raise TypeError("Argument should be either uid or object itself")
 

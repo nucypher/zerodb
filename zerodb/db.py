@@ -97,7 +97,7 @@ class DbModel(object):
         assert obj.__class__ == self._model
         uid = self._objects.add(obj)
         self._catalog.index_doc(uid, obj)
-        obj._v_uid = uid
+        obj._p_uid = uid
         return uid
 
     def remove(self, obj):
@@ -116,7 +116,7 @@ class DbModel(object):
             return ctr
         else:
             assert obj.__class__ == self._model
-            uid = obj._v_uid
+            uid = obj._p_uid
         self._catalog.unindex_doc(uid)
         del self._objects[uid]
         return 1
@@ -159,12 +159,13 @@ class DbModel(object):
 
         if limit:
             _, q = q()
+            # XXX islice -> [:]
             qids = list(itertools.islice(q, skip, skip + limit))
             objects = [self._objects[uid] for uid in qids]
             if objects and prefetch:
                 self._db._storage.loadBulk([o._p_oid for o in objects])
             for obj, uid in itertools.izip(objects, qids):
-                obj._v_uid = uid
+                obj._p_uid = uid
             return objects
 
         else:

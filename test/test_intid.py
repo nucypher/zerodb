@@ -19,12 +19,12 @@ def test_initid():
     assert len(idstore) == 3
 
     for t in ts:
-        assert type(t._v_uid) in (int, long)
+        assert type(t._p_uid) in (int, long)
 
-    assert len(set([t._v_uid for t in ts])) == 3
-    assert idstore[ts[0]._v_uid] is ts[0]
+    assert len(set([t._p_uid for t in ts])) == 3
+    assert idstore[ts[0]._p_uid] is ts[0]
 
     idstore.remove(ts[0])
-    idstore.remove(ts[1]._v_uid)
+    idstore.remove(ts[1]._p_uid)
 
     assert len(idstore) == 1

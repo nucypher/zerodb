@@ -71,6 +71,7 @@ class TransformingStorage(ZlibStorage):
         :rtype: list
         """
         if self.debug:
+            logging.debug("Loading: " + ", ".join([oid.encode("hex") for oid in oids]))
             in_cache_before = {oid: oid in self._cache.current for oid in oids}
         base_result = self.base.loadBulk(oids)
         if self.debug:

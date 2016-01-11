@@ -44,7 +44,7 @@ class Salary(Model):
 
     # Foreign relationships
     department_name = fields.Field(virtual=lambda o: o.department.name)  # Enable looking up Salary by department
-    department_id = fields.Field(virtual=lambda o: o.department._v_uid)  # Department ID
+    department_id = fields.Field(virtual=lambda o: o.department._p_uid)  # Department ID
 
 
 def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):

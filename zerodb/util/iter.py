@@ -1,5 +1,7 @@
-from itertools import islice, izip, imap
+from persistent import Persistent
+from itertools import islice, izip, imap, count
 from cachetools import LRUCache
+from zerodb.storage import prefetch
 
 
 class Sliceable(object):
@@ -12,17 +14,21 @@ class Sliceable(object):
         self.cache = LRUCache(cache_size)
         self.stop = 0
         self.length = length
-        self.iterator = f()
+        self.iterator = iter(f())
 
     def __iter__(self):
-        return iter(self.f())
+        self.iterator = iter(self.f())
+        for i in count():
+            y = self.__getitem__(i)
+            yield y
+            # We get StopIteration error once we're done
 
     def __len__(self):
         if self.length is None:
             if hasattr(self.iterator, "__len__"):
                 return len(self.iterator)
             else:
-                return len(list(self.f()))
+                return len(list(self.__iter__()))
         else:
             if callable(self.length):
                 return self.length()
@@ -30,53 +36,62 @@ class Sliceable(object):
                 return self.length
 
     def __getitem__(self, key):
-        if isinstance(key, int) and (key >= 0):
-            if key in self.cache:
-                return self.cache[key]
-            elif key < self.stop:
-                self.stop = 0
-                self.iterator = self.f()
+        try:
+            if isinstance(key, int) and (key >= 0):
+                if key in self.cache:
+                    return self.cache[key]
+                elif key < self.stop:
+                    self.stop = 0
+                    self.iterator = iter(self.f())
 
-            delta = key - self.stop
-            result = islice(self.iterator, delta, delta + 1).next()
-            self.cache[key] = result
-            self.stop = key + 1
-            return result
-
-        elif isinstance(key, slice):
-            if key.stop is None:
-                # Whole sequence is asked
-                return list(self.f())
-            start = key.start or 0
-            step = key.step or 1
-
-            indexes = range(start, key.stop, step)
-            index_upd = start
-            while index_upd < key.stop and index_upd in self.cache:
-                index_upd += step
-
-            if index_upd < self.stop and index_upd < key.stop:
-                self.iterator = self.f()
-                result = list(islice(self.iterator, start, key.stop, step))
-                for i, value in izip(indexes, result):
-                    self.cache[i] = value
-                self.stop = key.stop
+                delta = key - self.stop
+                result = islice(self.iterator, delta, delta + 1).next()
+                self.cache[key] = result
+                self.stop = key + 1
                 return result
 
-            else:
-                result = [self.cache[i] for i in xrange(start, index_upd, step)]
-                if len(result) < len(indexes):
-                    result_upd = list(islice(self.iterator, index_upd - self.stop, key.stop - self.stop, step))
-                else:
-                    result_upd = []
-                for i, value in izip(indexes[len(result):], result_upd):
-                    self.cache[i] = value
-                self.stop = key.stop
-                return result + result_upd
+            elif isinstance(key, slice):
+                if key.start is None and key.stop is None:
+                    # Whole sequence is asked
+                    return list(self.f())
+                start = key.start or 0
+                step = key.step or 1
 
-        else:
-            raise KeyError("Key must be non-negative integer or slice, not {}"
-                           .format(key))
+                indexes = count(start, step)
+                index_upd = start
+                while (key.stop is None or index_upd < key.stop) and index_upd in self.cache:
+                    index_upd += step
+
+                if index_upd < self.stop and (key.stop is None or index_upd < key.stop):
+                    self.iterator = iter(self.f())
+                    result = list(islice(self.iterator, start, key.stop, step))
+                    for i, value in izip(indexes, result):
+                        self.cache[i] = value
+                    self.stop = i + 1 if key.stop is None else key.stop
+                    return result
+
+                else:
+                    result = [self.cache[i] for i in xrange(start, index_upd, step)]
+
+                    if key.stop is None:
+                        result_upd = list(islice(self.iterator, index_upd - self.stop, None, step))
+                    elif index_upd < key.stop:
+                        result_upd = list(islice(self.iterator, index_upd - self.stop, key.stop - self.stop, step))
+                    else:
+                        result_upd = []
+                    for i, value in izip(indexes, result_upd):
+                        self.cache[i] = value
+                    self.stop = key.stop
+                    return result + result_upd
+
+            else:
+                raise KeyError("Key must be non-negative integer or slice, not {}"
+                               .format(key))
+
+        except StopIteration:
+            self.iterator = self.f()
+            self.stop = 0
+            raise
 
 
 class DBList(Sliceable):
@@ -89,7 +104,7 @@ class DBList(Sliceable):
 
         def get_object(uid):
             obj = db._objects[uid]
-            obj._v_uid = uid
+            obj._p_uid = uid
             return obj
 
         def f():
@@ -99,14 +114,34 @@ class DBList(Sliceable):
         super(DBList, self).__init__(f, **kw)
 
 
-class DBListPrefetch(DBList):
+class ListPrefetch(Sliceable):
+    prefetch_size = 20
+
     def __getitem__(self, key):
         previous_stop = self.stop
-        result = super(DBListPrefetch, self).__getitem__(key)
+        result = super(ListPrefetch, self).__getitem__(key)
         if self.stop != previous_stop:
+            # Cache-ahead
+            try:
+                if isinstance(key, (int, long)):
+                    tail = super(ListPrefetch, self).__getitem__(slice(key + 1, key + self.prefetch_size + 1))
+                elif isinstance(key, slice):
+                    if key.stop:
+                        tail = super(ListPrefetch, self).__getitem__(slice(key.stop + 1, key.stop + self.prefetch_size + 1))
+                    else:
+                        tail = []
+            except StopIteration:
+                # If we've finished right at this element, that's not an error
+                tail = []
+
             # Fetching objects needed
             if isinstance(result, list):
-                self.db._db._storage.loadBulk([o._p_oid for o in result])
-            elif hasattr(result, "_p_oid"):
-                self.db._db._storage.load(result._p_oid)
+                prefetch(result + tail)
+            elif isinstance(result, Persistent):
+                prefetch([result] + tail)
         return result
+
+
+class DBListPrefetch(ListPrefetch, DBList):
+    def __init__(self, query_f, db, **kw):
+        DBList.__init__(self, query_f, db, **kw)

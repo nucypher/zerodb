@@ -32,3 +32,8 @@ def test_sliceable():
 
     assert len([i for i in it]) == 10
     assert len(it) == 10
+
+    it = Sliceable(lambda: itertools.imap(str, xrange(100)))
+    assert len(it) == 100
+    it = Sliceable(lambda: itertools.imap(str, xrange(100)))
+    assert it[10:] == map(str, range(10, 100))
