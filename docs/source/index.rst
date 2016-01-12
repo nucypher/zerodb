@@ -31,7 +31,7 @@ From a developer's perspective, ZeroDB's design is greatly inspired by the `Djan
 
 Installation
 ============
-We supply ZeroDB as a Python Pakcage ``zerodb-0.96.5``, installable via ``pip``.
+We supply ZeroDB as a Python Package ``zerodb-0.96.5``, installable via ``pip``.
 
 To run the server and test scripts, clone the ``zerodb-server`` repository,
 navigate to the resulting directory and (optionally) create a virtual environment::
