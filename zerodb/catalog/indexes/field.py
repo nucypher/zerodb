@@ -19,9 +19,9 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         self.clear()
 
     def applyInRange(self, start, end, excludemin=False, excludemax=False):
-        treeset_it = ListPrefetch(lambda: self._fwd_index.values(start, end, excludemin=excludemin, excludemax=excludemax))
+        return ListPrefetch(lambda: it.chain.from_iterable(
+            ListPrefetch(lambda: self._fwd_index.values(start, end, excludemin=excludemin, excludemax=excludemax))))
         # XXX what if these treesets are pretty deep? Need to pre-fetch "first N elements"
-        return it.chain.from_iterable(treeset_it)
 
     def scan_forward(self, docids, limit=None):
         # Batch-prefetch treesets

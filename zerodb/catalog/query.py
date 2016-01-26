@@ -1,5 +1,13 @@
 from repoze.catalog import query
 from zerodb import trees
+from zerodb.util.iter import Sliceable, ListPrefetch
+
+
+def _to_set(flavor, data):
+    if isinstance(data, Sliceable):
+        return flavor.Set(data)
+    else:
+        return data
 
 
 class LogicMixin:
@@ -179,9 +187,36 @@ class BoolOp(LogicMixin, query.BoolOp):
 class Or(LogicMixin, query.Or):
     family = trees.family32
 
+    def _apply(self, catalog, names):
+        # XXX Or query can be done lazily using heapq's sorted join
+        IF = self.family.IF
+        queries = self.queries
+        result = queries[0]._apply(catalog, names)
+        for q in queries[1:]:
+            next_result = q._apply(catalog, names)
+            if len(result) == 0:
+                result = next_result
+            elif len(next_result) > 0:
+                _, result = self.family.IF.weightedUnion(_to_set(IF, result), _to_set(IF, next_result))
+        return result
+
 
 class And(LogicMixin, query.And):
     family = trees.family32
+
+    def _apply(self, catalog, names):
+        # XXX figure out doing smallest part first for performance
+        IF = self.family.IF
+        queries = self.queries
+        result = queries[0]._apply(catalog, names)
+        for q in queries[1:]:
+            if len(result) == 0:
+                return IF.Set()
+            next_result = q._apply(catalog, names)
+            if len(next_result) == 0:
+                return IF.Set()
+            _, result = IF.weightedIntersection(_to_set(IF, result), _to_set(IF, next_result))
+        return result
 
 
 class Not(LogicMixin, query.Not):

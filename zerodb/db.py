@@ -220,13 +220,14 @@ class DB(object):
                 "username": username,
                 "password": password,
                 "realm": realm,
+                "cache_size": 2 ** 30,
                 "debug": debug}
 
         self.__db_kwargs = {
                 "pool_size": pool_size,
                 "pool_timeout": pool_timeout,
-                "cache_size": 50000,
-                "cache_size_bytes": 2 ** 30}
+                "cache_size": 1000000,
+                "cache_size_bytes": 100 * 2 ** 20}
         self.__db_kwargs.update(kw)
 
         # For multi-threading

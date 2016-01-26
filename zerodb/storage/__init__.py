@@ -90,7 +90,7 @@ def prefetch(objs):
     if objs:
         oids = [y._p_oid for y in objs if y._p_oid is not None]
         if objs[0]._p_jar:
-            objs[0]._p_jar._db._storage.loadBulk(oids)
+            objs[0]._p_jar._db._storage.loadBulk(oids, returns=False)
 
 
 def prefetch_trees(trees, depth=10, bucket_types=(), shallow=True):

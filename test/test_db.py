@@ -1,7 +1,7 @@
 import logging
 import transaction
 from db import Page, Salary, Department
-from zerodb.catalog.query import Contains, InRange
+from zerodb.catalog.query import Contains, InRange, Eq
 # Also need to test optimize, Lt(e), Gt(e)
 
 logging.basicConfig(level=logging.DEBUG)
@@ -42,6 +42,9 @@ def test_query(db):
 
     test_pages = db[Page].query(Contains("text", "something"))[:5]
     assert len(test_pages) == 5
+
+    db[Salary].query(InRange("salary", 130000, 180000), name="John-2")
+    db[Salary].query(InRange("salary", 130000, 180000) | Eq("name", "John-2"))
 
 
 def test_add(db):
