@@ -26,6 +26,7 @@ ZEO_CONFIG = """<zeo>
 
 <filestorage>
   path %(dbfile)s
+  pack-gc false
 </filestorage>"""
 
 elliptic.register_auth()

@@ -336,3 +336,9 @@ class DB(object):
             return ctr
         else:
             raise ModelException("Class <%s> is not a Model or iterable" % obj.__class__.__name__)
+
+    def pack(self):
+        """
+        Remove old versions of objects
+        """
+        self._db.pack()

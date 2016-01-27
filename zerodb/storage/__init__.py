@@ -8,6 +8,7 @@ from persistent import Persistent
 import batch
 import premade
 import transforming
+import logging
 
 # TODO when it comes to the point we need to,
 # we'll have to configure which classes to use
@@ -60,6 +61,13 @@ class ZEOServer(BaseZEOServer):
     def run(cls, args=None):
         options = ZEOOptions()
         options.realize(args=args)
+
+        for o_storage in options.storages:
+            if o_storage.config.pack_gc:
+                logging.warn("Packing with GC and end-to-end encryption removes all the data")
+                logging.warn("Turining GC off!")
+                o_storage.config.pack_gc = False
+
         s = cls(options)
         s.main()
 

@@ -58,3 +58,8 @@ def test_add(db):
 
     with transaction.manager:
         db.remove(page)
+
+
+def test_pack(db):
+    db.pack()
+    assert len(db[Page]) > 0
