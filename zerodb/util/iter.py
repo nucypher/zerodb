@@ -93,6 +93,33 @@ class Sliceable(object):
             self.stop = 0
             raise
 
+    def __repr__(self):
+        """ Visually appealing output showing first 5 elements of the data """
+        first_el = self[:6]
+        is_long = len(first_el) > 5
+        reprs = [i.__repr__() for i in first_el[:5]]
+        if is_long:
+            reprs.append("...")
+        if len(reprs) <= 1:
+            return "[" + "".join(reprs) + "]"
+        else:
+            l = len(reprs)
+            out = []
+            for i, s in enumerate(reprs):
+                if i == 0:
+                    s = "[" + s
+                else:
+                    s = " " + s
+                if i == l - 1:
+                    s = s + "]"
+                else:
+                    s = s + ","
+                out.append(s)
+            return "\n".join(out)
+
+    def __unicode__(self):
+        return self.__repr__()
+
 
 class DBList(Sliceable):
     def __init__(self, query_f, db, **kw):

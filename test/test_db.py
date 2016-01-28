@@ -1,7 +1,7 @@
 import logging
 import transaction
 from db import Page, Salary, Department
-from zerodb.catalog.query import Contains, InRange, Eq
+from zerodb.catalog.query import Contains, InRange, Eq, Gt
 # Also need to test optimize, Lt(e), Gt(e)
 
 logging.basicConfig(level=logging.DEBUG)
@@ -58,6 +58,20 @@ def test_add(db):
 
     with transaction.manager:
         db.remove(page)
+
+
+def test_repr(db):
+    data = db[Salary].query(Gt("salary", 100000))
+    s = str(data)
+    assert s.startswith("[")
+    assert "..." in s
+    assert s.endswith("]")
+    lines = s.split("\n")
+    assert sum([l.endswith(",") for l in lines]) == 5
+    assert sum([l.startswith(" ") for l in lines]) == 5
+
+    data = db[Salary].query(Gt("salary", 100000), name="Nonexistent")
+    assert str(data) == "[]"
 
 
 def test_pack(db):
