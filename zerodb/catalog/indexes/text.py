@@ -171,6 +171,30 @@ class OkapiIndex(_OkapiIndex):
         return super(OkapiIndex, self)._search_wids(wids)
 
 
+class IncrementalLuceneIndex(object):
+    """
+    Using Lucene's practical scoring function and incremental search
+    """
+    # Using Okapi index requires us to fetch all docids for all word ids.
+    # That makes scalability of the search bad, even for a single keyword
+    # This class uses Lucene's practical scoring function:
+    # https://www.elastic.co/guide/en/elasticsearch/guide/current/practical-scoring-function.html
+
+    # In brief, practical scoring is this:
+    #   t - keyword (or term) which is searched
+    #   D - document
+    #   TF(t, D) = sqrt(f(t, D))
+    #   IDF(t) = 1 + log(N_docs / (N_docs_for_term + 1))
+    #   score(term, D) = TF * IDF**2 / sqrt(N_terms_in_D)
+    #   score(D) = sum(score(term, D)) / sqrt(sum(IDF(t)**2))
+
+    # When we search for one keyword, we can keep document UIDs
+    # Ordered by w_t = TF(t, D) / sqrt(N_terms_in_D),
+    # for example in a TreeSet((-w_t, uid)).
+    # Reading it incrementally gives docs ordered from most to least relevant.
+    pass
+
+
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
     family = trees.family32
 
