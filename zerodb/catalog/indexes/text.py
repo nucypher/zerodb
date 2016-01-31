@@ -192,7 +192,43 @@ class IncrementalLuceneIndex(object):
     # Ordered by w_t = TF(t, D) / sqrt(N_terms_in_D),
     # for example in a TreeSet((-w_t, uid)).
     # Reading it incrementally gives docs ordered from most to least relevant.
-    pass
+
+    # Now the harder part (not in Lucene)
+
+    # When we want to do a multi-keyword search, it is, in a way, weighted union
+    # of searches for all keywords.
+    # E.g. now:
+    #   w(D) = sum(w_t * IDF(t)**2)   // no need to normalize by sqrt(sum(idf**2))
+    # weight calculation and sort in memory, which fetches docweights for all terms again.
+    # This is slow when e2e encrypted and fetched remotely, and also reveals sum(N_docs_for_term) to the server
+
+    # Here's how we do the same incrementally ("lazy")
+    # We allow elements to be shifted by max_out_of_order = 3 from their ideal position.
+    # We read beginnings of sorted lists of (w_i, uid_i) for each word.
+    # After we calculate the sum,
+    # w_j_known = sum(w_j * IDF(t_j)**2, t: all terms for which we know w_j for uid_i)
+
+    # for i_th element the weight could be between:
+    #   w_min_i(t_j) = sum(w_min(t_j) * IDF(t_j)**2: all terms for which we don't know w_j) + w_i_known
+    #   and
+    #   w_max_i(t_j) = sum(w_max(t_j) * IDF(t_j)**2: all terms for which we don't know w_j) + w_i_known
+
+    # For each term, we have current window of docs ordered by weight which still haven't been returned.
+    # It is likely that some term is particularly selective and largely outweights others,
+    # E.g. for almost all elements in the current window, weight ranges (w_min_i, w_max_i) don't overlap
+    # for different i. Or, perhaps, elements are misplaced by no more than max_out_of_order positions.
+
+    # We choose a term for which all positions at the tail of the window can never appear within the limit # of docs.
+    # If there are none, we expand most promising wid set by factor of 2 until we get this situation.
+    # Out of those terms (if there are multiple), we select one which has smallest number of
+    # doc uids misplaced.
+
+    # For misplaced docids, we fetch their weights. Now we know order within the specified
+    # number of documents.
+
+    # For this to work, we need to keep
+    # BTree(wids -> (TreeSet(w_i, uid_i), BTree(uid_i -> w_i), Length))
+    # Length is for calculating IDF
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
