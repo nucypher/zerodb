@@ -58,7 +58,7 @@ def test_add(db):
 
     with transaction.manager:
         page.text = "Slow brown lazy fox jumps over lorem  ipsum dolor sit amet"
-        db[Page]._catalog.index_doc(docid, page)
+        db[Page]._catalog.reindex_doc(docid, page)
 
     with transaction.manager:
         db.remove(page)
