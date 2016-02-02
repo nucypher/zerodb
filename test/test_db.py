@@ -51,17 +51,53 @@ def test_add(db):
     with transaction.manager:
         pre_commit_count = db._storage._debug_download_count
         page = Page(title="hello", text="Quick brown lazy fox jumps over lorem  ipsum dolor sit amet")
-        docid = db.add(page)
+        db.add(page)
         post_commit_count = db._storage._debug_download_count
     print "Number of requests:", post_commit_count - pre_commit_count
     assert post_commit_count - pre_commit_count < 22
 
     with transaction.manager:
-        page.text = "Slow brown lazy fox jumps over lorem  ipsum dolor sit amet"
-        db[Page]._catalog.reindex_doc(docid, page)
+        db.remove(page)
+
+
+def test_reindex(db):
+    with transaction.manager:
+        page = Page(title="hello", text="Quick0 brown lazy fox jumps over lorem  ipsum dolor sit amet")
+        docid = db.add(page)
+    assert len(db[Page].query(Contains("text", "quick0"))) == 1
+
+    # DbModel, by ID
+    with transaction.manager:
+        page.text = "Quick1 brown lazy fox jumps over well, you know"
+        db[Page].reindex(docid)
+    assert len(db[Page].query(Contains("text", "quick0"))) == 0
+    assert len(db[Page].query(Contains("text", "quick1"))) == 1
+
+    # DbModel, by obj
+    with transaction.manager:
+        page.text = "quick2 brown lazy fox jumps over well, you know"
+        db[Page].reindex(page)
+    assert len(db[Page].query(Contains("text", "quick1"))) == 0
+    assert len(db[Page].query(Contains("text", "quick2"))) == 1
+
+    # DB, by obj
+    with transaction.manager:
+        page.text = "quick3 brown lazy fox jumps over well, you know"
+        db[Page].reindex(page)
+    assert len(db[Page].query(Contains("text", "quick2"))) == 0
+    assert len(db[Page].query(Contains("text", "quick3"))) == 1
+
+    # DB, multiple objects
+    with transaction.manager:
+        page2 = Page(title="hello", text="Quick4 brown lazy fox jumps over lorem  ipsum dolor sit amet")
+        db.add(page2)
 
     with transaction.manager:
-        db.remove(page)
+        page.text = "quick5 brown lazy fox jumps over well, you know"
+        page2.text = "quick5 brown lazy fox jumps over well, you know"
+        db.reindex([page, page2])
+    assert len(db[Page].query(Contains("text", "quick3") | Contains("text", "quick4"))) == 0
+    assert len(db[Page].query(Contains("text", "quick5"))) == 2
 
 
 def test_repr(db):
