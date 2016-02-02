@@ -14,7 +14,7 @@ from zerodb.models.exceptions import ModelException
 from zerodb.permissions import subdb
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
-from zerodb.util.iter import DBList, DBListPrefetch
+from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
 from zerodb.transform.encrypt_aes import AES256Encrypter
 from zerodb.transform import init_crypto
@@ -99,6 +99,41 @@ class DbModel(object):
         self._catalog.index_doc(uid, obj)
         obj._p_uid = uid
         return uid
+
+    def reindex_one(self, obj):
+        """
+        Reindex one object which is already in the database
+
+        :param obj: Object to add to the database or its uid
+        :type obj: zerodb.models.Model, int
+        """
+
+        if isinstance(obj, (int, long)):
+            uid = obj
+            obj = self._objects[uid]
+        elif isinstance(obj, self._model):
+            if hasattr(obj, "_p_uid"):
+                uid = obj._p_uid
+            else:
+                raise ModelException("Object %s is not indexed" % obj)
+        else:
+            raise TypeError("Wrong type of argument passed: must be integer or model instance")
+        self._catalog.reindex_doc(uid, obj)
+
+    def reindex(self, obj):
+        """
+        Reindex one or multiple objects in the database
+
+        :param obj: Object to add to the database or its uid, or list of objects or uids
+        :type obj: zerodb.models.Model, int, list
+        """
+        if isinstance(obj, (int, long, self._model)):
+            self.reindex_one(obj)
+        elif isinstance(obj, (list, tuple, set, Sliceable)):
+            for o in obj:
+                self.reindex_one(o)
+        else:
+            raise TypeError("ZeroDB object, its uid or list of these should be passed")
 
     def remove(self, obj):
         """
@@ -336,6 +371,22 @@ class DB(object):
             return ctr
         else:
             raise ModelException("Class <%s> is not a Model or iterable" % obj.__class__.__name__)
+
+    def reindex(self, obj):
+        """
+        Reindex one or multiple objects in the database
+
+        :param obj: Object to add to the database or its uid, or list of objects or uids
+        :type obj: zerodb.models.Model, list
+        """
+        if isinstance(obj, models.Model):
+            self[obj.__class__].reindex_one(obj)
+        elif isinstance(obj, (list, tuple, set, Sliceable)):
+            for o in obj:
+                assert isinstance(o, models.Model)
+                self[o.__class__].reindex_one(o)
+        else:
+            raise TypeError("ZeroDB object or list of these should be passed")
 
     def pack(self):
         """

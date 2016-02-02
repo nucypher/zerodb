@@ -60,6 +60,46 @@ def test_add(db):
         db.remove(page)
 
 
+def test_reindex(db):
+    with transaction.manager:
+        page = Page(title="hello", text="Quick0 brown lazy fox jumps over lorem  ipsum dolor sit amet")
+        docid = db.add(page)
+    assert len(db[Page].query(Contains("text", "quick0"))) == 1
+
+    # DbModel, by ID
+    with transaction.manager:
+        page.text = "Quick1 brown lazy fox jumps over well, you know"
+        db[Page].reindex(docid)
+    assert len(db[Page].query(Contains("text", "quick0"))) == 0
+    assert len(db[Page].query(Contains("text", "quick1"))) == 1
+
+    # DbModel, by obj
+    with transaction.manager:
+        page.text = "quick2 brown lazy fox jumps over well, you know"
+        db[Page].reindex(page)
+    assert len(db[Page].query(Contains("text", "quick1"))) == 0
+    assert len(db[Page].query(Contains("text", "quick2"))) == 1
+
+    # DB, by obj
+    with transaction.manager:
+        page.text = "quick3 brown lazy fox jumps over well, you know"
+        db[Page].reindex(page)
+    assert len(db[Page].query(Contains("text", "quick2"))) == 0
+    assert len(db[Page].query(Contains("text", "quick3"))) == 1
+
+    # DB, multiple objects
+    with transaction.manager:
+        page2 = Page(title="hello", text="Quick4 brown lazy fox jumps over lorem  ipsum dolor sit amet")
+        db.add(page2)
+
+    with transaction.manager:
+        page.text = "quick5 brown lazy fox jumps over well, you know"
+        page2.text = "quick5 brown lazy fox jumps over well, you know"
+        db.reindex([page, page2])
+    assert len(db[Page].query(Contains("text", "quick3") | Contains("text", "quick4"))) == 0
+    assert len(db[Page].query(Contains("text", "quick5"))) == 2
+
+
 def test_repr(db):
     data = db[Salary].query(Gt("salary", 100000))
     s = str(data)
