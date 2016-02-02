@@ -1,5 +1,15 @@
+import BTrees
 import itertools
+
 from BTrees.Length import Length
+from collections import Counter
+from math import sqrt
+from persistent import Persistent
+from zope.interface import implementer
+from zope.index.interfaces import IInjection
+from zope.index.interfaces import IStatistics
+from zope.index.text.interfaces import IExtendedQuerying
+from zope.index.text.interfaces import ILexiconBasedIndex
 from zope.index.text import TextIndex as ZopeTextIndex
 from zope.index.text.lexicon import CaseNormalizer
 from zope.index.text.lexicon import Lexicon as _Lexicon
@@ -8,6 +18,7 @@ from zope.index.text.lexicon import _text2list
 from zope.index.text.lexicon import StopWordRemover
 from zope.index.text.okapiindex import OkapiIndex as _OkapiIndex
 from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
+
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.storage import prefetch, prefetch_trees, parallel_traversal
@@ -171,7 +182,8 @@ class OkapiIndex(_OkapiIndex):
         return super(OkapiIndex, self)._search_wids(wids)
 
 
-class IncrementalLuceneIndex(object):
+@implementer(IInjection, IStatistics, ILexiconBasedIndex, IExtendedQuerying)
+class IncrementalLuceneIndex(Persistent):
     """
     Using Lucene's practical scoring function and incremental search
     """
@@ -229,6 +241,65 @@ class IncrementalLuceneIndex(object):
     # For this to work, we need to keep
     # BTree(wids -> (TreeSet(w_i, uid_i), BTree(uid_i -> w_i), Length))
     # Length is for calculating IDF
+
+    family = BTrees.family32
+    lexicon = property(lambda self: self._lexicon,)
+
+    def __init__(self, lexicon, family=None, keep_phrases=True):
+        if family is not None:
+            self.family = family
+        self._lexicon = lexicon
+        self.keep_phrases = keep_phrases
+        self.clear()
+
+    def clear(self):
+        # ._wordinfo = BTree(wids -> (TreeSet((weight, docid)), BTree(docid -> weight), Length))
+        self._wordinfo = self.family.IO.BTree()
+
+        # ._docwords = BTree(docid -> widcode)
+        # used for document unindexing
+        # but no phrase search
+        self._docwords = self.family.IO.BTree()
+
+    def _get_docweights(self, wids):
+        """
+        returns: ([TreeSet((weight, docid))], [Length]) for wids in order
+        """
+        weights = []
+        lengths = []
+        parallel_traversal(self._wordinfo, wids)
+        for wid in wids:
+            record = self._wordinfo.get(wid)
+            if record is None:
+                length = Length(0)
+                wdocid = self.family.OO.TreeSet()
+                self._wordinfo[wid] = (wdocid, length)
+                weights.append(wdocid)
+                lengths.append(length)
+            else:
+                wdocid, length = record
+                lengths.append(length)
+                weights.append(wdocid)
+        return weights, lengths
+
+    def index_doc(self, docid, text):
+        if docid in self._docwords:
+            return self._reindex_doc(docid, text)
+        wids = self._lexicon.sourceToWordIds(text)
+        # XXX Counter is slow. If it is an issue, need to include C module
+        # http://stackoverflow.com/questions/2522152/python-is-a-dictionary-slow-to-find-frequency-of-each-character
+        widset, widcnt = zip(*Counter(wids).items())
+        widcode = PersistentWid.encode_wid(wids if self.keep_phrases else widset)
+        self._docwords[docid] = widcode
+        weights, lengths = self._get_docweights(widset)
+        prefetch(lengths)
+        # Normalized TFs
+        norm = sqrt(len(widset))
+        docscores = [(sqrt(f) / norm, docid) for f in widcnt]
+        parallel_traversal(weights, docscores)
+        for w, length, docscore in zip(weights, lengths, docscores):
+            w.add(docscore)
+            length.change(1)
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
