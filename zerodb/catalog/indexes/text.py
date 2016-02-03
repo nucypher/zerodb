@@ -1,5 +1,6 @@
 import BTrees
 import itertools
+import logging
 
 from BTrees.Length import Length
 from collections import Counter
@@ -263,43 +264,107 @@ class IncrementalLuceneIndex(Persistent):
 
     def _get_docweights(self, wids):
         """
-        returns: ([TreeSet((weight, docid))], [Length]) for wids in order
+        Gets persistent objects used for indexes for wids
+        returns: {wid -> TreeSet((weight, docid))}, {wid -> Length}
         """
-        weights = []
-        lengths = []
+        weights = {}
+        lengths = {}
         parallel_traversal(self._wordinfo, wids)
+
         for wid in wids:
             record = self._wordinfo.get(wid)
             if record is None:
                 length = Length(0)
                 wdocid = self.family.OO.TreeSet()
                 self._wordinfo[wid] = (wdocid, length)
-                weights.append(wdocid)
-                lengths.append(length)
             else:
                 wdocid, length = record
-                lengths.append(length)
-                weights.append(wdocid)
+
+            weights[wid] = wdocid
+            lengths[wid] = length
+
         return weights, lengths
+
+    def get_words(self, docid):
+        """Return a list of the wordids for a given docid."""
+        return self._docwords[docid].decode_wid()
+
+    def _get_widscores(self, ctr, docid, widlen=None):
+        """
+        Get scores per word:
+            score = sqrt(f) / sqrt(widlen)
+
+        :param dict ctr: Counter {wid -> number_of_wids}
+        :param int widlen: Number of unique words in document. Use len(ctr) if
+            not given
+        :returns dict: {wid -> (score, docid)}
+        """
+        widlen = sqrt(widlen or len(ctr))
+        return {w: (sqrt(f) / widlen, docid) for w, f in ctr.items()}
 
     def index_doc(self, docid, text):
         if docid in self._docwords:
             return self._reindex_doc(docid, text)
+
         wids = self._lexicon.sourceToWordIds(text)
+
         # XXX Counter is slow. If it is an issue, need to include C module
         # http://stackoverflow.com/questions/2522152/python-is-a-dictionary-slow-to-find-frequency-of-each-character
-        widset, widcnt = zip(*Counter(wids).items())
+        widcnt = Counter(wids)
+        widset = widcnt.keys()
         widcode = PersistentWid.encode_wid(wids if self.keep_phrases else widset)
         self._docwords[docid] = widcode
+
         weights, lengths = self._get_docweights(widset)
-        prefetch(lengths)
-        # Normalized TFs
-        norm = sqrt(len(widset))
-        docscores = [(sqrt(f) / norm, docid) for f in widcnt]
-        parallel_traversal(weights, docscores)
-        for w, length, docscore in zip(weights, lengths, docscores):
-            w.add(docscore)
-            length.change(1)
+        docscores = self._get_widscores(widcnt, docid)
+        prefetch(lengths.values())
+        parallel_traversal(zip(*[(weights[w], docscores[w]) for w in widset]))
+
+        for w in widset:
+            weights[w].add(docscores[w])
+            lengths[w].change(1)
+
+        return len(wids)
+
+    def _reindex_doc(self, docid, text):
+        # We should change Length only for new wids used
+        old_wids = self.get_words(docid)
+        old_ctr = Counter(old_wids)
+        old_widset = set(old_ctr)
+        new_wids = self._lexicon.sourceToWordIds(text)
+        new_ctr = Counter(new_wids)
+        new_widset = set(new_ctr)
+        removed_wids = old_widset - new_widset
+        added_wids = new_widset - old_widset
+        all_wids = list(new_widset + old_widset)
+
+        weights, lengths = self._get_docweights(all_wids)
+
+        for w in removed_wids:
+            lengths[w].change(-1)
+        for w in added_wids:
+            lengths[w].change(1)
+
+        old_docscores = self._get_widscores(old_ctr, docid)
+        new_docscores = self._get_widscores(new_ctr, docid)
+        parallel_traversal(zip(*[
+            (weights[w], old_docscores.get(w) or new_docscores.get(w))
+                for w in all_wids]))
+        # We should update all the weights if len(old_wids) != len(new_wids)
+        # ...and that is generally the case, so we update always
+        for w in old_widset:
+            try:
+                weights[w].remove(old_docscores[w])
+            except KeyError:
+                # This should never happen
+                # If it does, it's a bad sign, though we should still work
+                logging.error("Old weight-docid pair not found!")
+        for w in new_widset:
+            weights[w].add(new_docscores[w])
+
+        self._docwords[docid] = PersistentWid.encode_wid(new_wids if self.keep_phrases else new_widset)
+
+        return len(new_wids)
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
