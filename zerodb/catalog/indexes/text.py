@@ -4,7 +4,7 @@ import logging
 
 from BTrees.Length import Length
 from collections import Counter
-from math import sqrt
+from math import sqrt, log
 from persistent import Persistent
 from zope.interface import implementer
 from zope.index.interfaces import IInjection
@@ -51,6 +51,16 @@ class Lexicon(_Lexicon):
         self.wordCount._p_deactivate()
         parallel_traversal(self._wids, last)
         return list(map(self._getWordIdCreate, last))
+
+    def termToWordIds(self, text):
+        last = _text2list(text)
+        for element in self._pipeline:
+            last = element.process(last)
+        wids = []
+        parallel_traversal(self._wids, last)
+        for word in last:
+            wids.append(self._wids.get(word, 0))
+        return wids
 
 
 class OkapiIndex(_OkapiIndex):
@@ -254,7 +264,8 @@ class IncrementalLuceneIndex(Persistent):
     # search
     # search_phrase
     # search_glob
-    # query_weight
+    # _search_wids
+    # * query_weight
 
     def __init__(self, lexicon, family=None, keep_phrases=True):
         if family is not None:
@@ -399,6 +410,30 @@ class IncrementalLuceneIndex(Persistent):
                 del weights[scores[w]]
         del self._docwords[docid]
         self.documentCount.change(-1)
+
+    def idf2(self, wid):
+        """
+        Returns IDF squared.
+        Note that definition of IDF is different from the classic one
+        """
+        N_docs = self.documentCount.value
+        N_for_term = self._wordinfo[wid][1].value
+        return (1.0 + log(N_docs / (1.0 + N_for_term))) ** 2
+
+    def _remove_oov_wids(self, wids):
+        parallel_traversal(self._wordinfo, wids)
+        return filter(self._wordinfo.has_key, wids)
+
+    def query_weight(self, terms):
+        """
+        Normalization factor:
+            sum of idfs squared (with number-of-uses coefficient)
+        """
+        wc = Counter(self._lexicon.termToWordIds(terms))
+        if 0 in wc:
+            del wc[0]
+        wids = self._remove_oov_wids(wc.keys())
+        return sum([self.idf2(w) * wc[w] for w in wids])
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
