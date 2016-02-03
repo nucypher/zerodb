@@ -245,6 +245,16 @@ class IncrementalLuceneIndex(Persistent):
 
     family = BTrees.family32
     lexicon = property(lambda self: self._lexicon,)
+    # * index_doc
+    # * unindex_doc
+    # * clear
+    # * documentCount
+    # * wordCount
+    # * lexicon
+    # search
+    # search_phrase
+    # search_glob
+    # query_weight
 
     def __init__(self, lexicon, family=None, keep_phrases=True):
         if family is not None:
@@ -262,7 +272,10 @@ class IncrementalLuceneIndex(Persistent):
         # but no phrase search
         self._docwords = self.family.IO.BTree()
 
-    def _get_docweights(self, wids):
+        self.wordCount = Length.Length()
+        self.documentCount = Length.Length()
+
+    def _get_doctrees(self, wids):
         """
         Gets persistent objects used for indexes for wids
         returns: {wid -> TreeSet((weight, docid))}, {wid -> Length}
@@ -277,6 +290,7 @@ class IncrementalLuceneIndex(Persistent):
                 length = Length(0)
                 wdocid = self.family.OO.TreeSet()
                 self._wordinfo[wid] = (wdocid, length)
+                self.wordCount.change(1)
             else:
                 wdocid, length = record
 
@@ -315,14 +329,16 @@ class IncrementalLuceneIndex(Persistent):
         widcode = PersistentWid.encode_wid(wids if self.keep_phrases else widset)
         self._docwords[docid] = widcode
 
-        weights, lengths = self._get_docweights(widset)
+        weights, lengths = self._get_doctrees(widset)
         docscores = self._get_widscores(widcnt, docid)
-        prefetch(lengths.values())
-        parallel_traversal(zip(*[(weights[w], docscores[w]) for w in widset]))
+        prefetch(lengths.values() + [self.documentCount])
+        parallel_traversal(*zip(*[(weights[w], docscores[w]) for w in widset]))
 
         for w in widset:
             weights[w].add(docscores[w])
             lengths[w].change(1)
+
+        self.documentCount.change(1)
 
         return len(wids)
 
@@ -338,7 +354,7 @@ class IncrementalLuceneIndex(Persistent):
         added_wids = new_widset - old_widset
         all_wids = list(new_widset + old_widset)
 
-        weights, lengths = self._get_docweights(all_wids)
+        weights, lengths = self._get_doctrees(all_wids)
 
         for w in removed_wids:
             lengths[w].change(-1)
@@ -347,7 +363,7 @@ class IncrementalLuceneIndex(Persistent):
 
         old_docscores = self._get_widscores(old_ctr, docid)
         new_docscores = self._get_widscores(new_ctr, docid)
-        parallel_traversal(zip(*[
+        parallel_traversal(*zip(*[
             (weights[w], old_docscores.get(w) or new_docscores.get(w))
                 for w in all_wids]))
         # We should update all the weights if len(old_wids) != len(new_wids)
@@ -365,6 +381,24 @@ class IncrementalLuceneIndex(Persistent):
         self._docwords[docid] = PersistentWid.encode_wid(new_wids if self.keep_phrases else new_widset)
 
         return len(new_wids)
+
+    def unindex_doc(self, docid):
+        if docid not in self._docwords:
+            return
+        wids = self.get_words(docid)
+        ctr = Counter(wids)
+        wids = list(ctr)
+        weights, lengths = self._get_doctrees(wids)
+        scores = self._get_widscores(ctr, docid)
+        parallel_traversal(*zip(*[(weights[w], scores[w]) for w in wids]))
+        for w in wids:
+            lengths[w].change(-1)
+            if lengths[w].value == 0:
+                del self._wordinfo[w]
+            else:
+                del weights[scores[w]]
+        del self._docwords[docid]
+        self.documentCount.change(-1)
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
