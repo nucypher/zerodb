@@ -322,10 +322,10 @@ class IncrementalLuceneIndex(Persistent):
         :param dict ctr: Counter {wid -> number_of_wids}
         :param int widlen: Number of unique words in document. Use len(ctr) if
             not given
-        :returns dict: {wid -> (score, docid)}
+        :returns dict: {wid -> (-score, docid)}
         """
         widlen = sqrt(widlen or len(ctr))
-        return {w: (sqrt(f) / widlen, docid) for w, f in ctr.items()}
+        return {w: (-sqrt(f) / widlen, docid) for w, f in ctr.items()}
 
     def index_doc(self, docid, text):
         if docid in self._docwords:
@@ -421,7 +421,7 @@ class IncrementalLuceneIndex(Persistent):
         return (1.0 + log(N_docs / (1.0 + N_for_term))) ** 2
 
     def _remove_oov_wids(self, wids):
-        parallel_traversal(self._wordinfo, wids)
+        parallel_traversal(self._wordinfo, set(wids))
         return filter(self._wordinfo.has_key, wids)
 
     def query_weight(self, terms):
@@ -434,6 +434,36 @@ class IncrementalLuceneIndex(Persistent):
             del wc[0]
         wids = self._remove_oov_wids(wc.keys())
         return sum([self.idf2(w) * wc[w] for w in wids])
+
+    def _search_wids(self, wids):
+        """
+        Finds pointers to iterables (-score, docid) for wids in order,
+        IDFs squared are also calculated as weights
+        """
+        return [(self._wordinfo[w][0], self.idf2(w)) for w in wids]
+
+    def search(self, term):
+        wids = self._lexicon.termToWordIds(term)
+        wids = self._remove_oov_wids(wids)
+        if not wids:
+            return None
+        return mass_weightedUnion(self._search_wids(wids), self.family)
+
+
+def mass_weightedUnion(L):
+    """
+    Incremental version of mass_weightedUnion
+    :param list L: list of (TreeSet((-score, docid)), weight) elements
+    :returns: iterable ordered from large to small sum(score*weight)
+    """
+    if len(L) == 0:
+        return []
+    elif len(L) == 1:
+        # Trivial
+        tree, weight = L[0]
+        return itertools.imap(lambda score, docid: (docid, -score * weight), tree)
+    else:
+        raise NotImplementedError("No multi-keyword search yet. Oy vey...")
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
