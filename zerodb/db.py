@@ -6,6 +6,7 @@ import transaction
 
 from hashlib import sha256
 from repoze.catalog.query import optimize
+from collective.indexing import queue
 from zerodb.permissions import elliptic
 
 from zerodb import models
@@ -52,7 +53,9 @@ class DbModel(object):
 
         if commit:
             transaction.commit()
-
+        
+        transaction.get().addBeforeCommitHook(queue.processQueue) 
+       
     @property
     def _catalog(self):
         return self._db._root[self._catalog_name]

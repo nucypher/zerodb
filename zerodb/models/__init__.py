@@ -5,7 +5,12 @@ from zerodb.intid import IdStore
 from zerodb.trees import family32
 from zerodb.catalog import Catalog
 from zerodb.models.fields import Field, Text
+from zope.lifecycleevent import modified
+from collective.indexing.subscribers import objectModified
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+from zope.event import classhandler
 
+classhandler.handler(IObjectModifiedEvent, objectModified)
 
 class ModelMeta(type):
     def __init__(cls, name, bases, dct):
@@ -70,6 +75,13 @@ class Model(persistent.Persistent):
 
         for field, value in kw.iteritems():
             setattr(self, field, value)
+
+    def __setattr__(self, name, value):
+        origattr = getattr(self,name,None)
+        if origattr is not None and name in self._z_indexed_fields and \
+                not isinstance(origattr, fields.Indexable):  # reindex notify
+            modified(self)
+        super(Model, self).__setattr__(name,value)
 
     @classmethod
     def create_store(cls):

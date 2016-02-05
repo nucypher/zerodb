@@ -17,7 +17,9 @@ INSTALL_REQUIRES = [
     'requests',
     'jsonpickle',
     'pyelliptic',
-    'ecdsa']
+    'ecdsa',
+    'collective.indexing'
+    ]
 
 setup(
     name="zerodb",
