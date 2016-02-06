@@ -25,11 +25,15 @@ from zerodb.transform import init_crypto
 
 
 class AutoReindexQueueProcessor(PortalCatalogProcessor):
-    def __init__(self, db):
+    def __init__(self, db, enabled=True):
         self.db = db
+        self.enabled = enabled
+
     def reindex(self, obj, attributes=None):
-        self.db.reindex(obj)
-  
+        if self.enabled:
+            self.db.reindex(obj)
+
+
 class DbModel(object):
     """
     Class where model is combined with db.
@@ -63,7 +67,6 @@ class DbModel(object):
         if commit:
             transaction.commit()
         
-       
     @property
     def _catalog(self):
         return self._db._root[self._catalog_name]
@@ -232,7 +235,7 @@ class DB(object):
     encrypter = AES256Encrypter
     compressor = None
 
-    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
+    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
@@ -282,7 +285,7 @@ class DB(object):
         self._init_db()
         self._models = {}
 
-        self._reindex_queue_processor = AutoReindexQueueProcessor(self)
+        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=autoreindex)
         component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb')
 
     def _init_default_crypto(self, passphrase=None):
@@ -407,3 +410,9 @@ class DB(object):
         Remove old versions of objects
         """
         self._db.pack()
+
+    def enableAutoReindex(self, enabled=True):
+        """
+        Enable or disable auto reindex
+        """
+        self._reindex_queue_processor.enabled = enabled

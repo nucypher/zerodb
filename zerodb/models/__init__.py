@@ -23,6 +23,7 @@ def objectAutoReindex(ev):
     indexer = getQueue()
     indexer.reindex(ev.object)
 
+
 class ModelMeta(type):
     def __init__(cls, name, bases, dct):
         if bases != (persistent.Persistent,):  # Only subclasses of Model can do it, not Model itself

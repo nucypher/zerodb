@@ -120,6 +120,13 @@ def test_auto_reindex(db):
     assert len(db[Page].query(Contains("text", "autoreindex1") | Contains("text", "autoreindex2"))) == 0
     assert len(db[Page].query(Contains("text", "autoreindex3"))) == 2
 
+    db.enableAutoReindex(False)
+    with transaction.manager:
+        page.text = "autoreindex4, test whether to work"
+    assert len(db[Page].query(Contains("text", "autoreindex3"))) == 2
+    assert len(db[Page].query(Contains("text", "autoreindex4"))) == 0
+
+
 def test_repr(db):
     data = db[Salary].query(Gt("salary", 100000))
     s = str(data)
