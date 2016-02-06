@@ -18,7 +18,7 @@ INSTALL_REQUIRES = [
     'jsonpickle',
     'pyelliptic',
     'ecdsa',
-    'collective.indexing'
+    'collective.indexing == 2.0b1'
     ]
 
 setup(

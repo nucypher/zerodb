@@ -1,16 +1,27 @@
 import persistent
 import fields
 import exceptions
+from collective.indexing.queue import getQueue
+from collective.indexing.subscribers import objectModified
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+from zope.lifecycleevent import ObjectModifiedEvent
+from zope.lifecycleevent import modified
+from zope.event import subscribers
 from zerodb.intid import IdStore
 from zerodb.trees import family32
 from zerodb.catalog import Catalog
 from zerodb.models.fields import Field, Text
-from zope.lifecycleevent import modified
-from collective.indexing.subscribers import objectModified
-from zope.lifecycleevent.interfaces import IObjectModifiedEvent
-from zope.event import classhandler
 
-classhandler.handler(IObjectModifiedEvent, objectModified)
+
+def zerodb_autoreindex_dispatcher(event):
+    if isinstance(event, ObjectModifiedEvent):
+        objectAutoReindex(event)
+
+subscribers.append(zerodb_autoreindex_dispatcher)
+        
+def objectAutoReindex(ev):
+    indexer = getQueue()
+    indexer.reindex(ev.object)
 
 class ModelMeta(type):
     def __init__(cls, name, bases, dct):

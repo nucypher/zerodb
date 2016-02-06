@@ -6,7 +6,10 @@ import transaction
 
 from hashlib import sha256
 from repoze.catalog.query import optimize
+from collective.indexing.indexer import PortalCatalogProcessor
+from collective.indexing.interfaces import IIndexQueueProcessor
 from collective.indexing import queue
+from zope import component
 from zerodb.permissions import elliptic
 
 from zerodb import models
@@ -21,6 +24,12 @@ from zerodb.transform.encrypt_aes import AES256Encrypter
 from zerodb.transform import init_crypto
 
 
+class AutoReindexQueueProcessor(PortalCatalogProcessor):
+    def __init__(self, db):
+        self.db = db
+    def reindex(self, obj, attributes=None):
+        self.db.reindex(obj)
+  
 class DbModel(object):
     """
     Class where model is combined with db.
@@ -54,7 +63,6 @@ class DbModel(object):
         if commit:
             transaction.commit()
         
-        transaction.get().addBeforeCommitHook(queue.processQueue) 
        
     @property
     def _catalog(self):
@@ -273,6 +281,9 @@ class DB(object):
 
         self._init_db()
         self._models = {}
+
+        self._reindex_queue_processor = AutoReindexQueueProcessor(self)
+        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb')
 
     def _init_default_crypto(self, passphrase=None):
         if self.encrypter:
