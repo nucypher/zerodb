@@ -29,7 +29,7 @@ class AutoReindexQueueProcessor(PortalCatalogProcessor):
         self.db = db
         self.enabled = enabled
 
-    def reindex(self, obj, attributes=None):
+    def reindex(self, obj, attributes=None):   # execute reindex in before_commit hook when commit
         if self.enabled:
             self.db.reindex(obj)
 
@@ -286,7 +286,7 @@ class DB(object):
         self._models = {}
 
         self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=autoreindex)
-        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb')
+        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb')  # register queue processor, reindex obj when commit
 
     def _init_default_crypto(self, passphrase=None):
         if self.encrypter:

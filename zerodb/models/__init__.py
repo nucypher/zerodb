@@ -21,7 +21,7 @@ subscribers.append(zerodb_autoreindex_dispatcher)
         
 def objectAutoReindex(ev):
     indexer = getQueue()
-    indexer.reindex(ev.object)
+    indexer.reindex(ev.object)   # put into queue, not really reindex. 
 
 
 class ModelMeta(type):
