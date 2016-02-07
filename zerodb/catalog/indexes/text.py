@@ -4,6 +4,7 @@ import logging
 
 from BTrees.Length import Length
 from collections import Counter
+from itertools import izip
 from math import sqrt, log
 from persistent import Persistent
 from zope.interface import implementer
@@ -57,10 +58,13 @@ class Lexicon(_Lexicon):
         for element in self._pipeline:
             last = element.process(last)
         wids = []
-        parallel_traversal(self._wids, last)
+        if len(last) > 1:
+            parallel_traversal(self._wids, last)
         for word in last:
             wids.append(self._wids.get(word, 0))
         return wids
+
+    # XXX globToWordIds should pre-fetch prefixes in *range*
 
 
 class OkapiIndex(_OkapiIndex):
@@ -446,24 +450,134 @@ class IncrementalLuceneIndex(Persistent):
         wids = self._lexicon.termToWordIds(term)
         wids = self._remove_oov_wids(wids)
         if not wids:
-            return None
-        return mass_weightedUnion(self._search_wids(wids), self.family)
+            return []
+        return mass_weightedUnion(self._search_wids(wids))
+
+    def search_glob(self, pattern):
+        wids = self._lexicon.globToWordIds(pattern)
+        wids = self._remove_oov_wids(wids)
+        return mass_weightedUnion(self._search_wids(wids))
+
+    def search_phrase(self, phrase):
+        # Need to do mass_weightedIntersection here.
+        # Simplest version of it would be:
+        #   fetch (score, docid) info for the rarest keyword
+        #   find same docids in different keywords
+        #   do intersection in memory
+        #   fetch widcode to search for phrase
+        # XXX we'd require to maintain also BTree(docid -> score)
+        raise NotImplementedError
 
 
 def mass_weightedUnion(L):
     """
     Incremental version of mass_weightedUnion
-    :param list L: list of (TreeSet((-score, docid)), weight) elements
+    :param list L: dict of wid: (TreeSet((-score, docid)), weight) elements
     :returns: iterable ordered from large to small sum(score*weight)
     """
+    cache_size = 40
+    order_size = 15
+    order_violation = 3
+
     if len(L) == 0:
-        return []
+        return
     elif len(L) == 1:
         # Trivial
-        tree, weight = L[0]
-        return itertools.imap(lambda score, docid: (docid, -score * weight), tree)
+        tree, weight = L.values()[0]
+        # XXX need to make it possible to advance the tree N elements ahead!
+        for el in itertools.imap(lambda score, docid: (docid, -score * weight), tree):
+            yield el
     else:
-        raise NotImplementedError("No multi-keyword search yet. Oy vey...")
+        # XXX make into an iterator class
+
+        trees, weights = zip(*L)
+        prefetch(trees)
+        prefetch([x._firstbucket for x in trees if x._firstbucket is not None])
+
+        unread_max = [-x.minKey()[0] for x in trees]
+        iters = dict(enumerate(map(iter, trees)))
+        caches = [{} for i in range(len(L))]
+        maxscores = [-1] * len(L)
+        used = set()
+        minmax = []
+
+        def scorerange(docid):
+            """
+            :returns: minscore, maxscore
+            """
+            mc = zip(unread_max, caches)
+            maxscore = sum(c.get(docid, m) for m, c in mc)
+            minscore = sum(c.get(docid, 0) for m, c in mc)
+            return minscore, maxscore
+
+        def precache(i, size):
+            try:
+                for j in xrange(size):
+                    score, docid = iters[i].next()
+                    score = -score
+                    if unread_max[i] > score:
+                        unread_max[i] = score
+                    if docid not in used:
+                        caches[i][docid] = score
+                        if maxscores[i] < 0:
+                            maxscores[i] = score
+            except StopIteration:
+                del iters[i]
+                unread_max[i] = 0
+
+        while True:
+            # Main cycle in which we yield values to make an iterator
+
+            # Advance iterators when needed / fill caches to keep them long enough
+            # Perhaps, some better algorithm is needed to pre-read, this is the simplest
+
+            if sum(map(len, caches)) == 0:
+                # End of iteration - no more elements
+                break
+
+            cache_updated = False
+            for i in iters.keys():
+                cache = caches[i]
+                if len(cache) < cache_size / 2:
+                    precache(i, cache_size - len(cache))
+                    cache_updated = True
+
+            if cache_updated or not minmax:
+                while True:
+                    docids = set.union(map(set, caches))
+                    minmax = sorted([(
+                            sum(c.get(docid, 0) for c in caches),
+                            sum(c.get(docid, m) for c, m in izip(caches, unread_max)),
+                            docid)
+                        for docid in docids],
+                        reverse=True, key=lambda x: x[0])[:order_size]
+                    mins, maxs, docids = zip(*minmax)
+                    violated = False
+                    for i in xrange(len(mins) - order_violation - 1):
+                        # Naive implementation. Can go from tail and do faster
+                        # in batches of size of order_violation
+                        for m in maxs[i + order_violation:]:
+                            if m > mins[i]:
+                                violated = True
+                                break
+                        if violated:
+                            break
+                    if not violated:
+                        break
+                    else:
+                        # XXX instead we could download enough elements to change
+                        # sum(unread_max) by much enough
+                        precache(unread_max.index(max(unread_max)), cache_size / 2)
+
+            minw, maxw, docid = minmax.pop(0)
+            for i, c in enumerate(caches):
+                if docid in c:
+                    if c[docid] == unread_max[i]:
+                        del c[docid]
+                        unread_max[i] = max(c.itervalues())
+                    else:
+                        del c[docid]
+            yield docid, (minw + maxw) / 2.0
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
