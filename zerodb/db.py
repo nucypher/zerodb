@@ -6,9 +6,9 @@ import transaction
 
 from hashlib import sha256
 from repoze.catalog.query import optimize
-from collective.indexing.indexer import PortalCatalogProcessor
-from collective.indexing.interfaces import IIndexQueueProcessor
-from collective.indexing import queue
+from zerodb.collective.indexing.indexer import PortalCatalogProcessor
+from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
+from zerodb.collective.indexing import queue
 from zope import component
 from zerodb.permissions import elliptic
 
