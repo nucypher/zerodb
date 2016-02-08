@@ -148,26 +148,20 @@ class IndexQueue(local):
         self.setState(sorted(res.values()))
 
     def process(self):
-        print("###process queue")
         self.optimize()
         if not self.queue:
             return 0
         sm = getSiteManager()
-        print("###sm:",sm)
         utilities = list(sm.getUtilitiesFor(IIndexQueueProcessor))
-        print("##len of util:", len(utilities))
         processed = 0
         for name, util in utilities:
             util.begin()
         # TODO: must the queue be handled independently for each processor?
         for op, obj, attributes in self.queue:
-            print("###obj:",obj)
             for name, util in utilities:
-                print("##util:",util)
                 if op == INDEX:
                     util.index(obj, attributes)
                 elif op == REINDEX:
-                    print("##really reindex")
                     util.reindex(obj, attributes)
                 elif op == UNINDEX:
                     util.unindex(obj)
