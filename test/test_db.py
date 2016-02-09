@@ -99,6 +99,7 @@ def test_reindex(db):
     assert len(db[Page].query(Contains("text", "quick3") | Contains("text", "quick4"))) == 0
     assert len(db[Page].query(Contains("text", "quick5"))) == 2
 
+
 def test_auto_reindex(db):
     with transaction.manager:
         page = Page(title="hello", text="autoreindex0, test whether to work")

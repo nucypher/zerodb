@@ -2,7 +2,6 @@ from logging import getLogger
 from threading import local
 from zope.interface import implements
 from zope.component import getSiteManager
-from Acquisition import aq_base, aq_inner, aq_parent
 
 from zerodb.collective.indexing.interfaces import IIndexQueue
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
@@ -42,39 +41,6 @@ def processQueue():
     return processed
 
 
-def wrap(obj):
-    """ the indexing key, i.e. the path to the object in the case of the
-        portal catalog, might have changed while the unindex operation was
-        delayed, for example due to renaming the object;  it was probably not
-        such a good idea to use a key that can change in the first place, but
-        to work around this a proxy object is used, which can provide the
-        original path;  of course, access to other attributes must still be
-        possible, since alternate indexers (i.e. solr etc) might use another
-        unique key, usually the object's uid;  also the inheritence tree
-        must match """
-    if getattr(aq_base(obj), 'getPhysicalPath', None) is None:
-        return obj
-
-    class PathWrapper(obj.__class__):
-
-        def __init__(self):
-            self.__dict__.update(dict(
-                context = obj,
-                path = obj.getPhysicalPath(),
-                REQUEST = getattr(obj, 'REQUEST', None)))
-
-        def __getattr__(self, name):
-            return getattr(aq_inner(self.context), name)
-
-        def __hash__(self):
-            return hash(self.context)   # make the wrapper transparent...
-
-        def getPhysicalPath(self):
-            return self.path
-
-    return PathWrapper().__of__(aq_parent(obj))
-
-
 class IndexQueue(local):
 
     implements(IIndexQueue)
@@ -101,7 +67,7 @@ class IndexQueue(local):
         self.hook()
 
     def unindex(self, obj):
-        self.queue.append((UNINDEX, wrap(obj), None))
+        self.queue.append((UNINDEX, obj, None))
         self.hook()
 
     def setHook(self, hook):
@@ -133,7 +99,7 @@ class IndexQueue(local):
             else:
                 # Operators are -1, 0 or 1 which makes it safe to add them
                 op += iop
-                op = min(max(op, UNINDEX), INDEX) # operator always between -1 and 1
+                op = min(max(op, UNINDEX), INDEX)  # operator always between -1 and 1
 
                 # Handle attributes, None means all fields, and takes presedence
                 if isinstance(attr, (tuple, list)) and isinstance(iattr, (tuple, list)):
