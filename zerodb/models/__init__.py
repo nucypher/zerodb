@@ -18,10 +18,11 @@ def zerodb_autoreindex_dispatcher(event):
         objectAutoReindex(event)
 
 subscribers.append(zerodb_autoreindex_dispatcher)
-        
+
+
 def objectAutoReindex(ev):
     indexer = getQueue()
-    indexer.reindex(ev.object)   # put into queue, not really reindex. 
+    indexer.reindex(ev.object)   # put into queue, not really reindex.
 
 
 class ModelMeta(type):
@@ -89,11 +90,11 @@ class Model(persistent.Persistent):
             setattr(self, field, value)
 
     def __setattr__(self, name, value):
-        origattr = getattr(self,name,None)
+        origattr = getattr(self, name, None)
         if origattr is not None and name in self._z_indexed_fields and \
                 not isinstance(origattr, fields.Indexable):  # reindex notify
             modified(self)
-        super(Model, self).__setattr__(name,value)
+        super(Model, self).__setattr__(name, value)
 
     @classmethod
     def create_store(cls):

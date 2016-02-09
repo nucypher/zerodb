@@ -66,7 +66,7 @@ class DbModel(object):
 
         if commit:
             transaction.commit()
-        
+
     @property
     def _catalog(self):
         return self._db._root[self._catalog_name]
