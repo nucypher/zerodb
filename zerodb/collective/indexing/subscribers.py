@@ -2,7 +2,6 @@ from Acquisition import aq_parent, aq_inner, aq_base
 from zope.container.contained import dispatchToSublocations
 from zope.event import notify
 from zope.lifecycleevent import ObjectModifiedEvent, Attributes
-from zope.publisher.interfaces.browser import IBrowserRequest
 
 from zerodb.collective.indexing.queue import getQueue
 
@@ -13,8 +12,6 @@ def filterTemporaryItems(obj, checkId=True):
         so return it, else return None """
     parent = aq_parent(aq_inner(obj))
     if parent is None:
-        return None
-    if IBrowserRequest.providedBy(parent):
         return None
     if checkId and getattr(obj, 'getId', None):
         parent = aq_base(parent)
@@ -28,7 +25,7 @@ def filterTemporaryItems(obj, checkId=True):
             if obj.isTemporary():
                 return None
         except TypeError:
-            return None # `isTemporary` on the `FactoryTool` expects 2 args
+            return None  # `isTemporary` on the `FactoryTool` expects 2 args
     return obj
 
 
