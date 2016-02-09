@@ -2,7 +2,6 @@ import persistent
 import fields
 import exceptions
 from zerodb.collective.indexing.queue import getQueue
-from zerodb.collective.indexing.subscribers import objectModified
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from zope.lifecycleevent import ObjectModifiedEvent
 from zope.lifecycleevent import modified
