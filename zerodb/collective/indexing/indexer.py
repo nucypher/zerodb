@@ -1,24 +1,5 @@
 from zope.interface import implements
-#from Products.Archetypes.CatalogMultiplex import CatalogMultiplex
-#from Products.CMFCore.CMFCatalogAware import CMFCatalogAware
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
-
-
-# container to hold references to the original and "monkeyed" indexing methods
-# these are populated by `collective.indexing.monkey`
-catalogMultiplexMethods = {}
-catalogAwareMethods = {}
-monkeyMethods = {}
-
-
-def getOwnIndexMethod(obj, name):
-    """ return private indexing method if the given object has one """
-    attr = getattr(obj.__class__, name, None)
-    if attr is not None:
-        method = attr.im_func
-        monkey = monkeyMethods.get(name.rstrip('Object'), None)
-        if monkey is not None and method is not monkey:
-            return method
 
 
 class IPortalCatalogQueueProcessor(IIndexQueueProcessor):
