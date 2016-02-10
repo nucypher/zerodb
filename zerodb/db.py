@@ -257,7 +257,7 @@ class DB(object):
             sock = str(sock[0]), int(sock[1])
 
         self._autoreindex = autoreindex
-        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=True)
+        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=autoreindex)
         component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb-indexer')
 
         self.auth_module = kw.pop("auth_module", self.auth_module)
@@ -420,4 +420,6 @@ class DB(object):
         """
         Enable or disable auto reindex
         """
+        if enabled:
+            subscribers.init()
         self._reindex_queue_processor.enabled = enabled
