@@ -18,11 +18,8 @@ INSTALL_REQUIRES = [
     'jsonpickle',
     'pyelliptic',
     'ecdsa',
-    'zope.container',
     'zope.event',
-    'zope.lifecycleevent',
-    'zope.publisher',
-    'Acquisition'
+    'zope.lifecycleevent'
     ]
 
 setup(
