@@ -6,6 +6,11 @@ import transaction
 
 from hashlib import sha256
 from repoze.catalog.query import optimize
+from zerodb.collective.indexing.indexer import PortalCatalogProcessor
+from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
+from zerodb.collective.indexing import queue
+from zerodb.collective.indexing import subscribers
+from zope import component
 from zerodb.permissions import elliptic
 
 from zerodb import models
@@ -18,6 +23,16 @@ from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
 from zerodb.transform.encrypt_aes import AES256Encrypter
 from zerodb.transform import init_crypto
+
+
+class AutoReindexQueueProcessor(PortalCatalogProcessor):
+    def __init__(self, db, enabled=True):
+        self.db = db
+        self.enabled = enabled
+
+    def reindex(self, obj, attributes=None):   # execute reindex in before_commit hook when commit
+        if self.enabled:
+            self.db.reindex(obj)
 
 
 class DbModel(object):
@@ -221,7 +236,7 @@ class DB(object):
     encrypter = AES256Encrypter
     compressor = None
 
-    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
+    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
@@ -240,6 +255,10 @@ class DB(object):
         elif type(sock) in (list, tuple):
             assert len(sock) == 2
             sock = str(sock[0]), int(sock[1])
+
+        self._autoreindex = autoreindex
+        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=autoreindex)
+        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb-indexer')
 
         self.auth_module = kw.pop("auth_module", self.auth_module)
 
@@ -280,6 +299,9 @@ class DB(object):
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
+        if self._autoreindex:
+            subscribers.init()
+
         self.__conn_refs = {}
         self.__thread_local = threading.local()
         self.__thread_watcher = ThreadWatcher()
@@ -393,3 +415,11 @@ class DB(object):
         Remove old versions of objects
         """
         self._db.pack()
+
+    def enableAutoReindex(self, enabled=True):
+        """
+        Enable or disable auto reindex
+        """
+        if enabled:
+            subscribers.init()
+        self._reindex_queue_processor.enabled = enabled

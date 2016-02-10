@@ -1,6 +1,7 @@
 import persistent
 import fields
 import exceptions
+from zope.lifecycleevent import modified
 from zerodb.intid import IdStore
 from zerodb.trees import family32
 from zerodb.catalog import Catalog
@@ -70,6 +71,13 @@ class Model(persistent.Persistent):
 
         for field, value in kw.iteritems():
             setattr(self, field, value)
+
+    def __setattr__(self, name, value):
+        origattr = getattr(self, name, None)
+        if origattr is not None and name in self._z_indexed_fields and \
+                not isinstance(origattr, fields.Indexable):  # reindex notify
+            modified(self)
+        super(Model, self).__setattr__(name, value)
 
     @classmethod
     def create_store(cls):

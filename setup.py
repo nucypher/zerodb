@@ -17,7 +17,10 @@ INSTALL_REQUIRES = [
     'requests',
     'jsonpickle',
     'pyelliptic',
-    'ecdsa']
+    'ecdsa',
+    'zope.event',
+    'zope.lifecycleevent'
+    ]
 
 setup(
     name="zerodb",
