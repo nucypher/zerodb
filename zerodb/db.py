@@ -9,6 +9,7 @@ from repoze.catalog.query import optimize
 from zerodb.collective.indexing.indexer import PortalCatalogProcessor
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
 from zerodb.collective.indexing import queue
+from zerodb.collective.indexing import subscribers
 from zope import component
 from zerodb.permissions import elliptic
 
@@ -285,8 +286,10 @@ class DB(object):
         self._init_db()
         self._models = {}
 
-        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=autoreindex)
-        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb')  # register queue processor, reindex obj when commit
+        if autoreindex:
+            subscribers.init()
+            self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=True)
+            component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb-indexer')
 
     def _init_default_crypto(self, passphrase=None):
         if self.encrypter:

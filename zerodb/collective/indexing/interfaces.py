@@ -1,11 +1,6 @@
 from zope.interface import Interface
 
 
-class IIndexQueueSwitch(Interface):
-    # BBB: support uninstall of 1.x versions
-    pass
-
-
 class IIndexing(Interface):
     """ interface for indexing operations, used both for the queue and
         the processors, which perform the actual indexing;  the queue gets
