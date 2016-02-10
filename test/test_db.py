@@ -1,4 +1,5 @@
 import logging
+import mock
 import transaction
 from db import Page, Salary, Department
 from zerodb.catalog.query import Contains, InRange, Eq, Gt
@@ -120,6 +121,13 @@ def test_auto_reindex(db):
         page2.text = "autoreindex3, test whether to work"
     assert len(db[Page].query(Contains("text", "autoreindex1") | Contains("text", "autoreindex2"))) == 0
     assert len(db[Page].query(Contains("text", "autoreindex3"))) == 2
+
+    with mock.patch("zerodb.db.DbModel.reindex_one") as reindex_mock:
+        with transaction.manager:
+            page.text = "autoreindex3, test whether to work1"
+            page.text = "autoreindex3, test whether to work2"
+            page.text = "autoreindex3, test whether to work3"
+        assert reindex_mock.call_count == 1
 
     db.enableAutoReindex(False)
     with transaction.manager:
