@@ -256,6 +256,10 @@ class DB(object):
             assert len(sock) == 2
             sock = str(sock[0]), int(sock[1])
 
+        self._autoreindex = autoreindex
+        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=True)
+        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb-indexer')
+
         self.auth_module = kw.pop("auth_module", self.auth_module)
 
         self.auth_module.register_auth()
@@ -286,11 +290,6 @@ class DB(object):
         self._init_db()
         self._models = {}
 
-        if autoreindex:
-            subscribers.init()
-            self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=True)
-            component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb-indexer')
-
     def _init_default_crypto(self, passphrase=None):
         if self.encrypter:
             self.encrypter.register_class(default=True)
@@ -300,6 +299,9 @@ class DB(object):
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
+        if self._autoreindex:
+            subscribers.init()
+
         self.__conn_refs = {}
         self.__thread_local = threading.local()
         self.__thread_watcher = ThreadWatcher()
