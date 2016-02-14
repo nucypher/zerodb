@@ -14,7 +14,7 @@ def test_query(db):
     assert len(db[Salary]) == 201
     test_pages = db[Page].query(Contains("text", "something"))
     pre_range_count = db._storage._debug_download_count
-    assert pre_range_count - pre_request_count < 20  # We'll have performance testing separately this way
+    assert pre_range_count - pre_request_count < 15  # We'll have performance testing separately this way
     test_salaries_1 = db[Salary].query(InRange("salary", 130000, 180000), sort_index="salary", limit=2)
     test_salaries_2 = db[Salary].query(InRange("salary", 130000, 130001), sort_index="salary", limit=2)
     post_range_count = db._storage._debug_download_count
@@ -25,7 +25,7 @@ def test_query(db):
         assert s.salary >= 130000
         assert s.salary <= 180000
     # Check that we pre-downloaded all objects into cache
-    assert db._storage._debug_download_count - post_range_count < 5
+    assert db._storage._debug_download_count - post_range_count <= 5
 
     million_employee = db[Salary].query(salary=1000000)
     assert len(million_employee) == 1
@@ -46,6 +46,11 @@ def test_query(db):
 
     db[Salary].query(InRange("salary", 130000, 180000), name="John-2")
     db[Salary].query(InRange("salary", 130000, 180000) | Eq("name", "John-2"))
+
+    # test Length object
+    delattr(db[Salary]._objects, "length")
+    assert len(db[Salary]) > 0
+    assert db[Salary]._objects.length.value == len(db[Salary])
 
 
 def test_add(db):

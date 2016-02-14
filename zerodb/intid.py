@@ -4,6 +4,7 @@
 # Conflict avoidance method is copied from IntIds._generateId (need something better I guess)
 import persistent
 import random
+from BTrees.Length import Length
 from zerodb.trees import family32
 
 
@@ -22,6 +23,7 @@ class IdStore(persistent.Persistent):
         :param family: Family of BTrees to use
         """
         self.tree = family.IO.BTree()
+        self.length = Length()
 
     def _generateId(self):
         """Generate an id which is not yet taken.
@@ -54,6 +56,8 @@ class IdStore(persistent.Persistent):
         :return: Unique ID
         :rtype: int
         """
+        if not hasattr(self, "length"):
+            self.length = Length(len(self.tree))
         while True:
             uid = self._generateId()
             if self.tree.insert(uid, obj):  # We use this feature of BTrees to avoid conflicts
@@ -61,6 +65,7 @@ class IdStore(persistent.Persistent):
                 # However assigning _v_* unghostifies the object while _p_* doesn't
                 # We don't want to force-unghostify the object in some cases
                 obj._p_uid = uid
+                self.length.change(1)
                 return uid
 
     def remove(self, iobj):
@@ -68,11 +73,15 @@ class IdStore(persistent.Persistent):
         Remove object from the storage
         :param obj: Object or its integer unique id
         """
+        if not hasattr(self, "length"):
+            self.length = Length(len(self.tree))
         if type(iobj) in (int, long):
             del self.tree[iobj]
+            self.length.change(-1)
         elif hasattr(iobj, "_p_uid"):
             del self.tree[iobj._p_uid]
             iobj._p_uid = None
+            self.length.change(-1)
         else:
             raise TypeError("Argument should be either uid or object itself")
 
@@ -89,4 +98,6 @@ class IdStore(persistent.Persistent):
         self.remove(uid)
 
     def __len__(self):
-        return len(self.tree)
+        if not hasattr(self, "length"):
+            self.length = Length(len(self.tree))
+        return self.length.value
