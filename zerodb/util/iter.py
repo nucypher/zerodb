@@ -23,6 +23,12 @@ class Sliceable(object):
             yield y
             # We get StopIteration error once we're done
 
+    def dictify(self):
+        for obj in self.__iter__():
+            if hasattr(obj, "_p_activate"):
+                obj._p_activate()
+            yield {k: v for k, v in obj.__dict__.iteritems() if not k.startswith("_")}
+
     def __len__(self):
         if self.length is None:
             if hasattr(self.iterator, "__len__"):

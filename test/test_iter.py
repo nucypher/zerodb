@@ -2,6 +2,8 @@ import itertools
 import pytest
 
 from zerodb.util.iter import Sliceable
+from zerodb.catalog.query import Gt
+from db import Salary
 
 
 def test_sliceable():
@@ -37,3 +39,9 @@ def test_sliceable():
     assert len(it) == 100
     it = Sliceable(lambda: itertools.imap(str, xrange(100)))
     assert it[10:] == map(str, range(10, 100))
+
+
+def test_dictify(db):
+    test_salaries = db[Salary].query(Gt("salary", 100000)).dictify()
+    obj = test_salaries.next()
+    assert set(obj.keys()) == set(["name", "surname", "salary", "department"])
