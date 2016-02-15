@@ -75,8 +75,8 @@ class Model(persistent.Persistent):
     def __setattr__(self, name, value):
         origattr = getattr(self, name, None)
         if origattr is not None and name in self._z_indexed_fields and \
-                not isinstance(origattr, fields.Indexable):  # reindex notify
-            modified(self)
+                not isinstance(origattr, fields.Indexable) and hasattr(self, "_p_uid"):  # reindex notify
+            modified(self, name)
         super(Model, self).__setattr__(name, value)
 
     @classmethod

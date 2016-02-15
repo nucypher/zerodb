@@ -140,6 +140,38 @@ def test_auto_reindex(db):
     assert len(db[Page].query(Contains("text", "autoreindex3"))) == 2
     assert len(db[Page].query(Contains("text", "autoreindex4"))) == 0
 
+    db.enableAutoReindex(True)
+    with transaction.manager:    # should not throw ModleException
+        page3 = Page(title="helloworld", text="autoreindex5, test whether to work")
+        page3.title = "helloworld1"
+    assert len(db[Page].query(Eq("title", "helloworld"))) == 0
+    assert len(db[Page].query(Eq("title", "helloworld1"))) == 0
+
+    with mock.patch("zerodb.db.DbModel.reindex_one") as reindex_mock:
+        with transaction.manager:  # should not reindex
+            page3 = Page(title="helloworld", text="autoreindex5, test whether to work")
+            page3.title = "helloworld1"
+            db.add(page3)
+        assert reindex_mock.call_count == 0
+
+    with transaction.manager:  # should  reindex
+        page3 = Page(title="helloworld", text="autoreindex6, test whether to work")
+        db.add(page3)
+        page3.title = "helloworld1"
+        page3.text = "autoreindex7, test whether to work"
+    assert len(db[Page].query(Eq("title", "helloworld"))) == 0
+    assert len(db[Page].query(Eq("title", "helloworld1"))) == 2
+    assert len(db[Page].query(Contains("text", "autoreindex6"))) == 0
+    assert len(db[Page].query(Contains("text", "autoreindex7"))) == 1
+
+    with mock.patch("zerodb.db.DbModel.reindex_one") as reindex_mock:
+        with transaction.manager:  # should  reindex
+            page3 = Page(title="helloworld", text="autoreindex6, test whether to work")
+            db.add(page3)
+            page3.title = "helloworld1"
+            page3.text = "autoreindex7, test whether to work"
+        assert reindex_mock.call_count == 1
+
 
 def test_repr(db):
     data = db[Salary].query(Gt("salary", 100000))

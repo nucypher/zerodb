@@ -32,7 +32,7 @@ class AutoReindexQueueProcessor(PortalCatalogProcessor):
 
     def reindex(self, obj, attributes=None):   # execute reindex in before_commit hook when commit
         if self.enabled:
-            self.db.reindex(obj)
+            self.db.reindex(obj, attributes)
 
 
 class DbModel(object):
@@ -115,12 +115,14 @@ class DbModel(object):
         obj._p_uid = uid
         return uid
 
-    def reindex_one(self, obj):
+    def reindex_one(self, obj, attributes=None):
         """
         Reindex one object which is already in the database
 
         :param obj: Object to add to the database or its uid
         :type obj: zerodb.models.Model, int
+        :param attributes: Attributes of obj to be reindex
+        :type attributes: tuple, list
         """
 
         if isinstance(obj, (int, long)):
@@ -132,8 +134,16 @@ class DbModel(object):
             else:
                 raise ModelException("Object %s is not indexed" % obj)
         else:
-            raise TypeError("Wrong type of argument passed: must be integer or model instance")
-        self._catalog.reindex_doc(uid, obj)
+            raise TypeError("Wrong type of argument passed: obj must be integer or model instance")
+
+        if attributes is None:
+            self._catalog.reindex_doc(uid, obj)
+        elif isinstance(attributes, (tuple, list)):
+            for attr in attributes:
+                if attr in self._catalog:
+                    self._catalog[attr].reindex_doc(uid, obj)
+        else:
+            raise TypeError("Wrong type of argument passed: attributes must be tuple or list")
 
     def reindex(self, obj):
         """
@@ -394,19 +404,21 @@ class DB(object):
         else:
             raise ModelException("Class <%s> is not a Model or iterable" % obj.__class__.__name__)
 
-    def reindex(self, obj):
+    def reindex(self, obj, attributes=None):
         """
         Reindex one or multiple objects in the database
 
         :param obj: Object to add to the database or its uid, or list of objects or uids
         :type obj: zerodb.models.Model, list
+        :param attributes: Attributes of obj to be reindex
+        :type attributes: tuple, list
         """
         if isinstance(obj, models.Model):
-            self[obj.__class__].reindex_one(obj)
+            self[obj.__class__].reindex_one(obj, attributes)
         elif isinstance(obj, (list, tuple, set, Sliceable)):
             for o in obj:
                 assert isinstance(o, models.Model)
-                self[o.__class__].reindex_one(o)
+                self[o.__class__].reindex_one(o, attributes)
         else:
             raise TypeError("ZeroDB object or list of these should be passed")
 
