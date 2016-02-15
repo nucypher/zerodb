@@ -76,7 +76,7 @@ class Model(persistent.Persistent):
         origattr = getattr(self, name, None)
         if origattr is not None and name in self._z_indexed_fields and \
                 not isinstance(origattr, fields.Indexable):  # reindex notify
-            modified(self)
+            modified(self, name)
         super(Model, self).__setattr__(name, value)
 
     @classmethod

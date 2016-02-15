@@ -13,7 +13,7 @@ def zerodb_autoreindex_dispatcher(event):
 
 def objectAutoReindex(ev):
     indexer = getQueue()
-    indexer.reindex(ev.object)   # put into queue, not really reindex.
+    indexer.reindex(ev.object, ev.descriptions)   # put into queue, not really reindex.
 
 
 def init():
