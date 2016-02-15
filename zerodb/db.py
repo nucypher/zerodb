@@ -135,7 +135,7 @@ class DbModel(object):
                 raise ModelException("Object %s is not indexed" % obj)
         else:
             raise TypeError("Wrong type of argument passed: obj must be integer or model instance")
-        
+       
         if attributes is None:
             self._catalog.reindex_doc(uid, obj)
         elif isinstance(attributes, (tuple, list)):
