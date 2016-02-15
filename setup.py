@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
 
 setup(
     name="zerodb",
-    version="0.96.14",
+    version="0.96.15",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
