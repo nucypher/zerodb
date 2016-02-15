@@ -146,7 +146,7 @@ def test_auto_reindex(db):
         page3.title = "helloworld1"
     assert len(db[Page].query(Eq("title", "helloworld"))) == 0
     assert len(db[Page].query(Eq("title", "helloworld1"))) == 0
-   
+
     with mock.patch("zerodb.db.DbModel.reindex_one") as reindex_mock:
         with transaction.manager:  # should not reindex
             page3 = Page(title="helloworld", text="autoreindex5, test whether to work")
@@ -163,7 +163,7 @@ def test_auto_reindex(db):
     assert len(db[Page].query(Eq("title", "helloworld1"))) == 2
     assert len(db[Page].query(Contains("text", "autoreindex6"))) == 0
     assert len(db[Page].query(Contains("text", "autoreindex7"))) == 1
- 
+
     with mock.patch("zerodb.db.DbModel.reindex_one") as reindex_mock:
         with transaction.manager:  # should  reindex
             page3 = Page(title="helloworld", text="autoreindex6, test whether to work")
