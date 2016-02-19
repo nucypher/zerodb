@@ -13,15 +13,17 @@ class CommonCompressor(object):
     """
     name = ""
 
-    def __init__(self, name="", compress=None, decompress=None):
+    def __init__(self, name="", compress=None, decompress=None, args=None, kwargs=None):
         self.name = name
         self._compress = compress
         self._decompress = decompress
         self._signature = self.name and ".c%s$" % self.name
+        self._args = args or []
+        self._kwargs = kwargs or {}
 
     def compress(self, data):
         if not data.startswith(self._signature):
-            compressed = self._signature + self._compress(data)
+            compressed = self._signature + self._compress(data, *self._args, **self._kwargs)
             if len(compressed) < len(data):
                 return compressed
         return data
