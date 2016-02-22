@@ -10,7 +10,7 @@ from zerodb.permissions import base as permissions_base
 from zerodb.storage import ZEOServer
 
 from db import TEST_PASSPHRASE
-from db import create_objects_and_close
+from db import create_objects_and_close, add_wiki_and_close
 TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
 TEST_PUBKEY_3 = ecc.private(TEST_PASSPHRASE + " third").get_pubkey()
 TEST_PERMISSIONS = """realm ZERO
@@ -85,6 +85,45 @@ def tempdir(request):
 @pytest.fixture(scope="module")
 def db(request, zeo_server):
     zdb = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+
+    @request.addfinalizer
+    def fin():
+        zdb.disconnect()  # I suppose, it's not really required
+
+    return zdb
+
+
+@pytest.fixture(scope="module")
+def wiki_server(request, pass_file, tempdir):
+    """
+    :return: Temporary UNIX socket
+    :rtype: str
+    """
+    sock = path.join(tempdir, "zeosocket_auth")
+    zeroconf_file = path.join(tempdir, "zeo.config")
+    dbfile = path.join(tempdir, "db2.fs")
+    with open(zeroconf_file, "w") as f:
+        f.write(ZEO_CONFIG % {
+            "sock": sock,
+            "pass_file": pass_file,
+            "dbfile": dbfile})
+    server = Process(target=ZEOServer.run, kwargs={"args": ("-C", zeroconf_file)})
+
+    @request.addfinalizer
+    def fin():
+        server.terminate()
+        server.join()
+
+    server.start()
+
+    add_wiki_and_close(sock)
+
+    return sock
+
+
+@pytest.fixture(scope="module")
+def wiki_db(request, wiki_server):
+    zdb = zerodb.DB(wiki_server, username="root", password=TEST_PASSPHRASE, debug=True)
 
     @request.addfinalizer
     def fin():
