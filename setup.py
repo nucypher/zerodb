@@ -17,7 +17,8 @@ INSTALL_REQUIRES = [
     'pyelliptic',
     'ecdsa',
     'zope.event',
-    'zope.lifecycleevent'
+    'zope.lifecycleevent',
+    'aes256gcm-nacl'
     ]
 
 setup(

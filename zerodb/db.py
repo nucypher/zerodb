@@ -21,7 +21,7 @@ from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
 from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
-from zerodb.transform.encrypt_aes import AES256Encrypter
+from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
 from zerodb.transform import init_crypto
 
 
@@ -243,7 +243,7 @@ class DB(object):
 
     db_factory = subdb.DB
     auth_module = elliptic
-    encrypter = AES256Encrypter
+    encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, **kw):
@@ -301,10 +301,19 @@ class DB(object):
         self._models = {}
 
     def _init_default_crypto(self, passphrase=None):
-        if self.encrypter:
-            self.encrypter.register_class(default=True)
+        encrypters = self.encrypter
+        if not isinstance(encrypters, (list, tuple)):
+            encrypters = [self.encrypter]
+        elif not encrypters:
+            encrypters = []
+
+        if encrypters:
+            encrypters[0].register_class(default=True)
+            for e in encrypters[1:]:
+                e.register_class(default=False)
         if self.compressor:
             self.compressor.register(default=True)
+
         init_crypto(passphrase=passphrase)
 
     def _init_db(self):
