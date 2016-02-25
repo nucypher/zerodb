@@ -32,8 +32,11 @@ class TransformingStorage(ZlibStorage):
 
         base.registerDB(self)
 
-        self._transform = lambda data: encrypt(compress(data))
+        self._transform = lambda data: encrypt(compress(data), no_cipher_name=True)
+        self._transform_named = lambda data: encrypt(compress(data), no_cipher_name=False)
         self._untransform = lambda data: decompress(decrypt(data))
+
+        self._root_oid = None
 
     def load(self, oid, version=''):
         """
@@ -95,3 +98,11 @@ class TransformingStorage(ZlibStorage):
                                 (logline_prefix, oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
             if returns:
                 return out
+
+    def store(self, oid, serial, data, version, transaction):
+        if oid == self._root_oid:
+            _transform = self._transform_named
+        else:
+            _transform = self._transform
+        return self.base.store(oid, serial, _transform(data), version,
+                               transaction)

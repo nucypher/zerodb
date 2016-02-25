@@ -6,6 +6,11 @@ import transaction
 
 from hashlib import sha256
 from repoze.catalog.query import optimize
+from zerodb.collective.indexing.indexer import PortalCatalogProcessor
+from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
+from zerodb.collective.indexing import queue
+from zerodb.collective.indexing import subscribers
+from zope import component
 from zerodb.permissions import elliptic
 
 from zerodb import models
@@ -14,10 +19,20 @@ from zerodb.models.exceptions import ModelException
 from zerodb.permissions import subdb
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
-from zerodb.util.iter import DBList, DBListPrefetch
+from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
-from zerodb.transform.encrypt_aes import AES256Encrypter
+from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
 from zerodb.transform import init_crypto
+
+
+class AutoReindexQueueProcessor(PortalCatalogProcessor):
+    def __init__(self, db, enabled=True):
+        self.db = db
+        self.enabled = enabled
+
+    def reindex(self, obj, attributes=None):   # execute reindex in before_commit hook when commit
+        if self.enabled:
+            self.db.reindex(obj, attributes)
 
 
 class DbModel(object):
@@ -99,6 +114,51 @@ class DbModel(object):
         self._catalog.index_doc(uid, obj)
         obj._p_uid = uid
         return uid
+
+    def reindex_one(self, obj, attributes=None):
+        """
+        Reindex one object which is already in the database
+
+        :param obj: Object to add to the database or its uid
+        :type obj: zerodb.models.Model, int
+        :param attributes: Attributes of obj to be reindex
+        :type attributes: tuple, list
+        """
+
+        if isinstance(obj, (int, long)):
+            uid = obj
+            obj = self._objects[uid]
+        elif isinstance(obj, self._model):
+            if hasattr(obj, "_p_uid"):
+                uid = obj._p_uid
+            else:
+                raise ModelException("Object %s is not indexed" % obj)
+        else:
+            raise TypeError("Wrong type of argument passed: obj must be integer or model instance")
+
+        if attributes is None:
+            self._catalog.reindex_doc(uid, obj)
+        elif isinstance(attributes, (tuple, list)):
+            for attr in attributes:
+                if attr in self._catalog:
+                    self._catalog[attr].reindex_doc(uid, obj)
+        else:
+            raise TypeError("Wrong type of argument passed: attributes must be tuple or list")
+
+    def reindex(self, obj):
+        """
+        Reindex one or multiple objects in the database
+
+        :param obj: Object to add to the database or its uid, or list of objects or uids
+        :type obj: zerodb.models.Model, int, list
+        """
+        if isinstance(obj, (int, long, self._model)):
+            self.reindex_one(obj)
+        elif isinstance(obj, (list, tuple, set, Sliceable)):
+            for o in obj:
+                self.reindex_one(o)
+        else:
+            raise TypeError("ZeroDB object, its uid or list of these should be passed")
 
     def remove(self, obj):
         """
@@ -183,10 +243,10 @@ class DB(object):
 
     db_factory = subdb.DB
     auth_module = elliptic
-    encrypter = AES256Encrypter
+    encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, **kw):
+    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
@@ -205,6 +265,10 @@ class DB(object):
         elif type(sock) in (list, tuple):
             assert len(sock) == 2
             sock = str(sock[0]), int(sock[1])
+
+        self._autoreindex = autoreindex
+        self._reindex_queue_processor = AutoReindexQueueProcessor(self, enabled=autoreindex)
+        component.provideUtility(self._reindex_queue_processor, IIndexQueueProcessor, 'zerodb-indexer')
 
         self.auth_module = kw.pop("auth_module", self.auth_module)
 
@@ -237,14 +301,26 @@ class DB(object):
         self._models = {}
 
     def _init_default_crypto(self, passphrase=None):
-        if self.encrypter:
-            self.encrypter.register_class(default=True)
+        encrypters = self.encrypter
+        if not isinstance(encrypters, (list, tuple)):
+            encrypters = [self.encrypter]
+        elif not encrypters:
+            encrypters = []
+
+        if encrypters:
+            encrypters[0].register_class(default=True)
+            for e in encrypters[1:]:
+                e.register_class(default=False)
         if self.compressor:
             self.compressor.register(default=True)
+
         init_crypto(passphrase=passphrase)
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
+        if self._autoreindex:
+            subscribers.init()
+
         self.__conn_refs = {}
         self.__thread_local = threading.local()
         self.__thread_watcher = ThreadWatcher()
@@ -337,8 +413,34 @@ class DB(object):
         else:
             raise ModelException("Class <%s> is not a Model or iterable" % obj.__class__.__name__)
 
+    def reindex(self, obj, attributes=None):
+        """
+        Reindex one or multiple objects in the database
+
+        :param obj: Object to add to the database or its uid, or list of objects or uids
+        :type obj: zerodb.models.Model, list
+        :param attributes: Attributes of obj to be reindex
+        :type attributes: tuple, list
+        """
+        if isinstance(obj, models.Model):
+            self[obj.__class__].reindex_one(obj, attributes)
+        elif isinstance(obj, (list, tuple, set, Sliceable)):
+            for o in obj:
+                assert isinstance(o, models.Model)
+                self[o.__class__].reindex_one(o, attributes)
+        else:
+            raise TypeError("ZeroDB object or list of these should be passed")
+
     def pack(self):
         """
         Remove old versions of objects
         """
         self._db.pack()
+
+    def enableAutoReindex(self, enabled=True):
+        """
+        Enable or disable auto reindex
+        """
+        if enabled:
+            subscribers.init()
+        self._reindex_queue_processor.enabled = enabled

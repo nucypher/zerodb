@@ -22,16 +22,18 @@ class CommonEncrypter(object):
     def _init_encryption(self, **kw):
         pass
 
-    def encrypt(self, data):
-        if not data.startswith(self._signature):
-            encrypted = self._signature + self._encrypt(data)
-            return encrypted
+    def encrypt(self, data, no_cipher_name=False):
+        if no_cipher_name:
+            sig = ".e$"
         else:
-            return data
+            sig = self._signature
+        return sig + self._encrypt(data)
 
     def decrypt(self, data):
         if data.startswith(self._signature):
             return self._decrypt(data[len(self._signature):])
+        elif data.startswith(".e$"):
+            return self._decrypt(data[3:])
         else:
             return data
 
@@ -50,17 +52,25 @@ class CommonEncrypter(object):
             _gsm.registerUtility(self, IEncrypterClass)
 
 
-def encrypt(data):
+def encrypt(data, no_cipher_name=False):
     try:
-        return _gsm.getUtility(IEncrypter).encrypt(data)
+        return _gsm.getUtility(IEncrypter).encrypt(data, no_cipher_name=no_cipher_name)
     except ComponentLookupError:
         return data
 
 
-def decrypt(data):
+def get_encryption_signature(data):
     if data.startswith(".e"):
-        name = data[2:data.find("$")]
-        return _gsm.getUtility(IEncrypter, name).decrypt(data)
+        return data[2:data.find("$")]
+    else:
+        return None
+
+
+def decrypt(data):
+    sig = get_encryption_signature(data)
+    if sig is not None:
+        # Named utility if encrypter name is known, default if ''
+        return _gsm.getUtility(IEncrypter, sig).decrypt(data)
     else:
         return data
 

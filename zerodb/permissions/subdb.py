@@ -15,6 +15,7 @@ from ZODB.Connection import Connection as BaseConnection
 from ZODB.Connection import RootConvenience
 import base
 from zerodb.storage import ServerStorage
+from zerodb.transform.encrypt_common import get_encryption_signature, _gsm, IEncrypter
 
 
 def create_root(storage, oid=z64, check_new=True):
@@ -278,6 +279,15 @@ class DB(BaseDB):
 
     def _init_root(self, storage, **kw):
         oid, new = storage.get_root_id()
+        storage._root_oid = oid
         if new:
             create_root(storage, oid=oid, check_new=False)
+        elif hasattr(storage, "base"):
+            # If a different encryption was used for this DB,
+            # use that as default
+            edata, _ = storage.base.load(oid)
+            sig = get_encryption_signature(edata)
+            utility = _gsm.getUtility(IEncrypter, name=sig)
+            if _gsm.getUtility(IEncrypter) is not utility:
+                _gsm.registerUtility(utility)
         self._root_oid = oid
