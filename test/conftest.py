@@ -47,8 +47,7 @@ def pass_db(request, pass_file):
     return pdb
 
 
-@pytest.fixture(scope="module")
-def zeo_server(request, pass_file, tempdir):
+def do_zeo_server(request, pass_file, tempdir):
     """
     :return: Temporary UNIX socket
     :rtype: str
@@ -70,8 +69,13 @@ def zeo_server(request, pass_file, tempdir):
 
     server.start()
 
-    create_objects_and_close(sock)
+    return sock
 
+
+@pytest.fixture(scope="module")
+def zeo_server(request, pass_file, tempdir):
+    sock = do_zeo_server(request, pass_file, tempdir)
+    create_objects_and_close(sock)
     return sock
 
 
