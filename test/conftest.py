@@ -103,25 +103,8 @@ def wiki_server(request, pass_file, tempdir):
     :return: Temporary UNIX socket
     :rtype: str
     """
-    sock = path.join(tempdir, "zeosocket_auth")
-    zeroconf_file = path.join(tempdir, "zeo.config")
-    dbfile = path.join(tempdir, "db2.fs")
-    with open(zeroconf_file, "w") as f:
-        f.write(ZEO_CONFIG % {
-            "sock": sock,
-            "pass_file": pass_file,
-            "dbfile": dbfile})
-    server = Process(target=ZEOServer.run, kwargs={"args": ("-C", zeroconf_file)})
-
-    @request.addfinalizer
-    def fin():
-        server.terminate()
-        server.join()
-
-    server.start()
-
+    sock = do_zeo_server(request, pass_file, tempdir)
     add_wiki_and_close(sock)
-
     return sock
 
 

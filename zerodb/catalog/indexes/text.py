@@ -136,7 +136,7 @@ class OkapiIndex(_OkapiIndex):
             self.documentCount.change(1)
         except AttributeError:
             # upgrade documentCount to Length object
-            self.documentCount = Length.Length(len(self._docweight))
+            self.documentCount = Length(len(self._docweight))
         count = len(wids)
         self._change_doc_len(count)
         return count
@@ -287,8 +287,8 @@ class IncrementalLuceneIndex(Persistent):
         # but no phrase search
         self._docwords = self.family.IO.BTree()
 
-        self.wordCount = Length.Length()
-        self.documentCount = Length.Length()
+        self.wordCount = Length()
+        self.documentCount = Length()
 
     def _get_doctrees(self, wids):
         """
@@ -582,6 +582,7 @@ def mass_weightedUnion(L):
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
     family = trees.family32
+    index_class = OkapiIndex
 
     def __init__(self, discriminator, lexicon=None, index=None):
         self._init_discriminator(discriminator)
@@ -589,7 +590,11 @@ class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
         self._not_indexed = self.family.IF.Set()
 
         lexicon = lexicon or Lexicon(Splitter(), CaseNormalizer(), StopWordRemover())
-        index = index or OkapiIndex(lexicon, family=self.family)
+        index = index or self.index_class(lexicon, family=self.family)
 
         ZopeTextIndex.__init__(self, lexicon, index)
         self.clear()
+
+
+class CatalogTextIndexNew(CatalogTextIndex):
+    index_class = IncrementalLuceneIndex

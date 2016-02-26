@@ -82,7 +82,7 @@ def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
 class WikiPage(Model):
     id = fields.Field()
     title = fields.Field()
-    text = fields.Text()
+    text = fields.TextNew()
 
 
 def add_wiki_and_close(sock, count=200, dbclass=zerodb.DB):

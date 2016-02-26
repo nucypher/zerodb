@@ -1,4 +1,4 @@
-from zerodb.catalog.indexes.text import CatalogTextIndex
+from zerodb.catalog.indexes.text import CatalogTextIndex, CatalogTextIndexNew
 from zerodb.catalog.indexes.field import CatalogFieldIndex
 import exceptions
 
@@ -37,3 +37,10 @@ class Text(Indexable):
     Text field to be used for fulltext search
     """
     Index = CatalogTextIndex
+
+
+class TextNew(Indexable):
+    """
+    Text field to be used for fulltext search
+    """
+    Index = CatalogTextIndexNew
