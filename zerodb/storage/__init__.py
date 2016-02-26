@@ -7,6 +7,7 @@ from persistent import Persistent
 
 import batch
 import premade
+import server
 import transforming
 import logging
 
@@ -15,10 +16,37 @@ import logging
 # with Zope interfaces
 
 ServerStorage = premade.DefaultServerStorage
+SSLDispatcher = server.SSLDispatcher
 
 
 class StorageServer(BaseStorageServer):
     ZEOStorageClass = ServerStorage
+
+    def __init__(self, addr, storages,
+                 read_only=0,
+                 invalidation_queue_size=100,
+                 invalidation_age=None,
+                 transaction_timeout=None,
+                 monitor_address=None,
+                 auth_protocol=None,
+                 auth_database=None,
+                 auth_realm=None,
+                 ssl_context=None,
+                 ):
+
+        class _ConfiguredSSLDispatcher(SSLDispatcher):
+            ssl_context_info = ssl_context
+        self.DispatcherClass = _ConfiguredSSLDispatcher
+
+        BaseStorageServer.__init__(self, addr, storages,
+                 read_only=read_only,
+                 invalidation_queue_size=invalidation_queue_size,
+                 invalidation_age=invalidation_age,
+                 transaction_timeout=transaction_timeout,
+                 monitor_address=monitor_address,
+                 auth_protocol=auth_protocol,
+                 auth_database=auth_database,
+                 auth_realm=auth_realm)
 
     def invalidate(self, conn, storage_id, tid, invalidated=(), info=None):
         """ Internal: broadcast info and invalidations to clients. """
@@ -42,6 +70,10 @@ class StorageServer(BaseStorageServer):
 
 
 class ZEOServer(BaseZEOServer):
+    class _Closable:
+        def close(self): pass
+    server = _Closable()
+
     def create_server(self):
         storages = self.storages
         options = self.options
@@ -55,12 +87,18 @@ class ZEOServer(BaseZEOServer):
             monitor_address=options.monitor_address,
             auth_protocol=options.auth_protocol,
             auth_database=options.auth_database,
-            auth_realm=options.auth_realm)
+            auth_realm=options.auth_realm,
+            ssl_context=(options.certfile, options.keyfile))
 
     @classmethod
     def run(cls, args=None):
         options = ZEOOptions()
         options.realize(args=args)
+
+        # TODO Read from server.zcml
+        import os.path
+        options.certfile = os.path.join(os.path.dirname(__file__), 'conf', 'cert.pem')
+        options.keyfile = os.path.join(os.path.dirname(__file__), 'conf', 'key.pem')
 
         for o_storage in options.storages:
             if o_storage.config.pack_gc:
