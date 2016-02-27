@@ -189,7 +189,7 @@ class IncrementalLuceneIndex(Persistent):
         new_widset = set(new_ctr)
         removed_wids = old_widset - new_widset
         added_wids = new_widset - old_widset
-        all_wids = list(new_widset + old_widset)
+        all_wids = list(new_widset | old_widset)
 
         weights, lengths = self._get_doctrees(all_wids)
 
