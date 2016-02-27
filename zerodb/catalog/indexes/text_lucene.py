@@ -230,10 +230,9 @@ class IncrementalLuceneIndex(Persistent):
         parallel_traversal(*zip(*[(weights[w], scores[w]) for w in wids]))
         for w in wids:
             lengths[w].change(-1)
+            weights[w].remove(scores[w])
             if lengths[w].value == 0:
                 del self._wordinfo[w]
-            else:
-                del weights[scores[w]]
         del self._docwords[docid]
         self.documentCount.change(-1)
 
