@@ -293,7 +293,7 @@ class IncrementalLuceneIndex(Persistent):
 def mass_weightedUnion(L):
     """
     Incremental version of mass_weightedUnion
-    :param list L: dict of wid: (TreeSet((-score, docid)), weight) elements
+    :param list L: (TreeSet((-score, docid)), weight) elements
     :returns: iterable ordered from large to small sum(score*weight)
     """
     cache_size = 40
@@ -302,11 +302,12 @@ def mass_weightedUnion(L):
 
     if len(L) == 0:
         return
+
     elif len(L) == 1:
         # Trivial
-        tree, weight = L.values()[0]
+        tree, weight = L[0]
         # XXX need to make it possible to advance the tree N elements ahead!
-        for el in itertools.imap(lambda score, docid: (docid, -score * weight), tree):
+        for el in itertools.imap(lambda (score, docid): (docid, -score * weight), tree):
             yield el
     else:
         # XXX make into an iterator class

@@ -62,3 +62,9 @@ def test_search_wids(wiki_db):
         weight, docid = iter(wordinfo).next()
         assert weight < 0
         assert docid >= 0
+
+
+def test_search(wiki_db):
+    index = get_cat(wiki_db).index
+    assert list(index.search("")) == []
+    assert len(list(index.search("Africa"))) > 0
