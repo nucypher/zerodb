@@ -5,7 +5,6 @@ from zope.index.text import TextIndex as ZopeTextIndex
 from zope.index.text.lexicon import CaseNormalizer
 from zope.index.text.lexicon import Lexicon as _Lexicon
 from zope.index.text.lexicon import Splitter
-from zope.index.text.lexicon import _text2list
 from zope.index.text.lexicon import StopWordRemover
 from zope.index.text.okapiindex import OkapiIndex as _OkapiIndex
 from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
@@ -14,6 +13,19 @@ from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.storage import prefetch_trees, parallel_traversal
 from zerodb.catalog.indexes.pwid import PersistentWid
+
+
+def _text2list(text):
+    # Helper: splitter input may be a string or a list of strings
+    # Fixed from zope.index.text.lexicon
+    try:
+        text + u""
+    except UnicodeDecodeError:
+        return [text.decode("utf-8")]
+    except TypeError:
+        return text
+    else:
+        return [text]
 
 
 class Lexicon(_Lexicon):
