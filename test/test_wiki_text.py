@@ -1,11 +1,42 @@
 import logging
+import pytest
 import transaction
-from db import WikiPage
+import zerodb
+from zerodb.models import Model, fields
+from conftest import do_zeo_server
+from db import WikiPage, TEST_PASSPHRASE
 
 logging.basicConfig(level=logging.DEBUG)
 
-# These will be pretty slow tests: around 2700 wikipedia pages are indexed and added to the DB
-# Could take up to a minute
+
+class Page(Model):
+    title = fields.Field()
+    text = fields.TextNew()
+
+
+@pytest.fixture(scope="module")
+def many_server(request, pass_file, tempdir):
+    sock = do_zeo_server(request, pass_file, tempdir)
+    db = zerodb.DB(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+    with transaction.manager:
+        for i in range(2000):
+            db.add(Page(title="hello %s" % i, text="lorem ipsum dolor sit amet" * 2))
+        for i in range(1000):
+            db.add(Page(title="hello %s" % i, text="this is something we're looking for" * 5))
+        db.add(Page(title="extra page", text="something else is here"))
+    db.disconnect()
+    return sock
+
+
+@pytest.fixture(scope="module")
+def manydb(request, many_server):
+    zdb = zerodb.DB(many_server, username="root", password=TEST_PASSPHRASE, debug=True)
+
+    @request.addfinalizer
+    def fin():
+        zdb.disconnect()  # I suppose, it's not really required
+
+    return zdb
 
 
 def get_one(db):
@@ -69,3 +100,9 @@ def test_search(wiki_db):
     assert list(index.search("")) == []
     assert len(list(index.search("Africa"))) > 0
     assert len(list(index.search("Australia rugby"))) > 0
+
+
+def test_search_many(manydb):
+    index = manydb[Page]._catalog["text"].index
+    it = index.search("something looking")
+    assert len(list(it)) == 1001
