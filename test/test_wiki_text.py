@@ -57,14 +57,22 @@ def test_indexed(wiki_db):
 def test_reindex(wiki_db):
     with transaction.manager:
         key, test_doc = get_one(wiki_db)
+        original_size = len(test_doc.text)
         test_doc.text += "\nTestWord to change the text."
+        get_cat(wiki_db).reindex_doc(key, test_doc)
+
+    with transaction.manager:
+        test_doc = wiki_db[WikiPage]._objects[key]
+        test_doc.text = test_doc.text[:original_size] + "\nNewTestWord to change the text."
         get_cat(wiki_db).reindex_doc(key, test_doc)
 
 
 def test_unindex(wiki_db):
     with transaction.manager:
+        cat = get_cat(wiki_db)
         key, _ = get_one(wiki_db)
-        get_cat(wiki_db).unindex_doc(key)
+        cat.unindex_doc(key)
+        cat.unindex_doc(-99)  # No such ID, should be OK
 
 
 def test_idf2(wiki_db):
@@ -81,7 +89,7 @@ def test_idf2(wiki_db):
 
 def test_query_weight(wiki_db):
     index = get_cat(wiki_db).index
-    assert index.query_weight("Africa Asia") > 0
+    assert index.query_weight("Africa Asia SomethingWhichIsNotThere") > 0
 
 
 def test_search_wids(wiki_db):
@@ -100,6 +108,8 @@ def test_search(wiki_db):
     assert list(index.search("")) == []
     assert len(list(index.search("Africa"))) > 0
     assert len(list(index.search("Australia rugby"))) > 0
+    assert len(list(index.search_glob("Austral*"))) > 0
+    assert len(list(index.search_glob("itisnotthere*"))) == 0
 
 
 def test_search_many(manydb):
