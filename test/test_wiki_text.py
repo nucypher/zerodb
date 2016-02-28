@@ -68,3 +68,4 @@ def test_search(wiki_db):
     index = get_cat(wiki_db).index
     assert list(index.search("")) == []
     assert len(list(index.search("Africa"))) > 0
+    assert len(list(index.search("Australia rugby"))) > 0

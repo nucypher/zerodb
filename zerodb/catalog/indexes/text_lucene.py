@@ -299,6 +299,7 @@ def mass_weightedUnion(L):
     cache_size = 40
     order_size = 15
     order_violation = 3
+    cache_updated = None
 
     if len(L) == 0:
         return
@@ -309,6 +310,7 @@ def mass_weightedUnion(L):
         # XXX need to make it possible to advance the tree N elements ahead!
         for el in itertools.imap(lambda (score, docid): (docid, -score * weight), tree):
             yield el
+
     else:
         # XXX make into an iterator class
 
@@ -353,7 +355,7 @@ def mass_weightedUnion(L):
             # Advance iterators when needed / fill caches to keep them long enough
             # Perhaps, some better algorithm is needed to pre-read, this is the simplest
 
-            if sum(map(len, caches)) == 0:
+            if (sum(map(len, caches)) == 0) and (cache_updated is not None):
                 # End of iteration - no more elements
                 break
 
@@ -366,7 +368,7 @@ def mass_weightedUnion(L):
 
             if cache_updated or not minmax:
                 while True:
-                    docids = set.union(map(set, caches))
+                    docids = set.union(*map(set, caches))
                     minmax = sorted([(
                             sum(c.get(docid, 0) for c in caches),
                             sum(c.get(docid, m) for c, m in izip(caches, unread_max)),
