@@ -117,4 +117,8 @@ def test_search(wiki_db):
 def test_search_many(manydb):
     index = manydb[Page]._catalog["text"].index
     it = index.search("something looking")
-    assert len(list(it)) == 1000
+    ids = [x[0] for x in it]
+    assert len(ids) == 1000
+    # Longer docs for this query and our synthetic docs have higjer score
+    lens = [len(manydb[Page]._objects[i].text) for i in ids]
+    assert lens == sorted(lens, reverse=True)
