@@ -325,15 +325,6 @@ def mass_weightedUnion(L):
         used = set()
         minmax = []
 
-        def scorerange(docid):
-            """
-            :returns: minscore, maxscore
-            """
-            mc = zip(unread_max, caches)
-            maxscore = sum(c.get(docid, m) for m, c in mc)
-            minscore = sum(c.get(docid, 0) for m, c in mc)
-            return minscore, maxscore
-
         def precache(i, size):
             try:
                 for j in xrange(size):
