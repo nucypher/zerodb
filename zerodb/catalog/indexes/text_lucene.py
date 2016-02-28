@@ -378,6 +378,10 @@ def mass_weightedUnion(L):
                                 break
                         if violated:
                             break
+                    if len(mins) == order_size:
+                        # Last check: can the order be violated by out-of-cache elements?
+                        if mins[len(mins) - order_violation] < sum(unread_max):
+                            violated = True
                     if not violated:
                         break
                     else:
