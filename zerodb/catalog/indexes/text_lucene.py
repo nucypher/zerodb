@@ -166,14 +166,15 @@ class IncrementalLuceneIndex(Persistent):
         widcode = PersistentWid.encode_wid(wids if self.keep_phrases else widset)
         self._docwords[docid] = widcode
 
-        weights, lengths = self._get_doctrees(widset)
-        docscores = self._get_widscores(widcnt, docid)
-        prefetch(lengths.values() + [self.documentCount])
-        parallel_traversal(*zip(*[(weights[w], docscores[w]) for w in widset]))
+        if widset:
+            weights, lengths = self._get_doctrees(widset)
+            docscores = self._get_widscores(widcnt, docid)
+            parallel_traversal(*zip(*[(weights[w], docscores[w]) for w in widset]))
+            prefetch(lengths.values() + [self.documentCount])
 
-        for w in widset:
-            weights[w].add(docscores[w])
-            lengths[w].change(1)
+            for w in widset:
+                weights[w].add(docscores[w])
+                lengths[w].change(1)
 
         self.documentCount.change(1)
 

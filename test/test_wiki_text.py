@@ -22,7 +22,9 @@ def many_server(request, pass_file, tempdir):
         for i in range(2000):
             db.add(Page(title="hello %s" % i, text="lorem ipsum dolor sit amet" * 2))
         for i in range(1000):
-            db.add(Page(title="hello %s" % i, text="this is something we're looking for" * 5))
+            # Variable length while keeping number of terms the same
+            # will cause variable scores
+            db.add(Page(title="hello %s" % i, text="this is something we're looking for" * int(i ** 0.5)))
         db.add(Page(title="extra page", text="something else is here"))
     db.disconnect()
     return sock
@@ -115,4 +117,4 @@ def test_search(wiki_db):
 def test_search_many(manydb):
     index = manydb[Page]._catalog["text"].index
     it = index.search("something looking")
-    assert len(list(it)) == 1001
+    assert len(list(it)) == 1000
