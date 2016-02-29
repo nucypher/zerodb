@@ -12,6 +12,7 @@ from zope.index.interfaces import IInjection
 from zope.index.interfaces import IStatistics
 from zope.index.text.interfaces import IExtendedQuerying
 from zope.index.text.interfaces import ILexiconBasedIndex
+from zope.index.text.queryparser import _tokenizer_regex
 
 from zerodb.storage import prefetch, parallel_traversal
 from zerodb.catalog.indexes.pwid import PersistentWid
@@ -203,7 +204,7 @@ class IncrementalLuceneIndex(Persistent):
         new_docscores = self._get_widscores(new_ctr, docid)
         parallel_traversal(*zip(*[
             (weights[w], old_docscores.get(w) or new_docscores.get(w))
-                for w in all_wids]))
+            for w in all_wids]))
         # We should update all the weights if len(old_wids) != len(new_wids)
         # ...and that is generally the case, so we update always
         for w in old_widset:
@@ -252,10 +253,15 @@ class IncrementalLuceneIndex(Persistent):
 
     def query_weight(self, terms):
         """
+        terms - string with terms or list with wids
+
         Normalization factor:
             sum of idfs squared (with number-of-uses coefficient)
         """
-        wc = Counter(self._lexicon.termToWordIds(terms))
+        if isinstance(terms, list):
+            wc = Counter(terms)
+        else:
+            wc = Counter(self._lexicon.termToWordIds(terms))
         if 0 in wc:
             del wc[0]
         wids = self._remove_oov_wids(wc.keys())
@@ -279,6 +285,23 @@ class IncrementalLuceneIndex(Persistent):
         wids = self._lexicon.globToWordIds(pattern.lower())
         wids = self._remove_oov_wids(wids)
         return mass_weightedUnion(self._search_wids(wids))
+
+    def _search_all(self, term):
+        tokens = [t.lower() for t in _tokenizer_regex.findall(term)]
+        glob_cond = lambda t: ('?' in t) or ('*' in t)
+        glob_tokens = filter(glob_cond, tokens)
+        word_tokens = filter(lambda t: not glob_cond(t), tokens)
+        wids = set()
+        wids.update(self._lexicon.termToWordIds(word_tokens))
+        wids.update(itertools.chain(*map(self._lexicon.globToWordIds, glob_tokens)))
+        wids = self._remove_oov_wids(wids)
+        # XXX
+        # We should have OrderedDict-like lazy objects
+        # and we should have weightedIntersection and weightedUnion
+        # working lazily in a for of repoze.catalog
+        # This is just a workaround for simpler queries
+        # XXX
+        return itertools.imap(lambda x: x[0], mass_weightedUnion(self._search_wids(wids)))
 
     def search_phrase(self, phrase):
         # Need to do mass_weightedIntersection here.

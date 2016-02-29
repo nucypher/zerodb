@@ -3,6 +3,8 @@ import pytest
 import transaction
 import zerodb
 from zerodb.models import Model, fields
+from zerodb.query import Contains
+
 from conftest import do_zeo_server
 from db import WikiPage, TEST_PASSPHRASE
 
@@ -119,6 +121,16 @@ def test_search_many(manydb):
     it = index.search("something looking")
     ids = [x[0] for x in it]
     assert len(ids) == 1000
-    # Longer docs for this query and our synthetic docs have higjer score
+    # Longer docs for this query and our synthetic docs have higher score
     lens = [len(manydb[Page]._objects[i].text) for i in ids]
     assert lens == sorted(lens, reverse=True)
+
+
+def test_search_query(manydb, wiki_db):
+    # High level search using .query interface
+    pages = manydb[Page].query(Contains("text", "something looking"))
+    assert len(pages) == 1000
+    lens = [len(page.text) for page in pages]
+    assert lens == sorted(lens, reverse=True)
+
+    assert len(wiki_db[WikiPage].query(Contains("text", "Austra* rugb?"))) > 0

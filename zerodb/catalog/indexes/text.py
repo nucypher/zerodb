@@ -211,3 +211,12 @@ class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
 
         ZopeTextIndex.__init__(self, lexicon, index)
         self.clear()
+
+    def apply(self, querytext, start=0, count=None):
+        # For now, let's parse querytext ourselves
+        # and later make the queryparser capable to be iterative
+        if hasattr(self.index, "_search_all"):
+            return self.index._search_all(querytext)
+        else:
+            return super(CatalogTextIndex, self).apply(
+                    querytext, start=start, count=count)
