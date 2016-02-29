@@ -93,7 +93,9 @@ def test_idf2(wiki_db):
 
 def test_query_weight(wiki_db):
     index = get_cat(wiki_db).index
-    assert index.query_weight("Africa Asia SomethingWhichIsNotThere") > 0
+    qs = "Africa Asia SomethingWhichIsNotThere"
+    assert index.query_weight(qs) > 0
+    assert index.query_weight(index._lexicon.termToWordIds(qs.split())) == index.query_weight(qs)
 
 
 def test_search_wids(wiki_db):
@@ -133,4 +135,5 @@ def test_search_query(manydb, wiki_db):
     lens = [len(page.text) for page in pages]
     assert lens == sorted(lens, reverse=True)
 
-    assert len(wiki_db[WikiPage].query(Contains("text", "Austra* rugb?"))) > 0
+    assert len(wiki_db[WikiPage].query(text="Austra* rugb?")) > 0
+    assert len(wiki_db[WikiPage].query(text="Austra* rugb?", title="Geoff Toovey")) > 0

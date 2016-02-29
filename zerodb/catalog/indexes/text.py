@@ -13,6 +13,7 @@ from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.storage import prefetch_trees, parallel_traversal
 from zerodb.catalog.indexes.pwid import PersistentWid
+from zerodb.util.iter import Sliceable
 
 
 def _text2list(text):
@@ -216,7 +217,7 @@ class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
         # For now, let's parse querytext ourselves
         # and later make the queryparser capable to be iterative
         if hasattr(self.index, "_search_all"):
-            return self.index._search_all(querytext)
+            return Sliceable(lambda: self.index._search_all(querytext))
         else:
             return super(CatalogTextIndex, self).apply(
                     querytext, start=start, count=count)
