@@ -1,7 +1,9 @@
 import itertools as it
 
+from persistent import Persistent
+from ZODB.broken import Broken
 from repoze.catalog.indexes.field import CatalogFieldIndex as _CatalogFieldIndex
-from repoze.catalog.indexes.common import *
+from repoze.catalog.indexes.common import CatalogIndex
 from repoze.catalog import RangeValue
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
@@ -16,6 +18,7 @@ _marker = ()
 
 threshold = 10
 
+
 def multiunion1(set_type, seqs):
     # XXX simple/slow implementation. Goal is just to get tests to pass.
     result = set_type()
@@ -26,6 +29,7 @@ def multiunion1(set_type, seqs):
             s = set_type((s, ))
         result.update(s)
     return result
+
 
 class NewTreeItems(object):
     def __init__(self, items):
@@ -49,6 +53,7 @@ class NewTreeItems(object):
             else:
                 yield nextobj
 
+
 class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
     family = trees.family32
 
@@ -62,7 +67,9 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
 
     def applyInRange(self, start, end, excludemin=False, excludemax=False):
         return ListPrefetch(lambda: it.chain.from_iterable(
-            ListPrefetch(lambda: NewTreeItems(self._fwd_index.values(start, end, excludemin=excludemin, excludemax=excludemax)))))
+            ListPrefetch(lambda: NewTreeItems(
+                self._fwd_index.values(
+                    start, end, excludemin=excludemin, excludemax=excludemax)))))
         # XXX what if these treesets are pretty deep? Need to pre-fetch "first N elements"
 
     def scan_forward(self, docids, limit=None):
@@ -78,7 +85,8 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                 yield curdocids
                 if limit and n >= limit:
                     raise StopIteration
-            elif isinstance(curdocids, tuple) or isinstance(curdocids, BTreeSet):
+            elif (isinstance(curdocids, tuple)
+                    or isinstance(curdocids, BTreeSet)):
                 for docid in curdocids:
                     if docid in docids:
                         n += 1
@@ -121,7 +129,6 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
             self._not_indexed.remove(docid)
 
         return self.inner_index_doc(docid, value)
-        #return super(CatalogIndex, self).index_doc(docid, value)
 
     def inner_index_doc(self, docid, value):
         """See interface IInjection"""
@@ -140,37 +147,26 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         # Insert into forward index.
         curdocids = self._fwd_index.get(value)
         if curdocids is None:
-            #set = self.family.IF.TreeSet()
-            self._fwd_index[value] = docid # integer when only one docid
-            #self._fwd_index[value] = set
+            self._fwd_index[value] = docid  # integer when only one docid
         else:
             if isinstance(curdocids, int):
                 curdocnum = 1
             else:
                 curdocnum = len(curdocids)
-            '''
-            if curdocnum <= threshold-1 and isinstance(curdocids, BTreeSet):  # compatible with legacy TreeSet
-                tmptuple = tuple()
-                for docid in curdocids.keys():
-                    tmptuple += docid
-                curdocids = tmptuple
-            '''    
             newdocids = curdocids
 
             if isinstance(curdocids, int):
-                #self._fwd_index[value] = (curdocids, docid)
                 newdocids = (curdocids,)
             elif curdocnum == threshold-1 and isinstance(curdocids, tuple):
                 newset = BTreeSet()
                 newset.update(curdocids)
-       
-                #self._fwd_index[value] = set
+
                 newdocids = newset
 
             if isinstance(newdocids, tuple):
                 newdocids += (docid,)
             elif isinstance(newdocids, BTreeSet):
-                newdocids.insert(docid) 
+                newdocids.insert(docid)
 
             self._fwd_index[value] = newdocids
 
@@ -180,7 +176,6 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         # Insert into reverse index.
         rev_index[docid] = value
 
-
     def search(self, queries, operator='or'):
         sets = []
         for query in queries:
@@ -188,7 +183,6 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                 query = query.as_tuple()
             else:
                 query = (query, query)
-            #set = self.family.IF.multiunion(self._fwd_index.values(*query))
             set = multiunion1(BTreeSet, self._fwd_index.values(*query))
             sets.append(set)
 
@@ -216,10 +210,10 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         rev_index = self._rev_index
         value = rev_index.get(docid, _marker)
         if value is _marker:
-            return # not in index
+            return  # not in index
 
         del rev_index[docid]
-   
+
         delvalue = False
 
         try:
