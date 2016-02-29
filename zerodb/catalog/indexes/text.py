@@ -22,7 +22,11 @@ def _text2list(text):
     try:
         text + u""
     except UnicodeDecodeError:
-        return [text.decode("utf-8")]
+        try:
+            return [text.decode("utf-8")]
+        except UnicodeDecodeError:
+            # It wasn't utf-8. But at least, it was text!
+            return [text]
     except TypeError:
         return text
     else:
