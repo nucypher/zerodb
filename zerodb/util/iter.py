@@ -17,7 +17,6 @@ class Sliceable(object):
         self.iterator = iter(f())
 
     def __iter__(self):
-        self.iterator = iter(self.f())
         for i in count():
             y = self.__getitem__(i)
             yield y
