@@ -1,5 +1,5 @@
 import itertools as it
-
+import BTrees
 from persistent import Persistent
 from ZODB.broken import Broken
 from repoze.catalog.indexes.field import CatalogFieldIndex as _CatalogFieldIndex
@@ -10,23 +10,22 @@ from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.storage import prefetch
 from zerodb.util.iter import ListPrefetch
 
-import BTrees
+_marker = ()
 
 BTreeSet = BTrees.family32.IF.TreeSet
-
-_marker = ()
 
 threshold = 10
 
 
 def multiunion1(set_type, seqs):
-    # XXX simple/slow implementation. Goal is just to get tests to pass.
     result = set_type()
     for s in seqs:
-        try:
-            iter(s)
-        except TypeError:
-            s = set_type((s, ))
+        if (not isinstance(s, BTrees.IFBTree.Bucket) and
+                not isinstance(s, BTrees.IFBTree.Set) and
+                not isinstance(s, BTrees.IFBTree.BTree) and
+                not isinstance(s, BTrees.IFBTree.TreeSet) and
+                not isinstance(s, tuple)):
+            s = (s,)
         result.update(s)
     return result
 
@@ -86,7 +85,7 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                 if limit and n >= limit:
                     raise StopIteration
             elif (isinstance(curdocids, tuple)
-                    or isinstance(curdocids, BTreeSet)):
+                    or isinstance(curdocids, self.family.IF.TreeSet)):
                 for docid in curdocids:
                     if docid in docids:
                         n += 1
@@ -158,14 +157,14 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
             if isinstance(curdocids, int):
                 newdocids = (curdocids,)
             elif curdocnum == threshold-1 and isinstance(curdocids, tuple):
-                newset = BTreeSet()
+                newset = self.family.IF.TreeSet()
                 newset.update(curdocids)
 
                 newdocids = newset
 
             if isinstance(newdocids, tuple):
                 newdocids += (docid,)
-            elif isinstance(newdocids, BTreeSet):
+            elif isinstance(newdocids, self.family.IF.TreeSet):
                 newdocids.insert(docid)
 
             self._fwd_index[value] = newdocids
@@ -183,7 +182,8 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                 query = query.as_tuple()
             else:
                 query = (query, query)
-            set = multiunion1(BTreeSet, self._fwd_index.values(*query))
+            set = multiunion1(self.family.IF.TreeSet,
+                              self._fwd_index.values(*query))
             sets.append(set)
 
         result = None
@@ -229,7 +229,7 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                     delvalue = True
                 else:
                     self._fwd_index[value] = tuple(newtuple)
-            elif isinstance(docids, BTreeSet):
+            elif isinstance(docids, self.family.IF.TreeSet):
                 set = self._fwd_index[value]
                 set.remove(docid)
                 if not set:
