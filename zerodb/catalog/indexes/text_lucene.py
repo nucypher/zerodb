@@ -368,11 +368,12 @@ def mass_weightedUnion(L):
         lengths = map(len, trees)
         iters = dict(enumerate(map(iter, trees)))
         caches = [{} for i in range(len(L))]
+        cache_len = None
         maxscores = [-1] * len(L)
         used = set()
         sorted_mins = SortedSet()  # Contains tuples (-min_weight, docid)
         mins_dict = {}  # {docid -> min_weight}
-        docids = None
+        docids = []
 
         def precache(i, size):
             try:
@@ -401,18 +402,15 @@ def mass_weightedUnion(L):
             # Advance iterators when needed / fill caches to keep them long enough
             # Perhaps, some better algorithm is needed to pre-read, this is the simplest
 
-            if (sum(map(len, caches)) == 0) and (cache_updated is not None):
-                # End of iteration - no more elements
-                break
-
             cache_updated = False
             for i in iters.keys():
                 cache = caches[i]
                 if len(cache) < cache_size / 2:
                     precache(i, cache_size - len(cache))
+                    cache_len = sum(map(len, caches))
                     cache_updated = True
 
-            if cache_updated or not docids:
+            if cache_updated or (cache_len is not None and (cache_len > order_violation) and (len(docids) < order_violation)):
                 while True:
                     mins = []
                     docids = []
@@ -443,6 +441,7 @@ def mass_weightedUnion(L):
                         precache(
                                 max(enumerate(m / max(l, 1) for m, l in izip(unread_max, lengths)), key=lambda x: x[1])[0],
                                 cache_size / 2)
+                        cache_len = sum(map(len, caches))
 
             if not docids:
                 break
@@ -456,6 +455,7 @@ def mass_weightedUnion(L):
                         unread_max[i] = max(c.itervalues())
                     else:
                         del c[docid]
+                    cache_len -= 1
             used.add(docid)
             sorted_mins.remove((-minw, docid))
             del mins_dict[docid]
