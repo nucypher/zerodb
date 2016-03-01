@@ -3,8 +3,9 @@ import itertools
 import logging
 
 from BTrees.Length import Length
+from BTrees.OOBTree import Set as SortedSet  # sorted set implemented in C
 from collections import Counter
-from itertools import izip
+from itertools import izip, islice
 from math import sqrt, log
 from persistent import Persistent
 from zope.interface import implementer
@@ -18,6 +19,27 @@ from zerodb.storage import prefetch, parallel_traversal
 from zerodb.catalog.indexes.pwid import PersistentWid
 
 from text import CatalogTextIndex
+
+
+class LengthyTree(object):
+    def __init__(self, obj, L):
+        """
+        Replaces __len__ method to use Length, proxies all other methods.
+
+        :param Persistent obj: tree-like object
+        :param Length L: BTrees' Length object
+        """
+        self.__obj = obj
+        self.__L = L
+
+    def __len__(self):
+        return self.__L.value
+
+    def __getattr__(self, attr):
+        return getattr(self.__obj, attr)
+
+    def __iter__(self):
+        return self.__obj.__iter__()
 
 
 @implementer(IInjection, IStatistics, ILexiconBasedIndex, IExtendedQuerying)
@@ -272,7 +294,7 @@ class IncrementalLuceneIndex(Persistent):
         Finds pointers to iterables (-score, docid) for wids in order,
         IDFs squared are also calculated as weights
         """
-        return [(self._wordinfo[w][0], self.idf2(w)) for w in wids]
+        return [(LengthyTree(*self._wordinfo[w]), self.idf2(w)) for w in wids]
 
     def search(self, term):
         wids = self._lexicon.termToWordIds(term)
@@ -342,24 +364,33 @@ def mass_weightedUnion(L):
         prefetch(trees)
         prefetch([x._firstbucket for x in trees if x._firstbucket is not None])
 
-        unread_max = [-x.minKey()[0] for x in trees]
+        unread_max = [-t.minKey()[0] * w for t, w in L]
+        lengths = map(len, trees)
         iters = dict(enumerate(map(iter, trees)))
         caches = [{} for i in range(len(L))]
         maxscores = [-1] * len(L)
         used = set()
-        minmax = []
+        sorted_mins = SortedSet()  # Contains tuples (-min_weight, docid)
+        mins_dict = {}  # {docid -> min_weight}
+        docids = None
 
         def precache(i, size):
             try:
                 for j in xrange(size):
                     score, docid = iters[i].next()
-                    score = -score
+                    score = -score * weights[i]
                     if unread_max[i] > score:
                         unread_max[i] = score
                     if docid not in used:
                         caches[i][docid] = score
                         if maxscores[i] < 0:
                             maxscores[i] = score
+
+                        total_score = sum(c.get(docid, 0) for c in caches)
+                        if docid in mins_dict:
+                            sorted_mins.remove((-mins_dict[docid], docid))
+                        mins_dict[docid] = total_score
+                        sorted_mins.add((-total_score, docid))
             except StopIteration:
                 del iters[i]
                 unread_max[i] = 0
@@ -381,16 +412,14 @@ def mass_weightedUnion(L):
                     precache(i, cache_size - len(cache))
                     cache_updated = True
 
-            if cache_updated or not minmax:
+            if cache_updated or not docids:
                 while True:
-                    docids = set.union(*map(set, caches))
-                    minmax = sorted([(
-                            sum(c.get(docid, 0) for c in caches),
-                            sum(c.get(docid, m) for c, m in izip(caches, unread_max)),
-                            docid)
-                        for docid in docids],
-                        reverse=True, key=lambda x: x[0])[:order_size]
-                    mins, maxs, docids = zip(*minmax)
+                    mins = []
+                    docids = []
+                    for w, docid in islice(iter(sorted_mins), order_size):
+                        mins.append(-w)
+                        docids.append(docid)
+                    maxs = [sum(c.get(docid, m) for c, m in izip(caches, unread_max)) for docid in docids]
                     violated = False
                     for i in xrange(len(mins) - order_violation - 1):
                         # Naive implementation. Can go from tail and do faster
@@ -410,9 +439,16 @@ def mass_weightedUnion(L):
                     else:
                         # XXX instead we could download enough elements to change
                         # sum(unread_max) by much enough
-                        precache(unread_max.index(max(unread_max)), cache_size / 2)
+                        # We need something like "advance_to" method
+                        precache(
+                                max(enumerate(m / max(l, 1) for m, l in izip(unread_max, lengths)), key=lambda x: x[1])[0],
+                                cache_size / 2)
 
-            minw, maxw, docid = minmax.pop(0)
+            if not docids:
+                break
+            minw = mins.pop(0)
+            maxw = maxs.pop(0)
+            docid = docids.pop(0)
             for i, c in enumerate(caches):
                 if docid in c:
                     if c[docid] == unread_max[i]:
@@ -420,6 +456,9 @@ def mass_weightedUnion(L):
                         unread_max[i] = max(c.itervalues())
                     else:
                         del c[docid]
+            used.add(docid)
+            sorted_mins.remove((-minw, docid))
+            del mins_dict[docid]
             yield docid, (minw + maxw) / 2.0
 
 
