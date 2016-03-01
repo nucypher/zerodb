@@ -12,8 +12,6 @@ from zerodb.util.iter import ListPrefetch
 
 _marker = ()
 
-BTreeSet = BTrees.family32.IF.TreeSet
-
 threshold = 10
 
 
