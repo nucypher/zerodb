@@ -66,12 +66,8 @@ def do_zeo_server(request, pass_file, tempdir):
     def fin():
         server.terminate()
         server.join(1)
-        if server.is_alive():
-            # Nuke it
-            import os
-            import signal
-            os.kill(server.pid, signal.SIGKILL)
 
+    server.daemon = True
     server.start()
 
     return sock
