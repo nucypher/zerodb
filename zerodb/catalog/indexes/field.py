@@ -1,5 +1,4 @@
 import itertools as it
-import BTrees
 from persistent import Persistent
 from ZODB.broken import Broken
 from repoze.catalog.indexes.field import CatalogFieldIndex as _CatalogFieldIndex
@@ -18,11 +17,7 @@ threshold = 10
 def multiunion1(set_type, seqs):
     result = set_type()
     for s in seqs:
-        if (not isinstance(s, BTrees.IFBTree.Bucket) and
-                not isinstance(s, BTrees.IFBTree.Set) and
-                not isinstance(s, BTrees.IFBTree.BTree) and
-                not isinstance(s, BTrees.IFBTree.TreeSet) and
-                not isinstance(s, tuple)):
+        if isinstance(s, (int, long)):
             s = (s,)
         result.update(s)
     return result
@@ -82,8 +77,7 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                 yield curdocids
                 if limit and n >= limit:
                     raise StopIteration
-            elif (isinstance(curdocids, tuple)
-                    or isinstance(curdocids, self.family.IF.TreeSet)):
+            elif isinstance(curdocids, (tuple, self.family.IF.TreeSet)):
                 for docid in curdocids:
                     if docid in docids:
                         n += 1
@@ -155,17 +149,14 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
             if isinstance(curdocids, int):
                 newdocids = (curdocids,)
             elif curdocnum == threshold-1 and isinstance(curdocids, tuple):
-                newset = self.family.IF.TreeSet()
-                newset.update(curdocids)
-
-                newdocids = newset
+                newdocids = self.family.IF.TreeSet(curdocids)
+                self._fwd_index[value] = newdocids
 
             if isinstance(newdocids, tuple):
                 newdocids += (docid,)
+                self._fwd_index[value] = newdocids
             elif isinstance(newdocids, self.family.IF.TreeSet):
                 newdocids.insert(docid)
-
-            self._fwd_index[value] = newdocids
 
         # increment doc count
         self._num_docs.change(1)
