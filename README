@@ -3,6 +3,6 @@ Data can be stored on untrusted database servers without ever exposing the
 encryption key. Clients can execute remote queries against the encrypted data
 without downloading it or suffering an excessive performance hit.
 
-Brief description of the protocol: http://blog.zerodb.io/a-peek-under-the-hood/.
+Technical white paper: http://arxiv.org/abs/1602.07168
 
 Based on ZODB
