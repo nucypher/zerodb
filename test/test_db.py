@@ -1,6 +1,7 @@
 import logging
 import mock
 import transaction
+from itertools import islice
 from db import Page, Salary, Department
 from zerodb.catalog.query import Contains, InRange, Eq, Gt
 # Also need to test optimize, Lt(e), Gt(e)
@@ -190,3 +191,35 @@ def test_repr(db):
 def test_pack(db):
     db.pack()
     assert len(db[Page]) > 0
+
+
+def test_all_uid(db):
+    # Test for https://gist.github.com/micxjo/a097698b33fc4669b0b4
+    page = Page(title="Test page", text="Hello world")
+    with transaction.manager:
+        db.add(page)
+
+    del page
+    # Clear in-memory and on-disk caches
+    db._storage._cache.clear()
+    db._connection._cache.full_sweep()
+
+    for item in db[Page].all():
+        assert hasattr(item, "_p_uid")
+        del item
+
+    db._storage._cache.clear()
+    db._connection._cache.full_sweep()
+
+    for uid in db[Page].all_uids():
+        obj = db[Page][uid]
+        assert hasattr(obj, "_p_uid")
+        del obj
+
+    db._storage._cache.clear()
+    db._connection._cache.full_sweep()
+
+    uids = list(islice(db[Page].all_uids(), 10))
+    objs = db[Page][uids]
+    for obj in objs:
+        assert hasattr(obj, "_p_uid")

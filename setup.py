@@ -18,12 +18,11 @@ INSTALL_REQUIRES = [
     'ecdsa',
     'zope.event',
     'zope.lifecycleevent',
-    'aes256gcm-nacl'
-    ]
+    'aes256gcm-nacl']
 
 setup(
     name="zerodb",
-    version="0.96.18",
+    version="0.96.19",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
