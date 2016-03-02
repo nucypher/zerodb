@@ -174,6 +174,19 @@ def test_auto_reindex(db):
         assert reindex_mock.call_count == 1
 
 
+def test_fieldindex_typechange(db):
+    with transaction.manager:
+        for i in range(30):
+            db.add(Salary(
+                name="Tom",
+                surname="Jackson-%s" %i,
+                salary=10000 + 100 * i))
+    test1 = db[Salary].query(InRange("salary", 9999, 14000))
+    assert len(test1) == 30
+    test2 = db[Salary].query(InRange("salary", 9999, 10901) & Eq("name", "Tom"))
+    assert len(test2) == 10
+
+
 def test_repr(db):
     data = db[Salary].query(Gt("salary", 100000))
     s = str(data)
