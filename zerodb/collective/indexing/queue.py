@@ -1,6 +1,6 @@
 from logging import getLogger
 from threading import local
-from zope.interface import implements
+from zope.interface import implementer
 from zope.component import getSiteManager
 
 from zerodb.collective.indexing.interfaces import IIndexQueue
@@ -41,9 +41,8 @@ def processQueue():
     return processed
 
 
+@implementer(IIndexQueue)
 class IndexQueue(local):
-
-    implements(IIndexQueue)
 
     def __init__(self):
         self.queue = []

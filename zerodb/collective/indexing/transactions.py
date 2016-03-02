@@ -2,7 +2,7 @@ from logging import getLogger
 from threading import local
 from transaction.interfaces import ISavepointDataManager
 from transaction import get as getTransaction
-from zope.interface import implements
+from zope.interface import implementer
 
 logger = getLogger('collective.indexing.transactions')
 
@@ -18,9 +18,9 @@ class QueueSavepoint(object):
         self.queue.setState(self.state)
 
 
+@implementer(ISavepointDataManager)
 class QueueTM(local):
     """ transaction manager hook for the indexing queue """
-    implements(ISavepointDataManager)
 
     def __init__(self, queue):
         local.__init__(self)
