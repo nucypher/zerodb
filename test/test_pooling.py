@@ -49,7 +49,7 @@ def test_forking(db):
     p = multiprocessing.Process(target=f)
     p.daemon = True
     p.start()
-    p.join(1)
+    p.join(10)
 
     # Test that child used connection other than parent
     assert id_conn_child.value != 0
