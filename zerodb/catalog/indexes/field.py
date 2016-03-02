@@ -6,7 +6,6 @@ from repoze.catalog.indexes.common import CatalogIndex
 from repoze.catalog import RangeValue
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
-from zerodb.storage import prefetch
 from zerodb.util.iter import ListPrefetch
 
 _marker = ()
@@ -63,6 +62,18 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
                 self._fwd_index.values(
                     start, end, excludemin=excludemin, excludemax=excludemax)))))
         # XXX what if these treesets are pretty deep? Need to pre-fetch "first N elements"
+
+    def applyEq(self, value):
+        Set = self.family.IF.Set
+        docs = self._fwd_index.get(value, None)
+        if docs is None:
+            return Set()
+        elif isinstance(docs, (int, long)):
+            return Set([docs])
+        elif isinstance(docs, tuple):
+            return Set(docs)
+        else:
+            return ListPrefetch(lambda: iter(docs))
 
     def scan_forward(self, docids, limit=None):
         # Batch-prefetch treesets
@@ -140,15 +151,11 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         if curdocids is None:
             self._fwd_index[value] = docid  # integer when only one docid
         else:
-            if isinstance(curdocids, int):
-                curdocnum = 1
-            else:
-                curdocnum = len(curdocids)
             newdocids = curdocids
 
             if isinstance(curdocids, int):
                 newdocids = (curdocids,)
-            elif curdocnum == threshold-1 and isinstance(curdocids, tuple):
+            elif isinstance(curdocids, tuple) and len(curdocids) >= threshold - 1:
                 newdocids = self.family.IF.TreeSet(curdocids)
                 self._fwd_index[value] = newdocids
 
@@ -165,13 +172,15 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         rev_index[docid] = value
 
     def search(self, queries, operator='or'):
+        # .apply and .applyAny call this: may need to consider doing
+        # an iterative version of this method
         sets = []
         for query in queries:
             if isinstance(query, RangeValue):
                 query = query.as_tuple()
             else:
                 query = (query, query)
-            set = multiunion1(self.family.IF.TreeSet,
+            set = multiunion1(self.family.IF.Set,
                               self._fwd_index.values(*query))
             sets.append(set)
 
