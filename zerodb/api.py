@@ -58,7 +58,7 @@ def connnect():
 
     try:
         db = zerodb.DB(socket, username=username, password=passphrase)
-    except Exception, e:
+    except Exception as e:
         return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
 
     session["username"] = username
@@ -162,7 +162,7 @@ def remove(table_name):
     try:
         with transaction.manager:
             count = db.remove(result)
-    except Exception, e:
+    except Exception as e:
         return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
 
     return jsonify(ok=1, count=count)
@@ -186,7 +186,7 @@ def insert(table_name):
             with transaction.manager:
                 oids = [{"$oid": db.add(o)} for o in objs]
             return jsonify(status={"ok": 1}, oids=oids)
-        except Exception, e:
+        except Exception as e:
             return jsonify(ok=0, message=str(e), error_type=e.__class__.__name__)
     else:
         return jsonify(ok=0)
