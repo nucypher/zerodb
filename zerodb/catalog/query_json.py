@@ -1,4 +1,4 @@
-from query import Eq, Lt, Gt, And, Or, Not, InRange, Contains,\
+from .query import Eq, Lt, Gt, And, Or, Not, InRange, Contains,\
                   NotEq, Le, Ge, NotInRange, DoesNotContain,\
                   Any, All, NotAny, NotAll
 

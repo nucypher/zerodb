@@ -1,6 +1,6 @@
 import persistent
-import fields
-import exceptions
+from . import fields
+from . import exceptions
 from zope.lifecycleevent import modified
 from zerodb.intid import IdStore
 from zerodb.trees import family32

@@ -1,5 +1,5 @@
-import compress_common
-import encrypt_common
+from . import compress_common
+from . import encrypt_common
 
 compress = compress_common.compress
 decompress = compress_common.decompress

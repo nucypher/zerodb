@@ -9,8 +9,8 @@ from ZEO.auth.base import Client as BaseClient
 from ZEO.auth import register_module
 from ZEO.Exceptions import AuthError
 
-import base
-import subdb
+from . import base
+from . import subdb
 from zerodb.crypto import rand
 from zerodb.crypto import ecc
 

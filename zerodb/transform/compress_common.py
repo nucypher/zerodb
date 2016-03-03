@@ -1,6 +1,6 @@
 from zope.component import getGlobalSiteManager, ComponentLookupError
 from zope.interface import implementer
-from interfaces import ICompressor
+from .interfaces import ICompressor
 
 _gsm = getGlobalSiteManager()
 

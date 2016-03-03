@@ -5,9 +5,9 @@ import ZEO.zrpc.error
 from itertools import chain
 from persistent import Persistent
 
-import batch
-import premade
-import transforming
+from . import batch
+from . import premade
+from . import transforming
 import logging
 
 # TODO when it comes to the point we need to,

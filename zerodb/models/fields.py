@@ -1,6 +1,6 @@
 from zerodb.catalog.indexes.text import CatalogTextIndex
 from zerodb.catalog.indexes.field import CatalogFieldIndex
-import exceptions
+from . import exceptions
 
 
 class Indexable(object):

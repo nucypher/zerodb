@@ -6,11 +6,11 @@ import BTrees
 
 
 class TreeFamily32(BTrees._Family32):
-    import IFBTree as IF
-    import IIBTree as II
-    import IOBTree as IO
-    import OIBTree as OI
-    import OOBTree as OO
+    from . import IFBTree as IF
+    from . import IIBTree as II
+    from . import IOBTree as IO
+    from . import OIBTree as OI
+    from . import OOBTree as OO
 
 
 family32 = TreeFamily32()
