@@ -138,24 +138,22 @@ def btree_state_search(state, key):
     if not state:
         return -1, None
 
-    L = (len(state[0]) + 1) / 2
+    state = state[0]
 
-    get_key = lambda i: state[0][i * 2 - 1] if i > 0 else None
-
-    # Copy of python BTree logic
+    # Based on python BTree logic
     lo = 0
-    hi = L
+    hi = (len(state) + 1) // 2
     i = hi // 2
     while i > lo:
-        cmp_ = cmp(get_key(i), key)
-        if cmp_ < 0:
+        i_key = state[i * 2 - 1]
+        if i_key < key:
             lo = i
-        elif cmp_ > 0:
+        elif i_key > key:
             hi = i
         else:
             break
         i = (lo + hi) // 2
-    return i, state[0][i * 2]
+    return i, state[i * 2]
 
 
 def parallel_traversal(trees, keys):
