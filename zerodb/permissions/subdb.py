@@ -13,7 +13,7 @@ from ZEO.Exceptions import StorageError
 from ZODB.POSException import POSKeyError
 from ZODB.Connection import Connection as BaseConnection
 from ZODB.Connection import RootConvenience
-import base
+from . import base
 from zerodb.storage import ServerStorage
 from zerodb.transform.encrypt_common import get_encryption_signature, _gsm, IEncrypter
 
