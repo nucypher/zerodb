@@ -1,6 +1,7 @@
 import logging
 import mock
 import transaction
+from itertools import islice
 from db import Page, Salary, Department
 from zerodb.catalog.query import Contains, InRange, Eq, Gt
 # Also need to test optimize, Lt(e), Gt(e)
@@ -173,6 +174,19 @@ def test_auto_reindex(db):
         assert reindex_mock.call_count == 1
 
 
+def test_fieldindex_typechange(db):
+    with transaction.manager:
+        for i in range(30):
+            db.add(Salary(
+                name="Tom",
+                surname="Jackson-%s" %i,
+                salary=10000 + 100 * i))
+    test1 = db[Salary].query(InRange("salary", 9999, 14000))
+    assert len(test1) == 30
+    test2 = db[Salary].query(InRange("salary", 9999, 10901) & Eq("name", "Tom"))
+    assert len(test2) == 10
+
+
 def test_repr(db):
     data = db[Salary].query(Gt("salary", 100000))
     s = str(data)
@@ -190,3 +204,35 @@ def test_repr(db):
 def test_pack(db):
     db.pack()
     assert len(db[Page]) > 0
+
+
+def test_all_uid(db):
+    # Test for https://gist.github.com/micxjo/a097698b33fc4669b0b4
+    page = Page(title="Test page", text="Hello world")
+    with transaction.manager:
+        db.add(page)
+
+    del page
+    # Clear in-memory and on-disk caches
+    db._storage._cache.clear()
+    db._connection._cache.full_sweep()
+
+    for item in db[Page].all():
+        assert hasattr(item, "_p_uid")
+        del item
+
+    db._storage._cache.clear()
+    db._connection._cache.full_sweep()
+
+    for uid in db[Page].all_uids():
+        obj = db[Page][uid]
+        assert hasattr(obj, "_p_uid")
+        del obj
+
+    db._storage._cache.clear()
+    db._connection._cache.full_sweep()
+
+    uids = list(islice(db[Page].all_uids(), 10))
+    objs = db[Page][uids]
+    for obj in objs:
+        assert hasattr(obj, "_p_uid")

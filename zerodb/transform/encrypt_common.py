@@ -1,6 +1,6 @@
 from zope.component import getGlobalSiteManager, ComponentLookupError
 from zope.interface import implementer
-from interfaces import IEncrypter, IEncrypterClass
+from .interfaces import IEncrypter, IEncrypterClass
 
 _gsm = getGlobalSiteManager()
 

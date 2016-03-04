@@ -28,6 +28,7 @@ def test_thread_pooling(db):
 
     # Threadlocals die only when another thread accesses them
     db._root
+    sleep(0.3)
 
     # TODO: close connection when thread dies
     assert len(db._db.pool.all) - len(db._db.pool.available) == 1
@@ -46,8 +47,9 @@ def test_forking(db):
         id_conn_child.value = id(db._connection)
 
     p = multiprocessing.Process(target=f)
+    p.daemon = True
     p.start()
-    p.join()
+    p.join(10)
 
     # Test that child used connection other than parent
     assert id_conn_child.value != 0

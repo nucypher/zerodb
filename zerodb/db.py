@@ -1,4 +1,3 @@
-import collections
 import itertools
 import os
 import threading
@@ -8,7 +7,6 @@ from hashlib import sha256
 from repoze.catalog.query import optimize
 from zerodb.collective.indexing.indexer import PortalCatalogProcessor
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
-from zerodb.collective.indexing import queue
 from zerodb.collective.indexing import subscribers
 from zope import component
 from zerodb.permissions import elliptic
@@ -84,11 +82,19 @@ class DbModel(object):
         :return: Persistent object(s)
         """
         if isinstance(uids, (int, long)):
-            return self._objects[uids]
+            obj = self._objects[uids]
+            if not hasattr(obj, "_p_uid"):
+                obj._p_uid = uids
+            return obj
+
         elif isinstance(uids, (tuple, list, set)):
             objects = [self._objects[uid] for uid in uids]
             self._db._storage.loadBulk([o._p_oid for o in objects])
+            for o, uid in itertools.izip(objects, uids):
+                if not hasattr(o, "_p_uid"):
+                    o._p_uid = uid
             return objects
+
         else:
             raise ModelException("Integer or list of integers is expected")
 
@@ -98,7 +104,10 @@ class DbModel(object):
 
     def all(self):
         for i in self.all_uids():
-            yield self._objects[i]
+            obj = self._objects[i]
+            if not hasattr(obj, "_p_uid"):
+                obj._p_uid = i
+            yield obj
 
     def add(self, obj):
         """

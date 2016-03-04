@@ -1,7 +1,7 @@
 from cStringIO import StringIO
 from hashlib import sha256
 
-from encrypt_common import CommonEncrypter
+from .encrypt_common import CommonEncrypter
 from Crypto.Random import get_random_bytes as rand
 from zerodb.crypto.exceptions import WrongKeyError
 

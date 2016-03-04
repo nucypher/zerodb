@@ -65,8 +65,9 @@ def do_zeo_server(request, pass_file, tempdir):
     @request.addfinalizer
     def fin():
         server.terminate()
-        server.join()
+        server.join(1)
 
+    server.daemon = True
     server.start()
 
     return sock
