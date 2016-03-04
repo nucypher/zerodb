@@ -451,7 +451,7 @@ def mass_weightedUnion(L):
                         # sum(unread_max) by much enough
                         # We need something like "advance_to" method
                         precache(
-                                max(enumerate(m / max(l, 1) for m, l in izip(unread_max, lengths)), key=lambda x: x[1])[0],
+                                max(enumerate(m / max(l - len(c), 1) for m, l, c in izip(unread_max, lengths, caches)), key=lambda x: x[1])[0],
                                 cache_size / 2)
                         cache_len = sum(map(len, caches))
 
