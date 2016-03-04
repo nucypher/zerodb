@@ -60,7 +60,7 @@ def test_add(db):
         page = Page(title="hello", text="Quick brown lazy fox jumps over lorem  ipsum dolor sit amet")
         db.add(page)
         post_commit_count = db._storage._debug_download_count
-    print "Number of requests:", post_commit_count - pre_commit_count
+    print("Number of requests:", post_commit_count - pre_commit_count)
     assert post_commit_count - pre_commit_count < 22
 
     with transaction.manager:
