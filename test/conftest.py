@@ -1,6 +1,7 @@
 import pytest
 import shutil
 import tempfile
+from time import sleep
 from multiprocessing import Process
 from os import path
 import zerodb
@@ -64,6 +65,7 @@ def do_zeo_server(request, pass_file, tempdir):
 
     @request.addfinalizer
     def fin():
+        sleep(1)
         server.terminate()
         server.join(1)
 
