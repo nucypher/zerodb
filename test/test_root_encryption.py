@@ -10,4 +10,4 @@ def test_root_encryption(db):
     assert get_encryption_signature(edata) == utility.name
     for obj in db._root.values():
         edata, _ = db._connection._storage.base.load(obj._p_oid)
-        assert get_encryption_signature(edata) == ""
+        assert get_encryption_signature(edata) == b""

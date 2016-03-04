@@ -7,7 +7,7 @@ _gsm = getGlobalSiteManager()
 
 @implementer(IEncrypter)
 class CommonEncrypter(object):
-    name = ""
+    name = b""
     attributes = ()
 
     def __init__(self, **kw):
@@ -15,7 +15,7 @@ class CommonEncrypter(object):
         for i in self.attributes:
             if i in kw:
                 kwargs[i] = kw[i]
-        self._signature = ".e%s$" % self.name
+        self._signature = b".e%s$" % self.name
         self._init_encryption(**kwargs)
         self.register()
 
@@ -24,7 +24,7 @@ class CommonEncrypter(object):
 
     def encrypt(self, data, no_cipher_name=False):
         if no_cipher_name:
-            sig = ".e$"
+            sig = b".e$"
         else:
             sig = self._signature
         return sig + self._encrypt(data)
@@ -32,7 +32,7 @@ class CommonEncrypter(object):
     def decrypt(self, data):
         if data.startswith(self._signature):
             return self._decrypt(data[len(self._signature):])
-        elif data.startswith(".e$"):
+        elif data.startswith(b".e$"):
             return self._decrypt(data[3:])
         else:
             return data
@@ -60,14 +60,14 @@ def encrypt(data, no_cipher_name=False):
 
 
 def get_encryption_signature(data):
-    if data.startswith(".e"):
-        return data[2:data.find("$")]
+    if data.startswith(b".e"):
+        return data[2:data.find(b"$")]
     else:
         return None
 
 
 def decrypt(data):
-    sig = get_encryption_signature(data)
+    sig = get_encryption_signature(data).decode()
     if sig is not None:
         # Named utility if encrypter name is known, default if ''
         return _gsm.getUtility(IEncrypter, sig).decrypt(data)

@@ -1,4 +1,4 @@
-from StringIO import StringIO
+from six import StringIO
 from zerodb.catalog import query_json as qj
 from zerodb.catalog.query import optimize
 from zerodb.catalog.query import Gt, Contains

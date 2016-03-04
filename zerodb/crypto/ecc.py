@@ -1,3 +1,4 @@
+import six
 import hashlib
 import pyelliptic as pe  # This module re-uses OPENSSL's code
 import ecdsa  # But this one is more functional :-)
@@ -27,7 +28,9 @@ def priv2pub(priv):
 
 
 def private(passphrase):
-    priv = hashlib.sha256("elliptic" + hashlib.sha256(passphrase).digest()).digest()
+    if six.PY3 and isinstance(passphrase, six.string_types):
+        passphrase = passphrase.encode()
+    priv = hashlib.sha256(b"elliptic" + hashlib.sha256(passphrase).digest()).digest()
     px, py = priv2pub(priv)
     key = pe.ECC(curve=CURVE)
     key._set_keys(px, py, priv)

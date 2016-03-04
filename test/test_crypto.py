@@ -3,7 +3,7 @@ from zerodb.crypto import rand
 from zerodb.transform.encrypt_aes import AES256Encrypter as AES
 from zerodb.crypto.exceptions import WrongKeyError
 
-TEST_TEXT = "hello world"
+TEST_TEXT = b"hello world"
 
 
 def test_aes_rand():
@@ -17,7 +17,7 @@ def test_aes_rand():
 
 
 def test_aes_passphrase():
-    passphrase = "the most secret passphrase ever"
+    passphrase = b"the most secret passphrase ever"
 
     cipher1 = AES(passphrase=passphrase)
     ciphertext = cipher1.encrypt(TEST_TEXT)
@@ -27,7 +27,7 @@ def test_aes_passphrase():
 
 
 def test_aes_exception():
-    passphrase = "the most secret passphrase ever"
+    passphrase = b"the most secret passphrase ever"
 
     cipher1 = AES(passphrase=passphrase)
     ciphertext = cipher1.encrypt(TEST_TEXT)

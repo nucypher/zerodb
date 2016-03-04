@@ -11,13 +11,13 @@ class CommonCompressor(object):
     Common compression class
     One has to set _compress, _decompress and name
     """
-    name = ""
+    name = b""
 
-    def __init__(self, name="", compress=None, decompress=None, args=None, kwargs=None):
+    def __init__(self, name=b"", compress=None, decompress=None, args=None, kwargs=None):
         self.name = name
         self._compress = compress
         self._decompress = decompress
-        self._signature = self.name and ".c%s$" % self.name
+        self._signature = self.name and b".c%s$" % self.name
         self._args = args or []
         self._kwargs = kwargs or {}
 
@@ -41,8 +41,8 @@ class CommonCompressor(object):
 
 
 def decompress(data):
-    if data.startswith(".c"):
-        name = data[2:data.find("$")]
+    if data.startswith(b".c"):
+        name = data[2:data.find(b"$")].decode()
         return _gsm.getUtility(ICompressor, name).decompress(data)
     else:
         return data

@@ -272,7 +272,7 @@ class DB(object):
         username = username and str(username)
         password = str(password)
 
-        if isinstance(sock, basestring):
+        if isinstance(sock, six.string_types):
             sock = str(sock)
         elif type(sock) in (list, tuple):
             assert len(sock) == 2

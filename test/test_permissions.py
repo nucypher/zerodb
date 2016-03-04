@@ -1,4 +1,5 @@
 import pytest
+import six
 from ZEO.Exceptions import StorageError
 from ZODB.DB import z64
 from zerodb.permissions import subdb
@@ -48,7 +49,10 @@ def test_ecc_auth(zeo_server):
     conn.root()
 
     assert db._root_oid != z64
-    assert type(db._root_oid) == str
+    if six.PY2:
+        assert type(db._root_oid) == str
+    else:
+        assert type(db._root_oid) == bytes
 
     conn.close()
 

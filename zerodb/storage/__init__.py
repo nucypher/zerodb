@@ -1,3 +1,4 @@
+import six
 from ZEO.StorageServer import StorageServer as BaseStorageServer
 from ZEO.runzeo import ZEOServer as BaseZEOServer
 from ZEO.runzeo import ZEOOptions
@@ -83,7 +84,7 @@ def client_storage(sock, *args, **kw):
     :returns: Storage
     :rtype: TransformingStorage
     """
-    if type(sock) is unicode:
+    if six.PY2 and isinstance(sock, unicode):
         sock = str(sock)
     TransformingStorage = kw.pop('transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)

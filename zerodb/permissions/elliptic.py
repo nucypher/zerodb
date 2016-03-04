@@ -4,6 +4,8 @@ Module for auth with elliptic curve cryptography
 
 import hashlib
 import struct
+
+import six
 from ZEO import auth
 from ZEO.auth.base import Client as BaseClient
 from ZEO.auth import register_module
@@ -35,10 +37,10 @@ class ServerStorageMixin(object):
         user = self.database[username]
         verkey = ecc.public(user.pubkey)
 
-        h_up = hashlib.sha256("%s:%s:%s" % (username, self.database.realm, user.pubkey)).digest()
+        h_up = hashlib.sha256(b"%s:%s:%s" % (username.encode(), self.database.realm.encode(), user.pubkey)).digest()
 
         # regeneration resp from user, password, and nonce
-        check = hashlib.sha256("%s:%s" % (h_up, challenge)).digest()
+        check = hashlib.sha256(b"%s:%s" % (h_up, challenge)).digest()
         verify = verkey.verify(resp_sig, check)
         if verify:
             self.connection.setSessionKey(base.session_key(h_up, self._key_nonce))
@@ -64,9 +66,9 @@ class Client(BaseClient):
         if _realm != realm:
             raise AuthError("expected realm %r, got realm %r"
                             % (_realm, realm))
-        h_up = hashlib.sha256("%s:%s:%s" % (username, realm, priv.get_pubkey())).digest()
+        h_up = hashlib.sha256(b"%s:%s:%s" % (username.encode(), realm.encode(), priv.get_pubkey())).digest()
 
-        check = hashlib.sha256("%s:%s" % (h_up, challenge)).digest()
+        check = hashlib.sha256(b"%s:%s" % (h_up, challenge)).digest()
         sig = priv.sign(check)
         result = self.stub.auth_response((username, challenge, sig))
         if result:
