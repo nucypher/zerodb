@@ -56,9 +56,9 @@ def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
         db.add(departments)
 
     with transaction.manager:
-        for i in range(count / 2) + range(count / 2 + 10, count):
+        for i in list(range(count // 2)) + list(range(count // 2 + 10, count)):
             db.add(Page(title="hello %s" % i, text="lorem ipsum dolor sit amet" * 50))
-        for i in range(count / 2, count / 2 + 10):
+        for i in range(count // 2, count // 2 + 10):
             db.add(Page(title="hello %s" % i, text="this is something we're looking for" * 50))
         for i in range(count):
             db.add(Salary(

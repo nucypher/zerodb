@@ -70,7 +70,7 @@ class Model(six.with_metaclass(ModelMeta, persistent.Persistent)):
                 default = default()
             setattr(self, field, default)
 
-        for field, value in kw.iteritems():
+        for field, value in six.iteritems(kw):
             setattr(self, field, value)
 
     def __setattr__(self, name, value):

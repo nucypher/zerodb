@@ -112,7 +112,7 @@ class PermissionsDatabase(object):
 
         # If first line is realm, set it. Othewise they are all users
         try:
-            line = fd.next()
+            line = next(fd)
             if line.startswith("realm "):
                 self.realm = line.strip().split(" ", 1)[1]
             else:

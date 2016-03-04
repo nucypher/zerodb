@@ -1,6 +1,9 @@
 import itertools
 import os
 import threading
+
+import six
+from six.moves import zip as izip
 import transaction
 
 from hashlib import sha256
@@ -90,7 +93,7 @@ class DbModel(object):
         elif isinstance(uids, (tuple, list, set)):
             objects = [self._objects[uid] for uid in uids]
             self._db._storage.loadBulk([o._p_oid for o in objects])
-            for o, uid in itertools.izip(objects, uids):
+            for o, uid in izip(objects, uids):
                 if not hasattr(o, "_p_uid"):
                     o._p_uid = uid
             return objects
@@ -215,7 +218,7 @@ class DbModel(object):
             kw["limit"] = skip + limit
 
         eq_args = []
-        for k in kw.keys():
+        for k in list(kw.keys()):
             if k not in set(["sort_index", "sort_type", "reverse", "names", "limit"]):
                 eq_args.append(Eq(k, kw.pop(k)))
 
@@ -233,7 +236,7 @@ class DbModel(object):
             objects = [self._objects[uid] for uid in qids]
             if objects and prefetch:
                 self._db._storage.loadBulk([o._p_oid for o in objects])
-            for obj, uid in itertools.izip(objects, qids):
+            for obj, uid in izip(objects, qids):
                 obj._p_uid = uid
             return objects
 

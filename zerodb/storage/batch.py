@@ -1,4 +1,4 @@
-import itertools
+from six.moves import zip as izip
 import logging
 from ZEO.ClientStorage import ClientStorage
 from ZEO.Exceptions import ClientDisconnected
@@ -71,13 +71,13 @@ class BatchClientStorage(ClientStorage):
             if self._server is None:
                 raise ClientDisconnected()
 
-            load_oids = self._load_oids.keys()
+            load_oids = list(self._load_oids.keys())
 
             # [(data, tid), (data, tid), ...]
             bulk_data = self._server.rpc.call("loadBulk", load_oids)
 
             data_size = 0
-            for oid, (data, tid) in itertools.izip(load_oids, bulk_data):
+            for oid, (data, tid) in izip(load_oids, bulk_data):
                 data_size += len(data)
                 self._lock.acquire()    # for atomic processing of invalidations
                 try:

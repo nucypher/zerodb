@@ -1,5 +1,7 @@
+import six
 from persistent import Persistent
-from itertools import islice, izip, imap, count
+from itertools import islice, count
+from six.moves import zip as izip, map as imap
 from cachetools import LRUCache
 from zerodb.storage import prefetch
 
@@ -26,7 +28,7 @@ class Sliceable(object):
         for obj in self.__iter__():
             if hasattr(obj, "_p_activate"):
                 obj._p_activate()
-            yield {k: v for k, v in obj.__dict__.iteritems() if not k.startswith("_")}
+            yield {k: v for k, v in six.iteritems(obj.__dict__) if not k.startswith("_")}
 
     def __len__(self):
         if self.length is None:
@@ -50,7 +52,7 @@ class Sliceable(object):
                     self.iterator = iter(self.f())
 
                 delta = key - self.stop
-                result = islice(self.iterator, delta, delta + 1).next()
+                result = next(islice(self.iterator, delta, delta + 1))
                 self.cache[key] = result
                 self.stop = key + 1
                 return result
@@ -76,7 +78,7 @@ class Sliceable(object):
                     return result
 
                 else:
-                    result = [self.cache[i] for i in xrange(start, index_upd, step)]
+                    result = [self.cache[i] for i in six.moves.xrange(start, index_upd, step)]
 
                     if key.stop is None:
                         result_upd = list(islice(self.iterator, index_upd - self.stop, None, step))

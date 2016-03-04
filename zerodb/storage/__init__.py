@@ -94,7 +94,7 @@ def prefetch(objs):
     """
     Bulk-fetch ZODB objects
     """
-    objs = filter(lambda x: hasattr(x, "_p_oid"), objs)
+    objs = [o for o in objs if hasattr(o, "_p_oid")]
     if objs:
         oids = [y._p_oid for y in objs if y._p_oid is not None]
         if objs[0]._p_jar:

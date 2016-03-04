@@ -82,7 +82,7 @@ class TransformingStorage(ZlibStorage):
         if returns or self.debug:
             datas, serials = zip(*base_result)
             datas_out = map(self._untransform, datas)
-            out = zip(datas_out, serials)
+            out = list(zip(datas_out, serials))
             if self.debug:
                 if datas:
                     self._debug_download_count += 1
