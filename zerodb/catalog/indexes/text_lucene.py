@@ -3,7 +3,7 @@ import itertools
 import logging
 
 from BTrees.Length import Length
-from BTrees.OOBTree import Set as SortedSet  # sorted set implemented in C
+from BTrees.OOBTree import TreeSet as SortedSet  # sorted set implemented in C
 from collections import Counter, defaultdict
 from itertools import izip, islice
 from math import sqrt, log
