@@ -1,4 +1,6 @@
 import itertools as it
+
+import six
 from persistent import Persistent
 from ZODB.broken import Broken
 from repoze.catalog.indexes.field import CatalogFieldIndex as _CatalogFieldIndex
@@ -16,7 +18,7 @@ threshold = 10
 def multiunion1(set_type, seqs):
     result = set_type()
     for s in seqs:
-        if isinstance(s, (int, long)):
+        if isinstance(s, six.integer_types):
             s = (s,)
         result.update(s)
     return result
@@ -68,7 +70,7 @@ class CatalogFieldIndex(CallableDiscriminatorMixin, _CatalogFieldIndex):
         docs = self._fwd_index.get(value, None)
         if docs is None:
             return Set()
-        elif isinstance(docs, (int, long)):
+        elif isinstance(docs, six.integer_types):
             return Set([docs])
         elif isinstance(docs, tuple):
             return Set(docs)

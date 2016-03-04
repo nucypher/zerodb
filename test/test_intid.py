@@ -1,3 +1,5 @@
+import six
+
 from zerodb.models import Model
 from zerodb import intid
 
@@ -19,7 +21,7 @@ def test_initid():
     assert len(idstore) == 3
 
     for t in ts:
-        assert type(t._p_uid) in (int, long)
+        assert type(t._p_uid) in six.integer_types
 
     assert len(set([t._p_uid for t in ts])) == 3
     assert idstore[ts[0]._p_uid] is ts[0]

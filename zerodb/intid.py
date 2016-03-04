@@ -4,6 +4,8 @@
 # Conflict avoidance method is copied from IntIds._generateId (need something better I guess)
 import persistent
 import random
+
+import six
 from BTrees.Length import Length
 from zerodb.trees import family32
 
@@ -75,7 +77,7 @@ class IdStore(persistent.Persistent):
         """
         if not hasattr(self, "length"):
             self.length = Length(len(self.tree))
-        if type(iobj) in (int, long):
+        if type(iobj) in six.integer_types:
             del self.tree[iobj]
             self.length.change(-1)
         elif hasattr(iobj, "_p_uid"):

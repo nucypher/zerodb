@@ -157,7 +157,7 @@ class ListPrefetch(Sliceable):
         if self.stop != previous_stop:
             # Cache-ahead
             try:
-                if isinstance(key, (int, long)):
+                if isinstance(key, six.integer_types):
                     tail = super(ListPrefetch, self).__getitem__(slice(key + 1, key + self.prefetch_size + 1))
                 elif isinstance(key, slice):
                     if key.stop:
