@@ -4,7 +4,7 @@ import logging
 
 from BTrees.Length import Length
 from BTrees.OOBTree import Set as SortedSet  # sorted set implemented in C
-from collections import Counter
+from collections import Counter, defaultdict
 from itertools import izip, islice
 from math import sqrt, log
 from persistent import Persistent
@@ -368,6 +368,7 @@ def mass_weightedUnion(L):
         lengths = map(len, trees)
         iters = dict(enumerate(map(iter, trees)))
         caches = [{} for i in range(len(L))]
+        docid2cacheid = defaultdict(list)
         cache_len = None
         maxscores = [-1] * len(L)
         used = set()
@@ -384,10 +385,14 @@ def mass_weightedUnion(L):
                         unread_max[i] = score
                     if docid not in used:
                         caches[i][docid] = score
+                        docid2cacheid[docid].append(i)
                         if maxscores[i] < 0:
                             maxscores[i] = score
 
-                        total_score = sum(c.get(docid, 0) for c in caches)
+                        # documents are not repeated in iterators
+                        # it means that for the iterator i we didn't meet docid before
+                        # which means that we should just add score to the current minscore
+                        total_score = mins_dict.get(docid, 0.0) + score
                         if docid in mins_dict:
                             sorted_mins.remove((-mins_dict[docid], docid))
                         mins_dict[docid] = total_score
@@ -412,12 +417,19 @@ def mass_weightedUnion(L):
 
             if cache_updated or (cache_len is not None and (cache_len > order_violation) and (len(docids) < order_violation)):
                 while True:
+                    max_sum = sum(unread_max)
                     mins = []
                     docids = []
+                    maxs = []
                     for w, docid in islice(iter(sorted_mins), order_size):
                         mins.append(-w)
                         docids.append(docid)
-                    maxs = [sum(c.get(docid, m) for c, m in izip(caches, unread_max)) for docid in docids]
+                        cacheids = docid2cacheid[docid]
+                        # Slower equivalent:
+                        # maxs = sum(c.get(docid, m) for c, m in izip(caches, unread_max))
+                        # because
+                        # -w   = sum(c.get(docid, 0) for c, m in izip(caches, unread_max))
+                        maxs.append(max_sum - sum(unread_max[i] for i in cacheids) - w)
                     violated = False
                     for i in xrange(len(mins) - order_violation - 1):
                         # Naive implementation. Can go from tail and do faster
@@ -430,7 +442,7 @@ def mass_weightedUnion(L):
                             break
                     if len(mins) == order_size:
                         # Last check: can the order be violated by out-of-cache elements?
-                        if mins[len(mins) - order_violation] < sum(unread_max):
+                        if mins[len(mins) - order_violation] < max_sum:
                             violated = True
                     if not violated:
                         break
