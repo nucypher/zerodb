@@ -10,7 +10,7 @@ from zerodb.models.exceptions import ModelException
 from db import TEST_PASSPHRASE
 
 
-class TestMe(models.Model):
+class ExampleModel(models.Model):
     title = fields.Field(index=False)
     content = fields.Text(index=False)
     age = fields.Field(default=0)
@@ -19,20 +19,20 @@ class TestMe(models.Model):
 
 
 def test_model_metaclass():
-    assert len(TestMe._z_indexed_fields) == 3
-    assert len(TestMe._z_required_fields) == 2
-    assert len(TestMe._z_default_fields) == 2
-    assert TestMe._z_virtual_fields.keys() == ["all_text"]
+    assert len(ExampleModel._z_indexed_fields) == 3
+    assert len(ExampleModel._z_required_fields) == 2
+    assert len(ExampleModel._z_default_fields) == 2
+    assert ExampleModel._z_virtual_fields.keys() == ["all_text"]
 
 
 def test_model():
     test_timestamp = datetime(year=1984, month=1, day=1)
-    obj1 = TestMe(title="Hello", content="World", age=5, timestamp=test_timestamp)
-    obj2 = TestMe(title="Hello world", content="Lorem ipsum")
-    obj3 = TestMe(title="Hello", content="World", extra="something")
+    obj1 = ExampleModel(title="Hello", content="World", age=5, timestamp=test_timestamp)
+    obj2 = ExampleModel(title="Hello world", content="Lorem ipsum")
+    obj3 = ExampleModel(title="Hello", content="World", extra="something")
 
     with pytest.raises(ModelException):
-        TestMe(title="This is not enough")
+        ExampleModel(title="This is not enough")
 
     assert obj1.title == "Hello"
     assert obj1.content == "World"
@@ -56,16 +56,16 @@ def test_model():
 def test_db(zeo_server):
     db = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
     assert len(db._models) == 0
-    assert isinstance(db[TestMe], zerodb.db.DbModel)
+    assert isinstance(db[ExampleModel], zerodb.db.DbModel)
     assert len(db._models) == 1
-    assert TestMe in db._models
+    assert ExampleModel in db._models
     db.disconnect()
 
 
 def test_dbmodel(zeo_server):
     db = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
-    assert db[TestMe]._model == TestMe
-    assert db[TestMe]._db == db
-    assert db[TestMe]._catalog_name == "catalog__testme"
-    assert db[TestMe]._intid_name == "store__testme"
+    assert db[ExampleModel]._model == ExampleModel
+    assert db[ExampleModel]._db == db
+    assert db[ExampleModel]._catalog_name == "catalog__examplemodel"
+    assert db[ExampleModel]._intid_name == "store__examplemodel"
     db.disconnect()
