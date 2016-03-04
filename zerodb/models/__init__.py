@@ -1,4 +1,6 @@
 import persistent
+import six
+
 from . import fields
 from . import exceptions
 from zope.lifecycleevent import modified
@@ -35,7 +37,7 @@ class ModelMeta(type):
         super(ModelMeta, cls).__init__(name, bases, dct)
 
 
-class Model(persistent.Persistent):
+class Model(six.with_metaclass(ModelMeta, persistent.Persistent)):
     """
     Data model to easily create indexable persistent objects.
     If an object declares a property from indexable, this property is indexed.
@@ -54,7 +56,6 @@ class Model(persistent.Persistent):
     # This could be valuable when working with json which doesn't keep any python code
     # Or we should make a method which allows to generate a new model from json
 
-    __metaclass__ = ModelMeta
     __modelname__ = None
     __family__ = family32
 

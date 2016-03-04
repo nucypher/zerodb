@@ -1,6 +1,7 @@
 """
 Combine multiple server storages in one class
 """
+import six
 from types import MethodType
 from ZEO.StorageServer import ZEOStorage
 
@@ -21,5 +22,5 @@ class ServerStorageMeta(type):
         super(ServerStorageMeta, cls).__init__(name, bases, dct)
 
 
-class MultiStorage(ZEOStorage, object):
-    __metaclass__ = ServerStorageMeta
+class MultiStorage(six.with_metaclass(ServerStorageMeta, ZEOStorage, object)):
+    pass
