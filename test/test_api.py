@@ -71,8 +71,7 @@ def test_insert_get(api_server):
 
     api_connect(api_server, session)
 
-    resp = session.post(api_server + "/Page/_insert",
-            data={"docs": dumps(docs)})
+    resp = session.post(api_server + "/Page/_insert", data={"docs": dumps(docs)})
     resp = loads(resp.text)
 
     assert resp["status"]["ok"] == 1
@@ -90,24 +89,27 @@ def test_find(api_server):
     session = requests.Session()
     api_connect(api_server, session)
 
-    resp = session.post(api_server + "/Page/_find", data={
-        "criteria": dumps({"text": {"$text": "something"}})
+    resp = session.post(
+        api_server + "/Page/_find", data={
+            "criteria": dumps({"text": {"$text": "something"}})
         })
     resp = loads(resp.text)
     assert len(resp) == 10
 
-    resp = session.post(api_server + "/Salary/_find", data={
-        "criteria": dumps({"salary": {"$range": [130000, 180000]}}),
-        "limit": 2,
-        "sort": "salary"
+    resp = session.post(
+        api_server + "/Salary/_find", data={
+            "criteria": dumps({"salary": {"$range": [130000, 180000]}}),
+            "limit": 2,
+            "sort": "salary"
         })
     resp = loads(resp.text)
     assert len(resp) == 2
 
-    resp = session.post(api_server + "/Salary/_find", data={
-        "criteria": dumps({"salary": {"$range": [130000, 130001]}}),
-        "limit": 2,
-        "sort": {"salary": -1}
+    resp = session.post(
+        api_server + "/Salary/_find", data={
+            "criteria": dumps({"salary": {"$range": [130000, 130001]}}),
+            "limit": 2,
+            "sort": {"salary": -1}
         })
     resp = loads(resp.text)
     assert len(resp) == 0
@@ -116,25 +118,35 @@ def test_find(api_server):
 
 
 def test_remove_by_id(api_server):
-    docs = [{"title": "test removing one", "text": "Something to remove 1"},
-            {"title": "test removing two", "text": "Something to remove 2"},
-            {"title": "test removing three", "text": "Something to remove 3"}]
+    docs = [{"title": "test removing one", "text": "Marker to remove 1"},
+            {"title": "test removing two", "text": "Marker to remove 2"},
+            {"title": "test removing three", "text": "Marker to remove 3"}]
     session = requests.Session()
     api_connect(api_server, session)
 
-    resp = session.post(api_server + "/Page/_insert",
+    resp = session.post(
+            api_server + "/Page/_insert",
             data={"docs": dumps(docs)})
     resp = loads(resp.text)
     oids = [o["$oid"] for o in resp["oids"]]
 
-    resp = session.post(api_server + "/Page/_remove",
-            data={"_id": dumps(oids)})
+    resp = session.post(
+        api_server + "/Page/_find", data={
+            "criteria": dumps({"text": {"$text": "marker remove"}})
+        })
+    resp = loads(resp.text)
+    assert len(resp) == 3
+
+    resp = session.post(
+        api_server + "/Page/_remove",
+        data={"_id": dumps(oids)})
     resp = loads(resp.text)
     assert resp["ok"] == 1
     assert resp["count"] == 3
 
-    resp = session.post(api_server + "/Page/_find", data={
-        "criteria": dumps({"text": {"$text": "something remove"}})
+    resp = session.post(
+        api_server + "/Page/_find", data={
+            "criteria": dumps({"text": {"$text": "marker remove"}})
         })
     resp = loads(resp.text)
     assert len(resp) == 0
@@ -143,23 +155,25 @@ def test_remove_by_id(api_server):
 
 
 def test_remove_by_criteria(api_server):
-    docs = [{"title": "test removing one", "text": "Something to remove 1 placeholder"},
-            {"title": "test removing two", "text": "Something to remove 2 placeholder"},
-            {"title": "test removing three", "text": "Something to delete 3 placeholder"}]
+    docs = [{"title": "test removing one", "text": "Marker to remove 1 placeholder"},
+            {"title": "test removing two", "text": "Marker to remove 2 placeholder"},
+            {"title": "test removing three", "text": "Marker2 to remove 3 placeholder"}]
     session = requests.Session()
     api_connect(api_server, session)
 
-    resp = session.post(api_server + "/Page/_insert",
+    resp = session.post(
+            api_server + "/Page/_insert",
             data={"docs": dumps(docs)})
 
     resp = session.post(api_server + "/Page/_remove", data={
-            "criteria": dumps({"text": {"$text": "something remove"}})})
+            "criteria": dumps({"text": {"$text": "marker"}})})
     resp = loads(resp.text)
     assert resp["ok"] == 1
     assert resp["count"] == 2
 
-    resp = session.post(api_server + "/Page/_find", data={
-        "criteria": dumps({"text": {"$text": "something placeholder"}})
+    resp = session.post(
+        api_server + "/Page/_find", data={
+            "criteria": dumps({"text": {"$text": "marker2"}})
         })
     resp = loads(resp.text)
     assert len(resp) == 1

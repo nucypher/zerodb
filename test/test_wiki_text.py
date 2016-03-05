@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class Page(Model):
     title = fields.Field()
-    text = fields.TextNew()
+    text = fields.Text()
 
 
 @pytest.fixture(scope="module")

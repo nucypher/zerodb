@@ -16,10 +16,11 @@ def test_query(db):
     test_pages = db[Page].query(Contains("text", "something"))
     pre_range_count = db._storage._debug_download_count
     assert pre_range_count - pre_request_count < 15  # We'll have performance testing separately this way
+    assert len(test_pages) == 10
+
     test_salaries_1 = db[Salary].query(InRange("salary", 130000, 180000), sort_index="salary", limit=2)
     test_salaries_2 = db[Salary].query(InRange("salary", 130000, 130001), sort_index="salary", limit=2)
     post_range_count = db._storage._debug_download_count
-    assert len(test_pages) == 10
     assert len(test_salaries_1) == 2
     assert len(test_salaries_2) == 0
     for s in test_salaries_1:
@@ -179,7 +180,7 @@ def test_fieldindex_typechange(db):
         for i in range(30):
             db.add(Salary(
                 name="Tom",
-                surname="Jackson-%s" %i,
+                surname="Jackson-%s" % i,
                 salary=10000 + 100 * i))
     test1 = db[Salary].query(InRange("salary", 9999, 14000))
     assert len(test1) == 30

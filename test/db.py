@@ -74,7 +74,8 @@ def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
             surname="World",
             salary=1000000,
             department=random.choice(departments)))
-        db.add(Page(title="one two",
+        db.add(Page(
+            title="one two",
             text='"The quick brown fox jumps over a lazy dog" is an English-language pangram - a phrase that contains all of the letters of the alphabet.'))
     db.disconnect()
 
@@ -82,7 +83,7 @@ def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
 class WikiPage(Model):
     id = fields.Field()
     title = fields.Field()
-    text = fields.TextNew()
+    text = fields.Text()
 
 
 def add_wiki_and_close(sock, count=200, dbclass=zerodb.DB):

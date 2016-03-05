@@ -18,8 +18,6 @@ from zope.index.text.queryparser import _tokenizer_regex
 from zerodb.storage import prefetch, parallel_traversal
 from zerodb.catalog.indexes.pwid import PersistentWid
 
-from text import CatalogTextIndex
-
 
 class LengthyTree(object):
     def __init__(self, obj, L):
@@ -472,7 +470,3 @@ def mass_weightedUnion(L):
             sorted_mins.remove((-minw, docid))
             del mins_dict[docid]
             yield docid, (minw + maxw) / 2.0
-
-
-class CatalogTextIndexNew(CatalogTextIndex):
-    index_class = IncrementalLuceneIndex

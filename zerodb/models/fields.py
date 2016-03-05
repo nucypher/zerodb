@@ -1,5 +1,4 @@
 from zerodb.catalog.indexes.text import CatalogTextIndex
-from zerodb.catalog.indexes.text_lucene import CatalogTextIndexNew
 from zerodb.catalog.indexes.field import CatalogFieldIndex
 from . import exceptions
 
@@ -20,7 +19,7 @@ class Indexable(object):
 
         if (default is not None) and (virtual is not None):
             raise exceptions.FieldException("One cannot simultaneously set the default value"
-                    "and claim that the field is derived by calculation only")
+                                            "and claim that the field is derived by calculation only")
 
     def __repr__(self):
         return "Indexable field <%s>" % self.__class__.__name__
@@ -40,8 +39,4 @@ class Text(Indexable):
     Index = CatalogTextIndex
 
 
-class TextNew(Indexable):
-    """
-    Text field to be used for fulltext search
-    """
-    Index = CatalogTextIndexNew
+# XXX Okapi???
