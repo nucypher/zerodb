@@ -80,6 +80,9 @@ class Model(six.with_metaclass(ModelMeta, persistent.Persistent)):
             modified(self, name)
         super(Model, self).__setattr__(name, value)
 
+    def __lt__(self, other):
+        return id(self) < id(other)
+
     @classmethod
     def create_store(cls):
         """Returns intid.IdStore storage for this class"""
