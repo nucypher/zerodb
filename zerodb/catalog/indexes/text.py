@@ -33,23 +33,6 @@ def _text2list(text):
         return [text]
 
 
-def _text2list(text):
-    # Helper: splitter input may be a string or a list of strings
-    # Fixed from zope.index.text.lexicon
-    try:
-        text + u""
-    except UnicodeDecodeError:
-        try:
-            return [text.decode("utf-8")]
-        except UnicodeDecodeError:
-            # It wasn't utf-8. But at least, it was text!
-            return [text]
-    except TypeError:
-        return text
-    else:
-        return [text]
-
-
 class Lexicon(_Lexicon):
     family = trees.family32  # In comparison with standard Lexicon, use bigger buckets
 
