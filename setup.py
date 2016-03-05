@@ -19,6 +19,7 @@ INSTALL_REQUIRES = [
     'zope.event',
     'zope.lifecycleevent',
     'aes256gcm-nacl',
+    'ZEO',
     'six'
 ]
 
