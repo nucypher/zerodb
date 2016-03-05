@@ -3,9 +3,12 @@
 import random
 import transaction
 
+from os.path import abspath, join, dirname
 from zerodb.models import Model
 from zerodb.models import fields
 import zerodb
+
+import wiki
 
 TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
 
@@ -71,6 +74,22 @@ def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
             surname="World",
             salary=1000000,
             department=random.choice(departments)))
-        db.add(Page(title="one two",
+        db.add(Page(
+            title="one two",
             text='"The quick brown fox jumps over a lazy dog" is an English-language pangram - a phrase that contains all of the letters of the alphabet.'))
+    db.disconnect()
+
+
+class WikiPage(Model):
+    id = fields.Field()
+    title = fields.Field()
+    text = fields.Text()
+
+
+def add_wiki_and_close(sock, count=200, dbclass=zerodb.DB):
+    db = dbclass(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+    with transaction.manager:
+        for doc in wiki.read_docs(join(dirname(abspath(__file__)), "wiki_sample")):
+            p = WikiPage(**doc)
+            db.add(p)
     db.disconnect()

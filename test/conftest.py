@@ -13,7 +13,7 @@ from zerodb.storage import ZEOServer
 from zerodb.util import encode_hex
 
 from db import TEST_PASSPHRASE
-from db import create_objects_and_close
+from db import create_objects_and_close, add_wiki_and_close
 
 TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
 TEST_PUBKEY_3 = ecc.private(TEST_PASSPHRASE + " third").get_pubkey()
@@ -95,6 +95,28 @@ def tempdir(request):
 @pytest.fixture(scope="module")
 def db(request, zeo_server):
     zdb = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+
+    @request.addfinalizer
+    def fin():
+        zdb.disconnect()  # I suppose, it's not really required
+
+    return zdb
+
+
+@pytest.fixture(scope="module")
+def wiki_server(request, pass_file, tempdir):
+    """
+    :return: Temporary UNIX socket
+    :rtype: str
+    """
+    sock = do_zeo_server(request, pass_file, tempdir)
+    add_wiki_and_close(sock)
+    return sock
+
+
+@pytest.fixture(scope="module")
+def wiki_db(request, wiki_server):
+    zdb = zerodb.DB(wiki_server, username="root", password=TEST_PASSPHRASE, debug=True)
 
     @request.addfinalizer
     def fin():

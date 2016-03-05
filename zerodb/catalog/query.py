@@ -1,6 +1,6 @@
 from repoze.catalog import query
 from zerodb import trees
-from zerodb.util.iter import Sliceable, ListPrefetch
+from zerodb.util.iter import Sliceable
 
 
 def _to_set(flavor, data):
