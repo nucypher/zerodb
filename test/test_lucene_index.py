@@ -86,7 +86,7 @@ def test_idf2(wiki_db):
         wids = index._lexicon.sourceToWordIds(text)
         assert len(wids) == 3
         wids = index._remove_oov_wids(wids)
-        assert len(wids) == 2
+        assert len(list(wids)) == 2
         idfs = map(index.idf2, wids)
         assert all(idf > 0 for idf in idfs)
 
@@ -104,7 +104,7 @@ def test_search_wids(wiki_db):
     wids = index._lexicon.sourceToWordIds(text)
     for wordinfo, idf in index._search_wids(wids):
         assert idf > 0
-        weight, docid = iter(wordinfo).next()
+        weight, docid = next(iter(wordinfo))
         assert weight < 0
         assert docid >= 0
 
