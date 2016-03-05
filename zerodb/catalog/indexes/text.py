@@ -10,9 +10,7 @@ from zerodb.util.iter import Sliceable
 
 from .text_lexicon import Lexicon
 from .text_lucene import IncrementalLuceneIndex
-
-from . import text_okapi
-OkapiIndex = text_okapi.OkapiIndex
+from .text_okapi import OkapiIndex
 
 
 class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
@@ -38,3 +36,7 @@ class CatalogTextIndex(CallableDiscriminatorMixin, _CatalogTextIndex):
         else:
             return super(CatalogTextIndex, self).apply(
                     querytext, start=start, count=count)
+
+
+class CatalogTextIndexOkapi(CatalogTextIndex):
+    index_class = OkapiIndex

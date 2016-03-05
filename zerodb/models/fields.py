@@ -1,4 +1,4 @@
-from zerodb.catalog.indexes.text import CatalogTextIndex
+from zerodb.catalog.indexes.text import CatalogTextIndex, CatalogTextIndexOkapi
 from zerodb.catalog.indexes.field import CatalogFieldIndex
 from . import exceptions
 
@@ -39,4 +39,5 @@ class Text(Indexable):
     Index = CatalogTextIndex
 
 
-# XXX Okapi???
+class TextOkapi(Indexable):
+    Index = CatalogTextIndexOkapi
