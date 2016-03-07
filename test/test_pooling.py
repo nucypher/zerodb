@@ -1,6 +1,7 @@
 import ctypes
 import multiprocessing
 import threading
+import gc
 
 from time import sleep
 
@@ -29,6 +30,8 @@ def test_thread_pooling(db):
     # Threadlocals die only when another thread accesses them
     db._root
     sleep(0.3)
+
+    gc.collect()
 
     # TODO: close connection when thread dies
     assert len(db._db.pool.all) - len(db._db.pool.available) == 1
