@@ -31,7 +31,7 @@ From a developer's perspective, ZeroDB's design is greatly inspired by the `Djan
 
 Installation
 ============
-We supply ZeroDB as a Python Package ``zerodb-0.96.5``, installable via ``pip``.
+We supply ZeroDB as a Python Package ``zerodb-0.97``, installable via ``pip``.
 
 To run the server and test scripts, clone the ``zerodb-server`` repository,
 navigate to the resulting directory and (optionally) create a virtual environment::
@@ -49,7 +49,7 @@ Navigate to the ``demo`` directory and install the necessary packages::
 
 
 Starting the ZeroDB server and creating users
-=========================================
+=============================================
 In the ``zerodbext/server`` directory, we supply Python scripts to run a server and
 manage users.
 
@@ -58,7 +58,7 @@ manage users.
     | run.py
 
 Initializing and Running the ZeroDB server
----------------------
+------------------------------------------
 
 When you ran ``pip install`` previously, the following console scripts were created::
 
@@ -167,6 +167,7 @@ Number of Employees in the database can be determined by just ``len``::
 
 Let's try a range query. Here we search for the name *John* and select three of
 the matching items::
+
     >>> db[Employee].query(name="John", limit=3)
     [<John Aquirre who earns $147944>, <John Gauthier who earns $169040>, <John
     Hefner who earns $25895>]
