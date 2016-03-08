@@ -4,7 +4,7 @@ from zerodb.transform.compress_zlib import zlib_compressor
 
 def test_utilities():
     zlib_compressor.register(default=True)
-    test_string = "This is a test " * 1000
+    test_string = b"This is a test " * 1000
 
     compressed_default = compress(test_string)
     compressed_zlib = zlib_compressor.compress(test_string)

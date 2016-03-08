@@ -7,8 +7,8 @@ def test_utilities():
 
     init_crypto(passphrase="Hello world")
 
-    test_text = "Test text " * 100
+    test_text = b"Test text " * 100
 
     encrypted_text = encrypt(test_text)
-    assert encrypted_text.startswith(".e")
+    assert encrypted_text.startswith(b".e")
     assert decrypt(encrypted_text) == test_text

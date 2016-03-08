@@ -13,6 +13,8 @@ from ZEO.Exceptions import StorageError
 from ZODB.POSException import POSKeyError
 from ZODB.Connection import Connection as BaseConnection
 from ZODB.Connection import RootConvenience
+
+from zerodb.util import encode_hex
 from . import base
 from zerodb.storage import ServerStorage
 from zerodb.transform.encrypt_common import get_encryption_signature, _gsm, IEncrypter
@@ -66,8 +68,8 @@ class StorageClass(ServerStorage):
         return struct.pack("i", t)
 
     def _get_nonce(self):
-        s = ":".join([
-            str(self.connection.addr),
+        s = b":".join([
+            str(self.connection.addr).encode(),
             self._get_time(),
             self.noncekey])
         return hashlib.sha256(s).digest()
@@ -79,7 +81,7 @@ class StorageClass(ServerStorage):
 
     def _check_permissions(self, data, oid=None):
         if not data.endswith(self.user_id):
-            raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, self.user_id.encode("hex")))
+            raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, encode_hex(self.user_id)))
 
     def _check_admin(self):
         uid = struct.unpack(self.database.uid_pack, self.user_id)[0]
@@ -287,7 +289,7 @@ class DB(BaseDB):
             # use that as default
             edata, _ = storage.base.load(oid)
             sig = get_encryption_signature(edata)
-            utility = _gsm.getUtility(IEncrypter, name=sig)
+            utility = _gsm.getUtility(IEncrypter, name=sig.decode())
             if _gsm.getUtility(IEncrypter) is not utility:
                 _gsm.registerUtility(utility)
         self._root_oid = oid

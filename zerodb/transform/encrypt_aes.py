@@ -1,4 +1,4 @@
-from cStringIO import StringIO
+import six
 from hashlib import sha256
 
 from .encrypt_common import CommonEncrypter
@@ -33,7 +33,7 @@ class AES256Encrypter(CommonEncrypter):
     """
     AES256 with key derived as sha256(passphrase)
     """
-    name = "AES256-GCM"
+    name = b"AES256-GCM"
     attributes = ("passphrase", "key")
     iv_size = 12
     key_size = 32
@@ -47,6 +47,8 @@ class AES256Encrypter(CommonEncrypter):
         """
         if passphrase is not None:
             assert key is None
+            if six.PY3 and isinstance(passphrase, str):
+                passphrase = passphrase.encode()
             key = sha256(passphrase).digest()
         elif key is not None:
             assert len(key) == self.key_size
@@ -68,7 +70,7 @@ class AES256Encrypter(CommonEncrypter):
         else:
             cipher = AES.new(self.key, MODE, iv)
             edata, tag = cipher.encrypt_and_digest(data)
-        return iv + tag + edata
+        return iv + bytes(tag) + bytes(edata)
 
     def _decrypt(self, edata):
         """
@@ -76,7 +78,7 @@ class AES256Encrypter(CommonEncrypter):
         :return: Decrypted data
         :rtype: str
         """
-        f = StringIO(edata)
+        f = six.BytesIO(edata)
         iv = f.read(self.iv_size)
         if self.use_sodium:
             tag = f.read(MAC_LEN)
@@ -86,14 +88,14 @@ class AES256Encrypter(CommonEncrypter):
         data = f.read(-1)
         try:
             if self.use_sodium:
-                return str(self._box.decrypt_and_verify(data, tag, iv))
+                return bytes(self._box.decrypt_and_verify(data, tag, iv))
             else:
-                return cipher.decrypt_and_verify(data, tag)
+                return bytes(cipher.decrypt_and_verify(data, tag))
         except CryptoError:
             raise WrongKeyError("Data couldn't be decrypted. Probably your key is wrong")
 
 
 class AES256EncrypterV0(AES256Encrypter):
-    name = "AES256"
+    name = b"AES256"
     use_sodium = False
     iv_size = 16

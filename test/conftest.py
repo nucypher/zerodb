@@ -4,19 +4,22 @@ import tempfile
 from time import sleep
 from multiprocessing import Process
 from os import path
+
 import zerodb
 from zerodb.crypto import ecc
 from zerodb.permissions import elliptic
 from zerodb.permissions import base as permissions_base
 from zerodb.storage import ZEOServer
+from zerodb.util import encode_hex
 
 from db import TEST_PASSPHRASE
 from db import create_objects_and_close, add_wiki_and_close
+
 TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
 TEST_PUBKEY_3 = ecc.private(TEST_PASSPHRASE + " third").get_pubkey()
 TEST_PERMISSIONS = """realm ZERO
 root:%s
-third:%s""" % (TEST_PUBKEY.encode("hex"), TEST_PUBKEY_3.encode("hex"))
+third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))
 
 ZEO_CONFIG = """<zeo>
   address %(sock)s

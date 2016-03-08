@@ -18,7 +18,10 @@ INSTALL_REQUIRES = [
     'ecdsa',
     'zope.event',
     'zope.lifecycleevent',
-    'aes256gcm-nacl']
+    'aes256gcm-nacl',
+    'ZEO',
+    'six'
+]
 
 setup(
     name="zerodb",

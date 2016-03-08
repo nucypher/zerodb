@@ -1,6 +1,9 @@
 import itertools
 import os
 import threading
+
+import six
+from six.moves import zip as izip
 import transaction
 
 from hashlib import sha256
@@ -81,7 +84,7 @@ class DbModel(object):
         :param int uids: object's uid or list of them
         :return: Persistent object(s)
         """
-        if isinstance(uids, (int, long)):
+        if isinstance(uids, six.integer_types):
             obj = self._objects[uids]
             if not hasattr(obj, "_p_uid"):
                 obj._p_uid = uids
@@ -90,7 +93,7 @@ class DbModel(object):
         elif isinstance(uids, (tuple, list, set)):
             objects = [self._objects[uid] for uid in uids]
             self._db._storage.loadBulk([o._p_oid for o in objects])
-            for o, uid in itertools.izip(objects, uids):
+            for o, uid in izip(objects, uids):
                 if not hasattr(o, "_p_uid"):
                     o._p_uid = uid
             return objects
@@ -134,7 +137,7 @@ class DbModel(object):
         :type attributes: tuple, list
         """
 
-        if isinstance(obj, (int, long)):
+        if isinstance(obj, six.integer_types):
             uid = obj
             obj = self._objects[uid]
         elif isinstance(obj, self._model):
@@ -161,7 +164,7 @@ class DbModel(object):
         :param obj: Object to add to the database or its uid, or list of objects or uids
         :type obj: zerodb.models.Model, int, list
         """
-        if isinstance(obj, (int, long, self._model)):
+        if isinstance(obj, six.integer_types) or isinstance(obj, self._model):
             self.reindex_one(obj)
         elif isinstance(obj, (list, tuple, set, Sliceable)):
             for o in obj:
@@ -175,7 +178,7 @@ class DbModel(object):
 
         :param zerodb.models.Model obj: Object to add to the database
         """
-        if isinstance(obj, (int, long)):
+        if isinstance(obj, six.integer_types):
             uid = obj
         elif hasattr(obj, "__iter__"):
             ctr = 0
@@ -215,7 +218,7 @@ class DbModel(object):
             kw["limit"] = skip + limit
 
         eq_args = []
-        for k in kw.keys():
+        for k in list(kw.keys()):
             if k not in set(["sort_index", "sort_type", "reverse", "names", "limit"]):
                 eq_args.append(Eq(k, kw.pop(k)))
 
@@ -233,7 +236,7 @@ class DbModel(object):
             objects = [self._objects[uid] for uid in qids]
             if objects and prefetch:
                 self._db._storage.loadBulk([o._p_oid for o in objects])
-            for obj, uid in itertools.izip(objects, qids):
+            for obj, uid in izip(objects, qids):
                 obj._p_uid = uid
             return objects
 
@@ -269,7 +272,7 @@ class DB(object):
         username = username and str(username)
         password = str(password)
 
-        if isinstance(sock, basestring):
+        if isinstance(sock, six.string_types):
             sock = str(sock)
         elif type(sock) in (list, tuple):
             assert len(sock) == 2

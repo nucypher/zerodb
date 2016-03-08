@@ -6,6 +6,7 @@
 
 import imp
 import jsonpickle
+import six
 import transaction
 import zerodb
 from flask import Flask, jsonify, session, request
@@ -222,7 +223,7 @@ def run(data_models=None, host=HOST, port=PORT, debug=DEBUG, secret_key=DEV_SECR
     global models
     global zeosocket
 
-    if isinstance(data_models, basestring):
+    if isinstance(data_models, six.string_types):
         models = imp.load_source("models", data_models)
     else:
         models = data_models

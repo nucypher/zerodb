@@ -67,4 +67,4 @@ class QueueTM(local):
     abort = tpc_abort
 
     def sortKey(self):
-        return id(self)
+        return str(id(self))

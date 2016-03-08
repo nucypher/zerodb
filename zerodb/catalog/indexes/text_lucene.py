@@ -2,10 +2,12 @@ import BTrees
 import itertools
 import logging
 
+import six
 from BTrees.Length import Length
 from BTrees.OOBTree import TreeSet as SortedSet  # sorted set implemented in C
 from collections import Counter, defaultdict
-from itertools import izip, islice
+from itertools import islice
+from six.moves import zip as izip, map as imap, xrange
 from math import sqrt, log
 from persistent import Persistent
 from zope.interface import implementer
@@ -191,7 +193,7 @@ class IncrementalLuceneIndex(Persistent):
             weights, lengths = self._get_doctrees(widset)
             docscores = self._get_widscores(widcnt, docid)
             parallel_traversal(*zip(*[(weights[w], docscores[w]) for w in widset]))
-            prefetch(lengths.values() + [self.documentCount])
+            prefetch(list(lengths.values()) + [self.documentCount])
 
             for w in widset:
                 weights[w].add(docscores[w])
@@ -321,7 +323,7 @@ class IncrementalLuceneIndex(Persistent):
         # working lazily in a for of repoze.catalog
         # This is just a workaround for simpler queries
         # XXX
-        return itertools.imap(lambda x: x[0], mass_weightedUnion(self._search_wids(wids)))
+        return imap(lambda x: x[0], mass_weightedUnion(self._search_wids(wids)))
 
     def search_phrase(self, phrase):
         # Need to do mass_weightedIntersection here.
@@ -352,8 +354,8 @@ def mass_weightedUnion(L):
         # Trivial
         tree, weight = L[0]
         # XXX need to make it possible to advance the tree N elements ahead!
-        for el in itertools.imap(lambda (score, docid): (docid, -score * weight), tree):
-            yield el
+        for (score, docid) in tree:
+            yield (docid, -score * weight)
 
     else:
         # XXX make into an iterator class
@@ -377,7 +379,7 @@ def mass_weightedUnion(L):
         def precache(i, size):
             try:
                 for j in xrange(size):
-                    score, docid = iters[i].next()
+                    score, docid = next(iters[i])
                     score = -score * weights[i]
                     if unread_max[i] > score:
                         unread_max[i] = score
@@ -406,7 +408,7 @@ def mass_weightedUnion(L):
             # Perhaps, some better algorithm is needed to pre-read, this is the simplest
 
             cache_updated = False
-            for i in iters.keys():
+            for i in list(iters.keys()):
                 cache = caches[i]
                 if len(cache) < cache_size / 2:
                     precache(i, cache_size - len(cache))
@@ -462,7 +464,7 @@ def mass_weightedUnion(L):
                 if docid in c:
                     if c[docid] == unread_max[i]:
                         del c[docid]
-                        unread_max[i] = max(c.itervalues())
+                        unread_max[i] = max(six.itervalues(c))
                     else:
                         del c[docid]
                     cache_len -= 1

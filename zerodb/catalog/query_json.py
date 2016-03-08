@@ -1,3 +1,4 @@
+from six import iterkeys
 from .query import Eq, Lt, Gt, And, Or, Not, InRange, Contains,\
                   NotEq, Le, Ge, NotInRange, DoesNotContain,\
                   Any, All, NotAny, NotAll
@@ -38,7 +39,7 @@ def compile(q):
     :rtype: zerodb.catalog.query.Query
     """
     assert len(q) == 1
-    key = q.keys()[0]
+    key = next(iterkeys(q))
 
     if key in logical_operators:
         if isinstance(q[key], list):
@@ -48,7 +49,7 @@ def compile(q):
     else:
         assert isinstance(q[key], dict)
         assert len(q[key]) == 1
-        opkey = q[key].keys()[0]
+        opkey = next(iterkeys(q[key]))
         params = q[key][opkey]
         if not isinstance(params, list):
             params = [params]

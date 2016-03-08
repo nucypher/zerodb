@@ -1,6 +1,7 @@
 import BTrees
 import hashlib
 import persistent
+import six
 import transaction
 import ZODB
 
@@ -37,7 +38,7 @@ class User(persistent.Persistent):
 
 
 def session_key(h_up, nonce):
-    return hashlib.sha512(h_up + ":" + nonce).digest()
+    return hashlib.sha512(h_up + b":" + nonce).digest()
 
 
 class PermissionsDatabase(object):
@@ -112,7 +113,7 @@ class PermissionsDatabase(object):
 
         # If first line is realm, set it. Othewise they are all users
         try:
-            line = fd.next()
+            line = next(fd)
             if line.startswith("realm "):
                 self.realm = line.strip().split(" ", 1)[1]
             else:
@@ -127,7 +128,10 @@ class PermissionsDatabase(object):
             for line in fd:
                 username, pub = line.strip().split(":", 1)
                 username = username.strip()
-                pub = pub.strip().decode("hex")
+                if six.PY2:
+                    pub = pub.strip().decode("hex")
+                else:
+                    pub = bytes.fromhex(pub.strip())
                 if username not in usernames:
                     user = User(username, pub, self.realm, administrator=True)
                     uid = users.add(user)

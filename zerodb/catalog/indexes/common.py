@@ -1,3 +1,4 @@
+import six
 from repoze.catalog.indexes.common import *
 
 _marker = ()
@@ -12,7 +13,7 @@ class CallableDiscriminatorMixin(object):
             self.discriminator, = discriminator
             self.discriminator_callable = True
         else:
-            if not isinstance(discriminator, basestring):
+            if not isinstance(discriminator, six.string_types):
                 raise ValueError('discriminator value must be callable or a '
                                  'string')
             self.discriminator = discriminator

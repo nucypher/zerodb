@@ -1,5 +1,6 @@
 import pickle
-from StringIO import StringIO
+
+import six
 
 
 class DebugUnpickler(pickle.Unpickler):
@@ -10,9 +11,10 @@ class DebugUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         return name
 
-DebugUnpickler.dispatch[pickle.REDUCE] = lambda x: None
+if six.PY2:
+    DebugUnpickler.dispatch[pickle.REDUCE] = lambda x: None
 
 
 def debug_loads(obj):
-    up = DebugUnpickler(StringIO(obj))
+    up = DebugUnpickler(six.BytesIO(obj))
     return up.load()

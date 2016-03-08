@@ -2,6 +2,7 @@ from zc.zlibstorage import ZlibStorage
 import logging
 import zope.interface
 from zerodb.transform import encrypt, decrypt, compress, decompress
+from zerodb.util import encode_hex
 from zerodb.util.debug import debug_loads
 
 
@@ -57,7 +58,7 @@ class TransformingStorage(ZlibStorage):
         out_data = self._untransform(data)
 
         if self.debug and not in_cache:
-            logging.debug("id:%s, type:%s, transform: %s->%s" % (oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
+            logging.debug("id:%s, type:%s, transform: %s->%s" % (encode_hex(oid), debug_loads(out_data), len(data), len(out_data)))
             self._debug_download_size += len(data)
             self._debug_download_count += 1
 
@@ -74,7 +75,7 @@ class TransformingStorage(ZlibStorage):
         :rtype: list
         """
         if self.debug:
-            logging.debug("Loading: " + ", ".join([oid.encode("hex") for oid in oids]))
+            logging.debug("Loading: " + ", ".join([encode_hex(oid) for oid in oids]))
             in_cache_before = {oid: oid in self._cache.current for oid in oids}
         base_result = self.base.loadBulk(oids)
         if self.debug:
@@ -82,7 +83,7 @@ class TransformingStorage(ZlibStorage):
         if returns or self.debug:
             datas, serials = zip(*base_result)
             datas_out = map(self._untransform, datas)
-            out = zip(datas_out, serials)
+            out = list(zip(datas_out, serials))
             if self.debug:
                 if datas:
                     self._debug_download_count += 1
@@ -95,7 +96,7 @@ class TransformingStorage(ZlibStorage):
                         else:
                             logline_prefix = "(from bulk) "
                         logging.debug("%sid:%s, type:%s, transform: %s->%s" %
-                                (logline_prefix, oid.encode("hex"), debug_loads(out_data), len(data), len(out_data)))
+                                (logline_prefix, encode_hex(oid), debug_loads(out_data), len(data), len(out_data)))
             if returns:
                 return out
 

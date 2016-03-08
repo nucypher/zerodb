@@ -22,7 +22,7 @@ def test_model_metaclass():
     assert len(ExampleModel._z_indexed_fields) == 3
     assert len(ExampleModel._z_required_fields) == 2
     assert len(ExampleModel._z_default_fields) == 2
-    assert ExampleModel._z_virtual_fields.keys() == ["all_text"]
+    assert list(ExampleModel._z_virtual_fields.keys()) == ["all_text"]
 
 
 def test_model():
