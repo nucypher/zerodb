@@ -20,7 +20,8 @@ INSTALL_REQUIRES = [
     'zope.lifecycleevent',
     'aes256gcm-nacl',
     'ZEO',
-    'six'
+    'six',
+    'pystunnel',
 ]
 
 setup(

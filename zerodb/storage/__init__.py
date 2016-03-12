@@ -12,6 +12,11 @@ from . import premade
 from . import transforming
 import logging
 
+logger = logging.getLogger("zerodb.runzeo")
+
+def log_level(rc):
+    return logging.INFO if rc == 0 else logging.ERROR
+
 # TODO when it comes to the point we need to,
 # we'll have to configure which classes to use
 # with Zope interfaces
@@ -44,9 +49,15 @@ class StorageServer(BaseStorageServer):
 
 
 class ZEOServer(BaseZEOServer):
+    class _Closable:
+        def close(self): pass
+    server = _Closable()
+    stunnel = None
+
     def create_server(self):
         storages = self.storages
         options = self.options
+
         self.server = StorageServer(
             options.address,
             storages,
@@ -59,18 +70,41 @@ class ZEOServer(BaseZEOServer):
             auth_database=options.auth_database,
             auth_realm=options.auth_realm)
 
+        if options.stunnel_config:
+            from pystunnel import Stunnel
+            self.stunnel = Stunnel(options.stunnel_config)
+            rc = self.stunnel.start()
+            logger.log(log_level(rc), "stunnel started with rc %d (%s)" % (rc, options.stunnel_config))
+
+    def open_storages(self):
+        for storage in self.options.storages:
+            if storage.config.pack_gc:
+                logger.warn("Packing with GC and end-to-end encryption removes all data")
+                logger.warn("Turning GC off!")
+                storage.config.pack_gc = False
+
+        BaseZEOServer.open_storages(self)
+
+    def handle_sigterm(self):
+        if self.stunnel is not None:
+            rc = self.stunnel.stop()
+            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
+
+        BaseZEOServer.handle_sigterm(self)
+
+    def handle_sigint(self):
+        if self.stunnel is not None:
+            rc = self.stunnel.stop()
+            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
+
+        BaseZEOServer.handle_sigint(self)
+
     @classmethod
     def run(cls, args=None):
         options = ZEOOptions()
         options.schemadir = os.path.dirname(__file__)
         options.add("stunnel_config", "stunnel.stunnel_config", None, "stunnel-config=")
         options.realize(args=args)
-
-        for o_storage in options.storages:
-            if o_storage.config.pack_gc:
-                logging.warn("Packing with GC and end-to-end encryption removes all the data")
-                logging.warn("Turining GC off!")
-                o_storage.config.pack_gc = False
 
         s = cls(options)
         s.main()
