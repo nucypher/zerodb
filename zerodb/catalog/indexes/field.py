@@ -3,9 +3,9 @@ import itertools as it
 import six
 from persistent import Persistent
 from ZODB.broken import Broken
-from repoze.catalog.indexes.field import CatalogFieldIndex as _CatalogFieldIndex
-from repoze.catalog.indexes.common import CatalogIndex
-from repoze.catalog import RangeValue
+from zerodbext.catalog.indexes.field import CatalogFieldIndex as _CatalogFieldIndex
+from zerodbext.catalog.indexes.common import CatalogIndex
+from zerodbext.catalog import RangeValue
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin
 from zerodb.util.iter import ListPrefetch

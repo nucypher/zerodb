@@ -1,5 +1,5 @@
 import six
-from repoze.catalog.indexes.common import *
+from zerodbext.catalog.indexes.common import *
 
 _marker = ()
 

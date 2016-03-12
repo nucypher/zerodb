@@ -2,7 +2,7 @@ from zope.index.text import TextIndex as ZopeTextIndex
 from zope.index.text.lexicon import CaseNormalizer
 from zope.index.text.lexicon import Splitter
 from zope.index.text.lexicon import StopWordRemover
-from repoze.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
+from zerodbext.catalog.indexes.text import CatalogTextIndex as _CatalogTextIndex
 
 from zerodb import trees
 from zerodb.catalog.indexes.common import CallableDiscriminatorMixin

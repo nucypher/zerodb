@@ -6,7 +6,7 @@ INSTALL_REQUIRES = [
     'zodbpickle',
     'ZODB',
     'zope.index',
-    'repoze.catalog',
+    'zerodbext.catalog',
     'cachetools',
     'zc.zlibstorage',
     'pycryptodome',
@@ -25,7 +25,7 @@ INSTALL_REQUIRES = [
 
 setup(
     name="zerodb",
-    version="0.97",
+    version="0.97.1",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",

@@ -7,7 +7,7 @@ from six.moves import zip as izip
 import transaction
 
 from hashlib import sha256
-from repoze.catalog.query import optimize
+from zerodbext.catalog.query import optimize
 from zerodb.collective.indexing.indexer import PortalCatalogProcessor
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
 from zerodb.collective.indexing import subscribers

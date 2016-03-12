@@ -1,1 +1,1 @@
-from repoze.catalog.indexes.keyword import *
+from zerodbext.catalog.indexes.keyword import *
