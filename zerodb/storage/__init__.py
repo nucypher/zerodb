@@ -1,3 +1,4 @@
+import os
 import six
 from ZEO.StorageServer import StorageServer as BaseStorageServer
 from ZEO.runzeo import ZEOServer as BaseZEOServer
@@ -61,6 +62,8 @@ class ZEOServer(BaseZEOServer):
     @classmethod
     def run(cls, args=None):
         options = ZEOOptions()
+        options.schemadir = os.path.dirname(__file__)
+        options.add("stunnel_config", "stunnel.stunnel_config", None, "stunnel-config=")
         options.realize(args=args)
 
         for o_storage in options.storages:

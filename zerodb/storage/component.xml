@@ -1,0 +1,17 @@
+<component>
+
+  <sectiontype name="stunnel">
+
+    <description>
+      The stunnel configuration section.
+    </description>
+
+    <key name="stunnel-config" required="no">
+      <description>
+        The path to the configuration file.
+      </description>
+    </key>
+
+  </sectiontype>
+
+</component>

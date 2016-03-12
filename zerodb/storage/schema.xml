@@ -1,0 +1,46 @@
+<schema>
+
+  <!-- This is a copy of ZEO/schema.xml -->
+
+  <!-- note that zeoctl.xml is a closely related schema which should
+       match this schema, but should require the "runner" section -->
+
+  <description>
+    This schema describes the configuration of the ZEO storage server
+    process.
+  </description>
+
+  <!-- Use the storage types defined by ZODB. -->
+  <import package="ZODB"/>
+
+  <!-- Use the ZEO server information structure. -->
+  <import package="ZEO"/>
+
+  <import package="ZConfig.components.logger"/>
+
+  <!-- runner control -->
+  <import package="zdaemon"/>
+
+  <section type="zeo" name="*" required="yes" attribute="zeo" />
+
+  <section type="runner" name="*" required="no" attribute="runner" />
+
+  <multisection name="*" type="ZODB.storage"
+                attribute="storages"
+                required="yes">
+    <description>
+      One or more storages that are provided by the ZEO server.  The
+      section names are used as the storage names, and must be unique
+      within each ZEO storage server.  Traditionally, these names
+      represent small integers starting at '1'.
+    </description>
+  </multisection>
+
+  <section name="*" type="eventlog" attribute="eventlog" required="no" />
+
+  <!-- ZeroDB server.zcml extensions -->
+  <import package="zerodb.storage"/>
+
+  <section name="*" type="stunnel" attribute="stunnel" required="no" />
+
+</schema>
