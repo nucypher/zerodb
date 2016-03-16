@@ -248,6 +248,65 @@ class DbModel(object):
         return len(self._objects)
 
 
+import re, tempfile, fcntl, atexit
+
+class StunnelManager:
+    stunnel = None
+    stunnel_config = None
+
+    class Counter:
+        def __init__(self, semfile, inc):
+            self._semfile = semfile
+            self._inc = inc
+
+        def __enter__(self):
+            # O_EXLOCK is Unix only
+            self._fd = os.open(self._semfile, os.O_RDWR|os.O_CREAT|os.O_EXLOCK)
+            # Don't pass open fd to sub processes
+            fcntl.fcntl(self._fd, fcntl.F_SETFD, 1)
+            try:
+                count = int(os.read(self._fd, 16), 10)
+            except ValueError:
+                count = 0
+            self._count = count + self._inc
+            return self._count
+
+        def __exit__(self, *ignored):
+            if self._count > 0:
+                os.lseek(self._fd, 0, os.SEEK_SET)
+                os.write(self._fd, "%016d" % self._count)
+                os.close(self._fd)
+            else:
+                os.close(self._fd)
+                os.remove(self._semfile)
+
+    @property
+    def semfile(self):
+        file = re.sub(r"[ \t\\:/]", "_", self.stunnel_config)
+        file = os.path.join(tempfile.gettempdir(), file)
+        return file
+
+    def start(self, stunnel_config):
+        from pystunnel import Stunnel
+        self.stunnel_config = os.path.abspath(stunnel_config)
+        self.stunnel = Stunnel(self.stunnel_config)
+        with self.Counter(self.semfile, +1) as count:
+            if count == 1:
+                rc = self.stunnel.start()
+                print("stunnel started with rc %d (%s)" % (rc, self.stunnel_config))
+
+    def stop(self):
+        if self.stunnel is not None:
+            with self.Counter(self.semfile, -1) as count:
+                if count == 0:
+                    rc = self.stunnel.stop()
+                    self.stunnel = None
+                    print("stunnel stopped with rc %d" % rc)
+
+_stunnel = StunnelManager()
+atexit.register(_stunnel.stop)
+
+
 class DB(object):
     """
     Database for this user. Everything is used through this class
@@ -258,7 +317,7 @@ class DB(object):
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, **kw):
+    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, stunnel_config=None, **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
@@ -308,6 +367,10 @@ class DB(object):
 
         # For multi-threading
         self.__pid = os.getpid()
+
+        # Start stunnel
+        if stunnel_config is not None:
+            _stunnel.start(stunnel_config)
 
         self._init_db()
         self._models = {}
