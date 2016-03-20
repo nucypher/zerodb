@@ -1,0 +1,22 @@
+<schema>
+
+  <description>
+    This schema describes the configuration of the ZeroDB proxy server
+    process.
+  </description>
+
+  <!-- Use the ZEO server information structure. -->
+  <import package="ZEO"/>
+
+  <section type="zeo" name="*" required="yes" attribute="zeo" />
+
+  <import package="ZConfig.components.logger"/>
+
+  <section name="*" type="eventlog" attribute="eventlog" required="no" />
+
+  <!-- ZeroDB server.zcml extensions -->
+  <import package="zerodb.storage"/>
+
+  <section name="*" type="stunnel" attribute="stunnel" required="no" />
+
+</schema>

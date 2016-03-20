@@ -117,6 +117,47 @@ class ZEOServer(BaseZEOServer):
         s.main()
 
 
+class ZEOProxy(ZEOServer):
+    def open_storages(self):
+        pass
+
+    def create_server(self):
+        if self.options.stunnel_config:
+            from pystunnel import Stunnel
+            self.stunnel = Stunnel(self.options.stunnel_config)
+            rc = self.stunnel.start()
+            logger.log(log_level(rc), "stunnel started with rc %d (%s)" % (rc, self.options.stunnel_config))
+
+    def loop_forever(self):
+        if self.options.testing_exit_immediately:
+            print("testing exit immediately")
+        else:
+            while True:
+                import time; time.sleep(300)
+
+    def close_server(self):
+        if self.stunnel is not None:
+            rc = self.stunnel.stop()
+            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
+
+    @classmethod
+    def run(cls, args=None):
+        class _ZEOOptions(ZEOOptions):
+            storages = ()
+            def __init__(self):
+                ZEOOptions.__init__(self)
+                self.remove("storages")
+
+        options = _ZEOOptions()
+        options.schemadir = os.path.dirname(__file__)
+        options.schemafile = "proxy.xml"
+        options.add("stunnel_config", "stunnel.stunnel_config", None, "stunnel-config=")
+        options.realize(args=args)
+
+        s = cls(options)
+        s.main()
+
+
 def client_storage(sock, *args, **kw):
     """
     Storage client
