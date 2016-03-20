@@ -49,10 +49,32 @@ class StorageServer(BaseStorageServer):
 
 
 class ZEOServer(BaseZEOServer):
-    class _Closable:
-        def close(self): pass
-    server = _Closable()
+    server = None
     stunnel = None
+
+    def main(self):
+        self.setup_default_logging()
+        self.check_socket()
+        self.clear_socket()
+        self.make_pidfile()
+        try:
+            self.open_storages()
+            self.setup_signals()
+            self.create_server()
+            self.loop_forever()
+        finally:
+            self.close_server() # New
+            self.clear_socket()
+            self.remove_pidfile()
+
+    def open_storages(self):
+        for storage in self.options.storages:
+            if storage.config.pack_gc:
+                logger.warn("Packing with GC and end-to-end encryption removes all data")
+                logger.warn("Turning GC off!")
+                storage.config.pack_gc = False
+
+        BaseZEOServer.open_storages(self)
 
     def create_server(self):
         storages = self.storages
@@ -76,28 +98,13 @@ class ZEOServer(BaseZEOServer):
             rc = self.stunnel.start()
             logger.log(log_level(rc), "stunnel started with rc %d (%s)" % (rc, options.stunnel_config))
 
-    def open_storages(self):
-        for storage in self.options.storages:
-            if storage.config.pack_gc:
-                logger.warn("Packing with GC and end-to-end encryption removes all data")
-                logger.warn("Turning GC off!")
-                storage.config.pack_gc = False
+    def close_server(self):
+        if self.server is not None:
+            self.server.close()
 
-        BaseZEOServer.open_storages(self)
-
-    def handle_sigterm(self):
         if self.stunnel is not None:
             rc = self.stunnel.stop()
             logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
-
-        BaseZEOServer.handle_sigterm(self)
-
-    def handle_sigint(self):
-        if self.stunnel is not None:
-            rc = self.stunnel.stop()
-            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
-
-        BaseZEOServer.handle_sigint(self)
 
     @classmethod
     def run(cls, args=None):
