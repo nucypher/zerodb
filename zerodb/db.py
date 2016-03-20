@@ -1,6 +1,10 @@
 import itertools
 import os
 import threading
+import re
+import tempfile
+import fcntl
+import atexit
 
 import six
 from six.moves import zip as izip
@@ -248,13 +252,13 @@ class DbModel(object):
         return len(self._objects)
 
 
-import re, tempfile, fcntl, atexit
-
 class StunnelManager:
-    stunnel = None
-    stunnel_config = None
 
     class Counter:
+        """
+        Shared counter using a file-based semaphore
+        """
+
         def __init__(self, semfile, inc):
             self._semfile = semfile
             self._inc = inc
@@ -280,31 +284,36 @@ class StunnelManager:
                 os.close(self._fd)
                 os.remove(self._semfile)
 
-    @property
-    def semfile(self):
-        file = re.sub(r"[ \t\\:/]", "_", self.stunnel_config)
-        file = os.path.join(tempfile.gettempdir(), file)
-        return file
-
-    def start(self, stunnel_config):
-        from pystunnel import Stunnel
+    def __init__(self, stunnel_config):
         self.stunnel_config = os.path.abspath(stunnel_config)
+        self.stunnel = None
+        self.semfile = re.sub(r"\W", "_", self.stunnel_config)
+        self.semfile = os.path.join(tempfile.gettempdir(), self.semfile)
+        print(self.semfile)
+
+    def start(self):
+        """Increase the counter. Start stunnel when the counter has reached 1.
+        """
+        from pystunnel import Stunnel
         self.stunnel = Stunnel(self.stunnel_config)
         with self.Counter(self.semfile, +1) as count:
+            print(count)
             if count == 1:
                 rc = self.stunnel.start()
                 print("stunnel started with rc %d (%s)" % (rc, self.stunnel_config))
 
     def stop(self):
+        """Decrease the counter. Stop stunnel when the counter has reached 0.
+
+        When start has been called stop MUST be called as well.
+        """
         if self.stunnel is not None:
             with self.Counter(self.semfile, -1) as count:
+                print(count)
                 if count == 0:
                     rc = self.stunnel.stop()
-                    self.stunnel = None
                     print("stunnel stopped with rc %d" % rc)
-
-_stunnel = StunnelManager()
-atexit.register(_stunnel.stop)
+                self.stunnel = None
 
 
 class DB(object):
@@ -316,6 +325,7 @@ class DB(object):
     auth_module = elliptic
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
+    stunnel_manager = None
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, stunnel_config=None, **kw):
         """
@@ -368,9 +378,8 @@ class DB(object):
         # For multi-threading
         self.__pid = os.getpid()
 
-        # Start stunnel
         if stunnel_config is not None:
-            _stunnel.start(stunnel_config)
+            self.stunnel_manager = StunnelManager(stunnel_config)
 
         self._init_db()
         self._models = {}
@@ -393,6 +402,10 @@ class DB(object):
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
+        if self.stunnel_manager is not None:
+            self.stunnel_manager.start()
+            atexit.register(self.stunnel_manager.stop)
+
         if self._autoreindex:
             subscribers.init()
 
@@ -441,6 +454,9 @@ class DB(object):
     def disconnect(self):
         if hasattr(self.__thread_local, "conn"):
             self.__thread_local.conn.close()
+
+        if self.stunnel_manager is not None:
+            self.stunnel_manager.stop()
 
     def __getitem__(self, model):
         """
