@@ -105,7 +105,7 @@ else:
 
 setup(
     name="zerodb",
-    version="0.97.2.1",
+    version="0.97.3",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
