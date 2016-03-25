@@ -254,66 +254,52 @@ class DbModel(object):
 
 class StunnelManager:
 
-    class Counter:
-        """
-        Shared counter using a file-based semaphore
-        """
-
-        def __init__(self, semfile, inc):
-            self._semfile = semfile
-            self._inc = inc
-
-        def __enter__(self):
-            # O_EXLOCK is Unix only
-            self._fd = os.open(self._semfile, os.O_RDWR|os.O_CREAT|os.O_EXLOCK)
-            # Don't pass open fd to sub processes
-            fcntl.fcntl(self._fd, fcntl.F_SETFD, 1)
-            try:
-                count = int(os.read(self._fd, 16), 10)
-            except ValueError:
-                count = 0
-            self._count = count + self._inc
-            return self._count
-
-        def __exit__(self, *ignored):
-            if self._count > 0:
-                os.lseek(self._fd, 0, os.SEEK_SET)
-                os.write(self._fd, "%016d" % self._count)
-                os.close(self._fd)
-            else:
-                os.close(self._fd)
-                os.remove(self._semfile)
-
     def __init__(self, stunnel_config):
         self.stunnel_config = os.path.abspath(stunnel_config)
         self.stunnel = None
-        self.semfile = re.sub(r"\W", "_", self.stunnel_config)
-        self.semfile = os.path.join(tempfile.gettempdir(), self.semfile)
-        print(self.semfile)
+
+    def create_config(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.instance_config = os.path.join(self.temp_dir, "stunnel-client.conf")
+        self.instance_pid = os.path.join(self.temp_dir, "stunnel-client.pid")
+        self.instance_socket = os.path.join(self.temp_dir, "stunnel-client.sock")
+        lines = []
+        with open(self.stunnel_config, "rt") as f:
+            lines = f.readlines()
+        with open(self.instance_config, "wt") as f:
+            for line in lines:
+                if line.startswith("pid ="):
+                    f.write("pid = %s\n" % self.instance_pid)
+                elif line.startswith("accept ="):
+                    f.write("accept = %s\n" % self.instance_socket)
+                else:
+                    f.write(line)
+
+    def remove_config(self):
+        if os.path.exists(self.instance_config):
+            os.remove(self.instance_config)
+        while os.listdir(self.temp_dir):
+            import time; time.sleep(1)
+        if os.path.exists(self.temp_dir):
+            os.rmdir(self.temp_dir)
 
     def start(self):
-        """Increase the counter. Start stunnel when the counter has reached 1.
+        """Start a new stunnel instance.
         """
+        self.create_config()
         from pystunnel import Stunnel
-        self.stunnel = Stunnel(self.stunnel_config)
-        with self.Counter(self.semfile, +1) as count:
-            print(count)
-            if count == 1:
-                rc = self.stunnel.start()
-                print("stunnel started with rc %d (%s)" % (rc, self.stunnel_config))
+        self.stunnel = Stunnel(self.instance_config)
+        rc = self.stunnel.start()
+        print("stunnel started with rc %d (%s)" % (rc, self.instance_config))
 
     def stop(self):
-        """Decrease the counter. Stop stunnel when the counter has reached 0.
-
-        When start has been called stop MUST be called as well.
+        """When start has been called, stop MUST be called as well.
         """
         if self.stunnel is not None:
-            with self.Counter(self.semfile, -1) as count:
-                print(count)
-                if count == 0:
-                    rc = self.stunnel.stop()
-                    print("stunnel stopped with rc %d" % rc)
-                self.stunnel = None
+            rc = self.stunnel.stop()
+            self.stunnel = None
+            self.remove_config()
+            print("stunnel stopped with rc %d" % rc)
 
 
 class DB(object):
@@ -404,6 +390,7 @@ class DB(object):
         """We need this to be executed each time we are in a new process"""
         if self.stunnel_manager is not None:
             self.stunnel_manager.start()
+            self.__storage_kwargs["sock"] = self.stunnel_manager.instance_socket
             atexit.register(self.disconnect)
 
         if self._autoreindex:
