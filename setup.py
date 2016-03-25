@@ -61,14 +61,17 @@ def can_build_cffi():
         return True
 
     # Include dirs copied from cffi 1.5.2
-    include_dirs = ["/usr/include/ffi", "/usr/include/libffi", "/usr/local/include"]
+    include_dirs = ["/usr/include/ffi", "/usr/include/libffi"]
     _ask_pkg_config(include_dirs, "--cflags-only-I", "-I", sysroot=True)
+
+    if "freebsd" in sys.platform:
+        include_dirs.append("/usr/local/include")
 
     cc = ccompiler.new_compiler()
     cc.include_dirs = [str(x) for x in include_dirs] # PY2
 
     with tempfile.NamedTemporaryFile(suffix=".c") as f:
-        f.write('#include "ffi.h"\nvoid foo(void){}\n')
+        f.write('#include "ffi.h"\nvoid f(){}\n')
         f.flush()
         try:
             cc.compile([f.name])
