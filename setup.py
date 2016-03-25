@@ -37,8 +37,7 @@ INSTALL_REQUIRES = [
 def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
     pkg_config = os.environ.get('PKG_CONFIG', 'pkg-config')
     try:
-        p = subprocess.Popen([pkg_config, option, 'libffi'],
-                             stdout=subprocess.PIPE)
+        p = subprocess.Popen([pkg_config, option, 'libffi'], stdout=subprocess.PIPE)
     except OSError as e:
         if e.errno not in [errno.ENOENT, errno.EACCES]:
             raise
@@ -47,20 +46,12 @@ def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
         p.stdout.close()
         if p.wait() == 0:
             res = t.split()
-            # '-I/usr/...' -> '/usr/...'
-            for x in res:
-                assert x.startswith(result_prefix)
-            res = [x[len(result_prefix):] for x in res]
-            #print 'PKG_CONFIG:', option, res
-            #
+            res = [x[len(result_prefix):] for x in res if x.startswith(result_prefix)]
             sysroot = sysroot and os.environ.get('PKG_CONFIG_SYSROOT_DIR', '')
             if sysroot:
                 # old versions of pkg-config don't support this env var,
                 # so here we emulate its effect if needed
-                res = [path if path.startswith(sysroot)
-                            else sysroot + path
-                         for path in res]
-            #
+                res = [x if x.startswith(sysroot) else sysroot + x for x in res]
             resultlist[:] = res
 
 
