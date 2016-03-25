@@ -284,10 +284,13 @@ class StunnelManager:
     def remove_config(self):
         if os.path.exists(self.instance_config):
             os.remove(self.instance_config)
-        while os.listdir(self.temp_dir):
-            import time; time.sleep(1)
         if os.path.exists(self.temp_dir):
-            os.rmdir(self.temp_dir)
+            for x in range(10):
+                if os.listdir(self.temp_dir):
+                    import time; time.sleep(1)
+                else:
+                    os.rmdir(self.temp_dir)
+                    break
 
     def start(self):
         """Start a new stunnel instance.
