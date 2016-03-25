@@ -5,6 +5,7 @@ import re
 import tempfile
 import fcntl
 import atexit
+import logging
 
 import six
 from six.moves import zip as izip
@@ -28,6 +29,11 @@ from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
 from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
 from zerodb.transform import init_crypto
+
+logger = logging.getLogger("zerodb.db")
+
+def log_level(rc):
+    return logging.INFO if rc == 0 else logging.ERROR
 
 
 class AutoReindexQueueProcessor(PortalCatalogProcessor):
@@ -290,7 +296,7 @@ class StunnelManager:
         from pystunnel import Stunnel
         self.stunnel = Stunnel(self.instance_config)
         rc = self.stunnel.start()
-        print("stunnel started with rc %d (%s)" % (rc, self.instance_config))
+        logger.log(log_level(rc), "stunnel started with rc %d (%s)" % (rc, self.instance_config))
 
     def stop(self):
         """When start has been called, stop MUST be called as well.
@@ -299,7 +305,7 @@ class StunnelManager:
             rc = self.stunnel.stop()
             self.stunnel = None
             self.remove_config()
-            print("stunnel stopped with rc %d" % rc)
+            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
 
 
 class DB(object):
