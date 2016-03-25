@@ -404,7 +404,7 @@ class DB(object):
         """We need this to be executed each time we are in a new process"""
         if self.stunnel_manager is not None:
             self.stunnel_manager.start()
-            atexit.register(self.stunnel_manager.stop)
+            atexit.register(self.disconnect)
 
         if self._autoreindex:
             subscribers.init()
