@@ -70,7 +70,7 @@ def can_build_cffi():
     cc = ccompiler.new_compiler()
     cc.include_dirs = [str(x) for x in include_dirs] # PY2
 
-    with tempfile.NamedTemporaryFile(suffix=".c") as f:
+    with tempfile.NamedTemporaryFile(mode="wt", suffix=".c") as f:
         f.write('#include "ffi.h"\nvoid f(){}\n')
         f.flush()
         try:
