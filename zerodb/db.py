@@ -32,9 +32,6 @@ from zerodb.transform import init_crypto
 
 logger = logging.getLogger("zerodb.db")
 
-def log_level(rc):
-    return logging.INFO if rc == 0 else logging.ERROR
-
 
 class AutoReindexQueueProcessor(PortalCatalogProcessor):
     def __init__(self, db, enabled=True):
@@ -258,59 +255,6 @@ class DbModel(object):
         return len(self._objects)
 
 
-class StunnelManager:
-
-    def __init__(self, stunnel_config):
-        self.stunnel_config = os.path.abspath(stunnel_config)
-        self.stunnel = None
-
-    def create_config(self):
-        self.temp_dir = tempfile.mkdtemp()
-        self.instance_config = os.path.join(self.temp_dir, "stunnel-client.conf")
-        self.instance_pid = os.path.join(self.temp_dir, "stunnel-client.pid")
-        self.instance_socket = os.path.join(self.temp_dir, "stunnel-client.sock")
-        lines = []
-        with open(self.stunnel_config, "rt") as f:
-            lines = f.readlines()
-        with open(self.instance_config, "wt") as f:
-            for line in lines:
-                if line.startswith("pid ="):
-                    f.write("pid = %s\n" % self.instance_pid)
-                elif line.startswith("accept ="):
-                    f.write("accept = %s\n" % self.instance_socket)
-                else:
-                    f.write(line)
-
-    def remove_config(self):
-        if os.path.exists(self.instance_config):
-            os.remove(self.instance_config)
-        if os.path.exists(self.temp_dir):
-            for x in range(10):
-                if os.listdir(self.temp_dir):
-                    import time; time.sleep(1)
-                else:
-                    os.rmdir(self.temp_dir)
-                    break
-
-    def start(self):
-        """Start a new stunnel instance.
-        """
-        self.create_config()
-        from pystunnel import Stunnel
-        self.stunnel = Stunnel(self.instance_config)
-        rc = self.stunnel.start()
-        logger.log(log_level(rc), "stunnel started with rc %d (%s)" % (rc, self.instance_config))
-
-    def stop(self):
-        """When start has been called, stop MUST be called as well.
-        """
-        if self.stunnel is not None:
-            rc = self.stunnel.stop()
-            self.stunnel = None
-            self.remove_config()
-            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
-
-
 class DB(object):
     """
     Database for this user. Everything is used through this class
@@ -320,7 +264,7 @@ class DB(object):
     auth_module = elliptic
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
-    stunnel_manager = None
+    stunnel = None
 
     def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, stunnel_config=None, **kw):
         """
@@ -373,8 +317,10 @@ class DB(object):
         # For multi-threading
         self.__pid = os.getpid()
 
+        # Create stunnel client
         if stunnel_config is not None:
-            self.stunnel_manager = StunnelManager(stunnel_config)
+            from zerodb.stunnel import StunnelClient
+            self.stunnel = StunnelClient(stunnel_config)
 
         self._init_db()
         self._models = {}
@@ -397,9 +343,9 @@ class DB(object):
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
-        if self.stunnel_manager is not None:
-            self.stunnel_manager.start()
-            self.__storage_kwargs["sock"] = self.stunnel_manager.instance_socket
+        if self.stunnel is not None:
+            self.stunnel.start()
+            self.__storage_kwargs["sock"] = self.stunnel.instance_socket
             atexit.register(self.disconnect)
 
         if self._autoreindex:
@@ -451,8 +397,8 @@ class DB(object):
         if hasattr(self.__thread_local, "conn"):
             self.__thread_local.conn.close()
 
-        if self.stunnel_manager is not None:
-            self.stunnel_manager.stop()
+        if self.stunnel is not None:
+            self.stunnel.stop()
 
     def __getitem__(self, model):
         """

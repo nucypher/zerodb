@@ -14,9 +14,6 @@ import logging
 
 logger = logging.getLogger("zerodb.runzeo")
 
-def log_level(rc):
-    return logging.INFO if rc == 0 else logging.ERROR
-
 # TODO when it comes to the point we need to,
 # we'll have to configure which classes to use
 # with Zope interfaces
@@ -51,8 +48,18 @@ class StorageServer(BaseStorageServer):
 class ZEOServer(BaseZEOServer):
     class _Closable:
         def close(self): pass
+
     server = _Closable()
     stunnel = None
+
+    def open_storages(self):
+        for storage in self.options.storages:
+            if storage.config.pack_gc:
+                logger.warn("Packing with GC and end-to-end encryption removes all data")
+                logger.warn("Turning GC off!")
+                storage.config.pack_gc = False
+
+        BaseZEOServer.open_storages(self)
 
     def create_server(self):
         storages = self.storages
@@ -71,31 +78,19 @@ class ZEOServer(BaseZEOServer):
             auth_realm=options.auth_realm)
 
         if options.stunnel_config:
-            from pystunnel import Stunnel
-            self.stunnel = Stunnel(options.stunnel_config)
-            rc = self.stunnel.start()
-            logger.log(log_level(rc), "stunnel started with rc %d (%s)" % (rc, options.stunnel_config))
-
-    def open_storages(self):
-        for storage in self.options.storages:
-            if storage.config.pack_gc:
-                logger.warn("Packing with GC and end-to-end encryption removes all data")
-                logger.warn("Turning GC off!")
-                storage.config.pack_gc = False
-
-        BaseZEOServer.open_storages(self)
+            from zerodb.stunnel import StunnelServer
+            self.stunnel = StunnelServer(options.stunnel_config)
+            self.stunnel.start()
 
     def handle_sigterm(self):
         if self.stunnel is not None:
-            rc = self.stunnel.stop()
-            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
+            self.stunnel.stop()
 
         BaseZEOServer.handle_sigterm(self)
 
     def handle_sigint(self):
         if self.stunnel is not None:
-            rc = self.stunnel.stop()
-            logger.log(log_level(rc), "stunnel stopped with rc %d" % rc)
+            self.stunnel.stop()
 
         BaseZEOServer.handle_sigint(self)
 
