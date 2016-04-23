@@ -68,38 +68,77 @@ def can_build_cffi():
         include_dirs.append("/usr/local/include")
 
     cc = ccompiler.new_compiler()
-    cc.include_dirs = [str(x) for x in include_dirs] # PY2
+    cc.include_dirs = [str(x) for x in include_dirs]  # PY2
 
     with tempfile.NamedTemporaryFile(mode="wt", suffix=".c") as f:
         f.write('#include "ffi.h"\nvoid f(){}\n')
         f.flush()
         try:
             cc.compile([f.name])
-            return True;
+            return True
         except ccompiler.CompileError:
             return False
 
 
-def have_cffi():
+# If we don't have ffi.h we fall back to pycryptodome.
+# Note that the warning is only visible if pip is run with -v.
+
+
+def have_pycrypto():
     try:
-        import cffi
+        import Crypto
         return True
     except ImportError:
         return False
 
 
-# If we have neither cffi nor ffi.h we fall back to pycryptodome.
-# Note that the warning is only visible if pip is run with -v.
+def have_pycryptodome():
+    try:
+        from Crypto.Cipher.AES import MODE_GCM
+        return True
+    except ImportError:
+        return False
 
-if have_cffi() or can_build_cffi():
-    INSTALL_REQUIRES.append("aes256gcm-nacl")
+
+def have_aesni():
+    if have_pycryptodome():
+        from Crypto.Cipher.AES import _raw_aesni_lib
+        return _raw_aesni_lib is not None
+
+    else:
+        try:
+            with open("/proc/cpuinfo", "r") as f:
+                info = f.read()
+        except IOError:
+            info = None
+
+        if (info is None) or ("aes" in info):
+            # If we have a platform w/o cpuinfo, assume we have AESNI
+            # Perhaps, should call sysctl in OSX
+            return True
+        else:
+            return False
+
+
+if have_aesni():
+    if can_build_cffi():
+        INSTALL_REQUIRES.append("aes256gcm-nacl")
+        if have_pycrypto() and not have_pycryptodome():
+            INSTALL_REQUIRES.append("pycrypto")
+        else:
+            INSTALL_REQUIRES.append("pycryptodome")
+
+    else:
+        INSTALL_REQUIRES.append("pycryptodome")
+        log.warn("WARNING: ffi.h not found: aes256gcm-nacl optimization disabled")
+
 else:
-    log.warn("warning: ffi.h not found: aes256gcm-nacl optimization disabled")
+    INSTALL_REQUIRES.append("pycryptodome")
 
 
 setup(
     name="zerodb",
-    version="0.97.3",
+    version="0.97.4",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",

@@ -4,6 +4,7 @@ import threading
 
 import six
 from six.moves import zip as izip
+from Crypto import Random
 import transaction
 
 from hashlib import sha256
@@ -332,6 +333,8 @@ class DB(object):
         """We need this to be executed each time we are in a new process"""
         if self._autoreindex:
             subscribers.init()
+
+        Random.atfork()
 
         self.__conn_refs = {}
         self.__thread_local = threading.local()
