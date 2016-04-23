@@ -1,6 +1,6 @@
 ZODB>=4.0
 zope.component>=4.0.0
-zope.index>=4.1.0
+zope.index>=4.2.0
 zope.event>=4.0.0
 zope.lifecycleevent>=4.0.0
 ZEO>=4.0.0
