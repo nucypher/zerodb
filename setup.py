@@ -9,24 +9,23 @@ from setuptools import setup, find_packages
 
 INSTALL_REQUIRES = [
     'BTrees',
-    'zope.component',
+    'zope.component>=4.0.0',
     'zodbpickle',
-    'ZODB',
-    'zope.index',
-    'zerodbext.catalog',
+    'ZODB>=4.0.0',
+    'zope.index>=4.0.0',
+    'zerodbext.catalog==0.8.4',
     'cachetools',
     'zc.zlibstorage',
-    'pycryptodome',
     'flask-cors',
-    'flask',
-    'requests',
+    'flask>=0.10',
+    'requests>=2.0',
     'jsonpickle',
     'pyelliptic',
-    'ecdsa',
-    'zope.event',
-    'zope.lifecycleevent',
-    'ZEO',
-    'six'
+    'ecdsa>=0.10',
+    'zope.event>=4.0.0',
+    'zope.lifecycleevent>=4.0.0',
+    'ZEO>=4.0.0',
+    'six>=1.7.0'
 ]
 
 
