@@ -120,8 +120,13 @@ def have_aesni():
             return False
 
 
+def have_sodium_wheel():
+    import platform
+    return (platform.system() == "Darwin") and (platform.mac_ver()[0].startswith("10.10"))
+
+
 if have_aesni():
-    if can_build_cffi():
+    if have_sodium_wheel() or can_build_cffi():
         INSTALL_REQUIRES.append("aes256gcm-nacl")
         if have_pycrypto() and not have_pycryptodome():
             INSTALL_REQUIRES.append("pycrypto")
