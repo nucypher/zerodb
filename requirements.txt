@@ -1,6 +1,6 @@
 ZODB>=4.0
 zope.component>=4.0.0
-zope.index>=4.2.0
+zope.index>=4.0.0
 zope.event>=4.0.0
 zope.lifecycleevent>=4.0.0
 ZEO>=4.0.0
@@ -8,5 +8,5 @@ flask>=0.10
 requests>=2.0
 jsonpickle>=0.6
 ecdsa>=0.10
-six>=1.5.0
+six>=1.7.0
 zdaemon>=4.0.0
