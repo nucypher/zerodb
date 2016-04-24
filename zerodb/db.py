@@ -313,6 +313,7 @@ class DB(object):
         self._init_db()
         self._models = {}
 
+    @classmethod
     def _init_default_crypto(self, passphrase=None):
         encrypters = self.encrypter
         if not isinstance(encrypters, (list, tuple)):
