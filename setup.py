@@ -20,7 +20,6 @@ INSTALL_REQUIRES = [
     'flask>=0.10',
     'requests>=2.0',
     'jsonpickle',
-    'pyelliptic',
     'ecdsa>=0.10',
     'zope.event>=4.0.0',
     'zope.lifecycleevent>=4.0.0',
@@ -142,7 +141,7 @@ else:
 
 setup(
     name="zerodb",
-    version="0.97.4",
+    version="0.97.5",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
