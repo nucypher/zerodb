@@ -1,5 +1,6 @@
 import sys
 import os
+import platform
 import subprocess
 import errno
 import tempfile
@@ -23,7 +24,6 @@ INSTALL_REQUIRES = [
     'ecdsa>=0.10',
     'zope.event>=4.0.0',
     'zope.lifecycleevent>=4.0.0',
-    'ZEO>=4.0.0',
     'six>=1.7.0'
 ]
 
@@ -119,8 +119,13 @@ def have_aesni():
 
 
 def have_sodium_wheel():
-    import platform
     return (platform.system() == "Darwin") and (platform.mac_ver()[0].startswith("10.10"))
+
+
+if platform.python_implementation() == "PyPy":
+    INSTALL_REQUIRES.append('ZEO>=4.2.0b1')
+else:
+    INSTALL_REQUIRES.append('ZEO>=4.0.0')
 
 
 if have_aesni():
@@ -141,7 +146,7 @@ else:
 
 setup(
     name="zerodb",
-    version="0.97.5",
+    version="0.97.6",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
