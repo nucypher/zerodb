@@ -60,10 +60,10 @@ For something that is bigger than a one or two line fix:
 1. Create your own fork of the code
 2. Do the changes in your fork
 3. If you like the change and think the project could use it:
-    * Be sure you have followed the code style for the project.
-    * Note the Developer's Certificate of Origin, DCO.
-    * Note the Python Community Code of Conduct.
-    * Send a pull request
+  *Be sure you have followed the code style for the project.
+  * Note the Developer's Certificate of Origin, DCO.
+  * Note the Python Community Code of Conduct.
+  * Send a pull request
 
 Small contributions such as fixing spelling errors, where the content is small enough can be submitted by a contributor as a patch without creating a fork.
 
@@ -101,4 +101,4 @@ If you find yourself wishing for a feature that doesn't exist in ZeroDB, let us 
 # Community
 If there are other channels you use besides GitHub to discuss contributions, mention them here. You can also list the author, maintainers, and/or contributors here, or set expectations for response time.
 
-You can chat with the core team on Slack(https://slack.zerodb.io/)
+You can chat with the core team on Slack(https://slack.zerodb.io/).
