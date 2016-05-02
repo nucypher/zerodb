@@ -78,6 +78,23 @@ As a rule of thumb, changes are obvious fixes if they do not introduce any new f
 * Changes to ‘metadata’ files like .gitignore, build scripts, etc.
 * Moving source files from one directory or package to another
 
+Some of the areas where we'd love to see contributions include:
+* Detailed protocol spec (for implementing in other languages)
+* Chrome extension
+* Desktop end-to-end encrypted app kit (node.js + Python over Electron)
+* Native Java zerodb -> .jar using Jython
+* Native javascript over pypyjs
+* JSON API wrapper for multiple languages
+* More robust benchmarking
+* Python Pandas/dataframe-like interface to the DB
+* Optimize bulk-indexing of many records added at once
+* SQL interface
+* JDBC driver
+* Proxy Re-Encryption for sharing
+* Oblivious RAM for perfect security (hiding access patterns)
+* Clustering / scalability (NEO storage, etc)
+* Conflict resolution with partially homomorphic encryption
+
 # How to report a bug
 If you find a security vulnerability, do NOT open an issue. Email michael@zerodb.io instead.
 
