@@ -176,6 +176,15 @@ class Connection(BaseConnection):
     def root(self):
         return RootConvenience(self.get(self._db._root_oid))
 
+    def setstate(self, obj):
+        if hasattr(obj, "_p_uid"):
+            uid = obj._p_uid
+        else:
+            uid = None
+        super(Connection, self).setstate(obj)
+        if uid is not None:
+            obj._p_uid = uid
+
 
 class DB(BaseDB):
     klass = Connection

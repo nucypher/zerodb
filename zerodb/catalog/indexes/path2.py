@@ -1,1 +1,1 @@
-from repoze.catalog.indexes.path2 import *
+from zerodbext.catalog.indexes.path2 import *

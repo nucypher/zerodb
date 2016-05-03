@@ -1,4 +1,4 @@
-from repoze.catalog import query
+from zerodbext.catalog import query
 from zerodb import trees
 from zerodb.util.iter import Sliceable
 

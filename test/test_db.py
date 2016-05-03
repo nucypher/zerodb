@@ -237,3 +237,13 @@ def test_all_uid(db):
     objs = db[Page][uids]
     for obj in objs:
         assert hasattr(obj, "_p_uid")
+
+    objs = list(db[Page].all())
+    obj = objs[0]
+    obj._p_activate()
+    assert hasattr(obj, "_p_uid")
+
+    objs[1].text += " xxx"
+    transaction.commit()
+    for obj in objs:
+        assert hasattr(obj, "_p_uid")

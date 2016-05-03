@@ -1,1 +1,1 @@
-from repoze.catalog.indexes.facet import *
+from zerodbext.catalog.indexes.facet import *
