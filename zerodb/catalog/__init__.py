@@ -1,5 +1,5 @@
-from repoze.catalog.catalog import ResultSetSize
-from repoze.catalog.catalog import Catalog as _Catalog
+from zerodbext.catalog.catalog import ResultSetSize
+from zerodbext.catalog.catalog import Catalog as _Catalog
 from zerodb import trees
 
 

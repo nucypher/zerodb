@@ -320,7 +320,7 @@ class IncrementalLuceneIndex(Persistent):
         # XXX
         # We should have OrderedDict-like lazy objects
         # and we should have weightedIntersection and weightedUnion
-        # working lazily in a for of repoze.catalog
+        # working lazily in a for of zerodbext.catalog
         # This is just a workaround for simpler queries
         # XXX
         return imap(lambda x: x[0], mass_weightedUnion(self._search_wids(wids)))

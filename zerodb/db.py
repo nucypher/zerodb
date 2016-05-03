@@ -4,10 +4,11 @@ import threading
 
 import six
 from six.moves import zip as izip
+from Crypto import Random
 import transaction
 
 from hashlib import sha256
-from repoze.catalog.query import optimize
+from zerodbext.catalog.query import optimize
 from zerodb.collective.indexing.indexer import PortalCatalogProcessor
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
 from zerodb.collective.indexing import subscribers
@@ -312,6 +313,7 @@ class DB(object):
         self._init_db()
         self._models = {}
 
+    @classmethod
     def _init_default_crypto(self, passphrase=None):
         encrypters = self.encrypter
         if not isinstance(encrypters, (list, tuple)):
@@ -332,6 +334,8 @@ class DB(object):
         """We need this to be executed each time we are in a new process"""
         if self._autoreindex:
             subscribers.init()
+
+        Random.atfork()
 
         self.__conn_refs = {}
         self.__thread_local = threading.local()

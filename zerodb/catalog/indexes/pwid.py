@@ -22,4 +22,4 @@ class PersistentWid(persistent.Persistent):
         try:
             return super(PersistentWid, self).__getattribute__(attr)
         except AttributeError:
-            return self.s.__getattribute__(attr)
+            return super(PersistentWid, self).__getattribute__('s').__getattribute__(attr)
