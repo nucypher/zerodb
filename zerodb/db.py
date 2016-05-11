@@ -289,8 +289,6 @@ class DB(object):
         if not username:
             username = sha256("username" + sha256(password).digest()).digest()
 
-        self._init_default_crypto(passphrase=password)
-
         # Store all the arguments necessary for login in this instance
         self.__storage_kwargs = {
                 "sock": sock,
@@ -341,6 +339,7 @@ class DB(object):
         self.__thread_local = threading.local()
         self.__thread_watcher = ThreadWatcher()
         self._storage = client_storage(**self.__storage_kwargs)
+        self._init_default_crypto(passphrase=self.__storage_kwargs["password"])
         self._db = DB.db_factory(self._storage, **self.__db_kwargs)
         self._conn_open()
 
