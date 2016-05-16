@@ -21,7 +21,9 @@ class User(persistent.Persistent):
     Persistent class to store users
     """
 
-    def __init__(self, username, pubkey, realm="ZEO", administrator=False, root=None):
+    def __init__(
+            self, username, pubkey, salt=None,
+            realm="ZEO", administrator=False, root=None):
         """
         :param str username: Username
         :param str pubkey: ECC public key
@@ -35,6 +37,7 @@ class User(persistent.Persistent):
         self.realm = realm
         self.administrator = administrator
         self.root = root
+        salt = salt
 
 
 def session_key(h_up, nonce):
@@ -69,9 +72,9 @@ class PermissionsDatabase(object):
         self.db_root = self.db_conn.root()
         root = self.db_root
         with transaction.manager:
-            if not "users" in root:
+            if "users" not in root:
                 root["users"] = IdStore()  # uid -> user
-            if not "usernames" in root:
+            if "usernames" not in root:
                 root["usernames"] = self.family.OI.BTree()  # username -> uid
 
         self.filename = filename
@@ -159,7 +162,8 @@ class PermissionsDatabase(object):
         if username in usernames:
             raise LookupError("User %s already exists" % username)
         with transaction.manager:
-            user = User(username, pubkey, self.realm,
+            user = User(
+                    username, pubkey, self.realm,
                     administrator=administrator)
             uid = users.add(user)
             usernames[username] = uid

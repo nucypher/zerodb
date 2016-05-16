@@ -4,8 +4,9 @@ Module for auth with elliptic curve cryptography
 
 import hashlib
 import struct
+import logging
+import scrypt
 
-import six
 from ZEO import auth
 from ZEO.auth.base import Client as BaseClient
 from ZEO.auth import register_module
@@ -22,11 +23,27 @@ __module_name__ = "ecc_auth"
 
 class ServerStorageMixin(object):
 
-    def auth_get_challenge(self):
-        """Return realm, challenge, and nonce."""
+    def auth_get_challenge(self, username):
+        """
+        :username: Needed when using passphrase to get salt
+        :returns: (realm, challenge, nonce)
+        """
         self._challenge = rand(32)
         self._key_nonce = self._get_nonce()
-        return self.auth_realm, self._challenge, self._key_nonce
+
+        if username is not None:
+            try:
+                salt = getattr(self.database[username], "salt", "")
+                if salt == "":
+                    logging.warn("Empty salt for %s: not very secure" %
+                                 username)
+            except LookupError:
+                # No one should know that there is no such user
+                salt = rand(32)
+            return self.auth_realm, self._challenge, self._key_nonce, salt
+
+        else:
+            return self.auth_realm, self._challenge, self._key_nonce
 
     def auth_response(self, resp):
         # verify client response
@@ -37,7 +54,11 @@ class ServerStorageMixin(object):
         user = self.database[username]
         verkey = ecc.public(user.pubkey)
 
-        h_up = hashlib.sha256(b"%s:%s:%s" % (username.encode(), self.database.realm.encode(), user.pubkey)).digest()
+        h_up = hashlib.sha256(
+                b"%s:%s:%s" % (
+                    username.encode(),
+                    self.database.realm.encode(),
+                    user.pubkey)).digest()
 
         # regeneration resp from user, password, and nonce
         check = hashlib.sha256(b"%s:%s" % (h_up, challenge)).digest()
@@ -60,8 +81,13 @@ class Client(BaseClient):
     extensions = ["auth_get_challenge", "auth_response", "get_root_id"]
 
     def start(self, username, realm, password):
-        priv = ecc.private(password)
-        _realm, challenge, nonce = self.stub.auth_get_challenge()
+        # XXX password can actually be key: need to handle that
+
+        _realm, challenge, nonce, salt = self.stub.auth_get_challenge(username)
+
+        secret_key = scrypt.hash(password, salt)[:32]
+
+        priv = ecc.private(secret_key)
         # _realm is str, challenge is 32-byte hash, nonce as well
         if _realm != realm:
             raise AuthError("expected realm %r, got realm %r"
@@ -71,7 +97,9 @@ class Client(BaseClient):
         check = hashlib.sha256(b"%s:%s" % (h_up, challenge)).digest()
         sig = priv.sign(check)
         result = self.stub.auth_response((username, challenge, sig))
+
         if result:
+            self.secret_key = secret_key
             return base.session_key(h_up, nonce)
         else:
             return None

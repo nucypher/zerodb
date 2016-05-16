@@ -1,4 +1,5 @@
 import pytest
+import scrypt
 import shutil
 import tempfile
 from time import sleep
@@ -15,8 +16,8 @@ from zerodb.util import encode_hex
 from db import TEST_PASSPHRASE
 from db import create_objects_and_close, add_wiki_and_close
 
-TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
-TEST_PUBKEY_3 = ecc.private(TEST_PASSPHRASE + " third").get_pubkey()
+TEST_PUBKEY = ecc.private(scrypt.hash(TEST_PASSPHRASE, '')[:32]).get_pubkey()
+TEST_PUBKEY_3 = ecc.private(scrypt.hash(TEST_PASSPHRASE + " third", '')[:32]).get_pubkey()
 TEST_PERMISSIONS = """realm ZERO
 root:%s
 third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))

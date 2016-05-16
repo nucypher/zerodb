@@ -1,4 +1,5 @@
 import pytest
+import scrypt
 import six
 from ZEO.Exceptions import StorageError
 from ZODB.DB import z64
@@ -38,7 +39,8 @@ def test_db_users(pass_db):
 
 def test_ecc_auth(zeo_server):
     # Presumably, ecc_server already registered auth protocol
-    storage = client_storage(zeo_server,
+    storage = client_storage(
+            zeo_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO")
 
     with pytest.raises(StorageError):  # Cannot access common root
@@ -58,15 +60,17 @@ def test_ecc_auth(zeo_server):
 
 
 def test_user_management(zeo_server):
-    storage = client_storage(zeo_server,
+    storage = client_storage(
+            zeo_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO")
 
-    pk0 = ecc.private("passY").get_pubkey()
-    pk = ecc.private("passX").get_pubkey()
+    pk0 = ecc.private(scrypt.hash("passY", "")[:32]).get_pubkey()
+    pk = ecc.private(scrypt.hash("passX", "")[:32]).get_pubkey()
     storage.add_user("userX", pk0)
     storage.change_key("userX", pk)
 
-    storage = client_storage(zeo_server,
+    storage = client_storage(
+            zeo_server,
             username="userX", password="passX", realm="ZERO")
     with pytest.raises(AssertionError):
         storage.add_user("shouldfail", pk)

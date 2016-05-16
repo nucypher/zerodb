@@ -1,9 +1,10 @@
 import six
 import hashlib
-import ecdsa  # We can use pyelliptic (uses OpenSSL) but this is more cross-patform
+# We can use pyelliptic (uses OpenSSL) but this is more cross-patform
+import ecdsa
 
 # We use curve standard for Bitcoin by default
-CURVE_ecdsa = ecdsa.SECP256k1
+DEFAULT_CURVE = "SECP256k1"
 
 
 class SigningKey(ecdsa.SigningKey, object):
@@ -25,14 +26,28 @@ class VerifyingKey(ecdsa.VerifyingKey, object):
                 sigdecode=ecdsa.util.sigdecode_der)
 
 
-def private(passphrase):
-    if six.PY3 and isinstance(passphrase, six.string_types):
-        passphrase = passphrase.encode()
-    priv = hashlib.sha256(b"elliptic" + hashlib.sha256(passphrase).digest()).digest()
-    key = SigningKey.from_string(priv, curve=CURVE_ecdsa)
+def private(seed, curve_name=DEFAULT_CURVE):
+    try:
+        curve = getattr(ecdsa.curves, curve_name)
+        assert isinstance(curve, ecdsa.curves.Curve)
+    except:
+        raise ecdsa.curves.UnknownCurveError("I don't lnow this curve!")
+
+    if six.PY3:
+        if isinstance(seed, six.string_types):
+            seed = seed.encode()
+
+    priv = hashlib.sha512(seed).digest()[:curve.baselen]
+    key = SigningKey.from_string(priv, curve=curve)
     return key
 
 
-def public(pub):
+def public(pub, curve_name=DEFAULT_CURVE):
+    try:
+        curve = getattr(ecdsa.curves, curve_name)
+        assert isinstance(curve, ecdsa.curves.Curve)
+    except:
+        raise ecdsa.curves.UnknownCurveError("I don't lnow this curve!")
+
     assert pub[0] == b'\x04'[0]
-    return VerifyingKey.from_string(pub[1:], curve=CURVE_ecdsa)
+    return VerifyingKey.from_string(pub[1:], curve=curve)

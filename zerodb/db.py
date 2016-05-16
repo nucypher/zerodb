@@ -228,7 +228,8 @@ class DbModel(object):
         else:
             Q = And(*eq_args)
 
-        q = lambda: self._catalog.query(Q, **kw)
+        def q():
+            return self._catalog.query(Q, **kw)
 
         if limit:
             _, q = q()
@@ -259,7 +260,12 @@ class DB(object):
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, username=None, password=None, realm="ZERO", debug=False, pool_timeout=3600, pool_size=7, autoreindex=True, **kw):
+    def __init__(
+            self, sock,
+            username=None, password=None, realm="ZERO",
+            debug=False,
+            pool_timeout=3600, pool_size=7,
+            autoreindex=True, **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
