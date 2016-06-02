@@ -1,7 +1,7 @@
 import pytest
 from pickle import loads
 from zerodb.storage import client_storage
-from db import TEST_PASSPHRASE
+from .db import TEST_PASSPHRASE
 
 
 @pytest.fixture(scope="module")

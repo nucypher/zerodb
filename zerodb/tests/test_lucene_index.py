@@ -5,8 +5,8 @@ import zerodb
 from zerodb.models import Model, fields
 from zerodb.query import Contains
 
-from conftest import do_zeo_server
-from db import WikiPage, TEST_PASSPHRASE
+from .conftest import do_zeo_server
+from .db import WikiPage, TEST_PASSPHRASE
 
 logging.basicConfig(level=logging.DEBUG)
 
