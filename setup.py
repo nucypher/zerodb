@@ -27,6 +27,16 @@ INSTALL_REQUIRES = [
     'six>=1.7.0'
 ]
 
+TESTS_REQUIRE = [
+    'pytest',
+    'coverage',
+    'path.py',
+    'mock',
+    'wheel',
+    'pytest-cov',
+    'pdbpp'
+]
+
 
 # The following is to avoid build errors on brand new Amazon Ubuntu
 # instances which may not have libffi-dev installed.
@@ -154,4 +164,5 @@ setup(
     url="http://zerodb.io",
     packages=find_packages(),
     install_requires=INSTALL_REQUIRES,
+    extras_require={'testing': TESTS_REQUIRE},
 )
