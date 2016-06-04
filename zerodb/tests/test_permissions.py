@@ -12,13 +12,19 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
+# Connections cannot be closed when they are joined to a transaction
+@pytest.fixture(scope="function")
+def abort(request):
+    request.addfinalizer(transaction.abort)
+
+
 def test_db_rootuser(pass_db):
     user = pass_db["root"]
     assert user.administrator
     assert user.pubkey == TEST_PUBKEY
 
 
-def test_db_users(pass_db):
+def test_db_users(pass_db, abort):
     pk1 = ecc.private("pass1").get_pubkey()
     pk2 = ecc.private("pass2").get_pubkey()
     pk3 = ecc.private("pass3").get_pubkey()
@@ -37,6 +43,23 @@ def test_db_users(pass_db):
 
     with pytest.raises(LookupError):
         pass_db["user3"]
+
+
+def test_db_users_abort(pass_db, abort):
+    pk4 = ecc.private("pass4").get_pubkey()
+
+    pass_db.add_user("user4", pk4)
+    pass_db["user4"]
+
+    with pytest.raises(LookupError):
+        pass_db.add_user("user4", pk4)
+
+    transaction.abort()
+
+    with pytest.raises(LookupError):
+        pass_db["user4"]
+
+    pass_db.add_user("user4", pk4)
 
 
 def test_ecc_auth(zeo_server):
@@ -60,7 +83,7 @@ def test_ecc_auth(zeo_server):
     conn.close()
 
 
-def test_user_management(zeo_server):
+def test_user_management(zeo_server, abort):
     storage = client_storage(zeo_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO")
 
@@ -71,8 +94,27 @@ def test_user_management(zeo_server):
         storage.add_user("userX", pk1)
         storage.change_key("userX", pk2)
 
+    with pytest.raises(LookupError):
+        storage.add_user("userX", pk1)
+
     storage = client_storage(zeo_server,
             username="userX", password="passX", realm="ZERO")
 
     with pytest.raises(AssertionError):
         storage.add_user("shouldfail", pk1)
+
+
+def test_user_management_abort(zeo_server, abort):
+    storage = client_storage(zeo_server,
+            username="root", password=TEST_PASSPHRASE, realm="ZERO")
+
+    pk1 = ecc.private("passY").get_pubkey()
+
+    storage.add_user("userY", pk1)
+
+    with pytest.raises(LookupError):
+        storage.add_user("userY", pk1)
+
+    transaction.abort()
+
+    #storage.add_user("userY", pk1)  # XXX
