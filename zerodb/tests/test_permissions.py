@@ -1,4 +1,5 @@
 import pytest
+import transaction
 import six
 from ZEO.Exceptions import StorageError
 from ZODB.DB import z64
@@ -21,11 +22,13 @@ def test_db_users(pass_db):
     pk1 = ecc.private("pass1").get_pubkey()
     pk2 = ecc.private("pass2").get_pubkey()
     pk3 = ecc.private("pass3").get_pubkey()
-    pass_db.add_user("user1", pk1, administrator=True)
-    pass_db.add_user("user2", pk2)
-    pass_db.add_user("user3", pk3)
-    pass_db.del_user("user3")
-    pass_db.change_key("user2", pk3)
+
+    with transaction.manager:
+        pass_db.add_user("user1", pk1, administrator=True)
+        pass_db.add_user("user2", pk2)
+        pass_db.add_user("user3", pk3)
+        pass_db.del_user("user3")
+        pass_db.change_key("user2", pk3)
 
     assert pass_db["user1"].administrator
     assert not pass_db["user2"].administrator
@@ -61,12 +64,15 @@ def test_user_management(zeo_server):
     storage = client_storage(zeo_server,
             username="root", password=TEST_PASSPHRASE, realm="ZERO")
 
-    pk0 = ecc.private("passY").get_pubkey()
-    pk = ecc.private("passX").get_pubkey()
-    storage.add_user("userX", pk0)
-    storage.change_key("userX", pk)
+    pk1 = ecc.private("passY").get_pubkey()
+    pk2 = ecc.private("passX").get_pubkey()
+
+    with transaction.manager:
+        storage.add_user("userX", pk1)
+        storage.change_key("userX", pk2)
 
     storage = client_storage(zeo_server,
             username="userX", password="passX", realm="ZERO")
+
     with pytest.raises(AssertionError):
-        storage.add_user("shouldfail", pk)
+        storage.add_user("shouldfail", pk1)
