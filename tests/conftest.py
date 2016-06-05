@@ -7,7 +7,6 @@ from db import create_objects_and_close
 from db import add_wiki_and_close
 
 
-# Override zeo_server to populate the database
 @pytest.fixture(scope="module")
 def zeo_server(request, pass_file, tempdir):
     sock = do_zeo_server(request, pass_file, tempdir, name="zeo_server")

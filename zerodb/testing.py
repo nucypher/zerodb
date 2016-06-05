@@ -1,3 +1,10 @@
+"""Pytest fixtures for zerodb tests
+
+To activate the fixtures add this to your conftest.py:
+
+from zerodb.testing import *
+"""
+
 import pytest
 import shutil
 import tempfile
@@ -81,7 +88,7 @@ def do_zeo_server(request, pass_file, tempdir, name=None):
             "sock": sock,
             "pass_file": pass_file,
             "dbfile": dbfile})
-    server = Process(target=ZEOServer.run, name=name, kwargs={"args": ("-C", zeroconf_file)})
+    server = Process(name=name, target=ZEOServer.run, kwargs={"args": ("-C", zeroconf_file)})
 
     @request.addfinalizer
     def fin():

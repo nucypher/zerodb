@@ -25,7 +25,7 @@ def api_server(request, db):
     _, port = sock.getsockname()
     sock.close()
 
-    server = Process(target=api_run, name="api_server", kwargs={
+    server = Process(name="api_server", target=api_run, kwargs={
         "host": "localhost",
         "port": port,
         "data_models": path.join(path.dirname(__file__), "db.py"),
