@@ -1,8 +1,8 @@
 import pytest
 import zerodb
 from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
-from .conftest import do_zeo_server
-from .db import Page, TEST_PASSPHRASE, create_objects_and_close
+from zerodb.testing import TEST_PASSPHRASE, do_zeo_server
+from .db import Page, create_objects_and_close
 
 
 class DBAESv0(zerodb.DB):

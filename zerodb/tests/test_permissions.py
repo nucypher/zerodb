@@ -6,7 +6,7 @@ from ZODB.DB import z64
 from zerodb.permissions import subdb
 from zerodb.crypto import ecc
 from zerodb.storage import client_storage
-from .conftest import TEST_PUBKEY, TEST_PASSPHRASE
+from zerodb.testing import TEST_PASSPHRASE, TEST_PUBKEY
 
 import logging
 logging.basicConfig(level=logging.DEBUG)

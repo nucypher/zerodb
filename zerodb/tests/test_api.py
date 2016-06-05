@@ -6,7 +6,7 @@ import time
 from json import loads, dumps
 from multiprocessing import Process
 from os import path
-from .db import TEST_PASSPHRASE
+from zerodb.testing import TEST_PASSPHRASE
 from zerodb import api
 
 

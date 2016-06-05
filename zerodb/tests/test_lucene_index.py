@@ -5,8 +5,8 @@ import zerodb
 from zerodb.models import Model, fields
 from zerodb.query import Contains
 
-from .conftest import do_zeo_server
-from .db import WikiPage, TEST_PASSPHRASE
+from zerodb.testing import TEST_PASSPHRASE, do_zeo_server
+from .db import WikiPage
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -18,7 +18,7 @@ class Page(Model):
 
 @pytest.fixture(scope="module")
 def many_server(request, pass_file, tempdir):
-    sock = do_zeo_server(request, pass_file, tempdir)
+    sock = do_zeo_server(request, pass_file, tempdir, name="many_server")
     db = zerodb.DB(sock, username="root", password=TEST_PASSPHRASE, debug=True)
     with transaction.manager:
         for i in range(2000):

@@ -7,7 +7,7 @@ import zerodb
 import zerodb.db
 from zerodb.models import fields
 from zerodb.models.exceptions import ModelException
-from .db import TEST_PASSPHRASE
+from zerodb.testing import TEST_PASSPHRASE
 
 
 class ExampleModel(models.Model):
