@@ -8,9 +8,8 @@ from zerodb.models import Model
 from zerodb.models import fields
 import zerodb
 
+from zerodb.testing import TEST_PASSPHRASE
 from zerodb.tests import wiki
-
-TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
 
 
 class Page(Model):
