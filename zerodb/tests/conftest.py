@@ -1,3 +1,6 @@
+import pytest
+import zerodb
+
 from zerodb.testing import *
 
 from .db import create_objects_and_close

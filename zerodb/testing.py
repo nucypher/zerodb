@@ -8,7 +8,7 @@ from os import path
 import zerodb
 from zerodb.crypto import ecc
 from zerodb.permissions import elliptic
-from zerodb.permissions import base as permissions_base
+from zerodb.permissions.base import PermissionsDatabase
 from zerodb.storage import ZEOServer
 from zerodb.util import encode_hex
 
@@ -34,6 +34,17 @@ ZEO_CONFIG = """<zeo>
 
 elliptic.register_auth()
 
+__all__ = [
+    "TEST_PASSPHRASE",
+    "TEST_PUBKEY",
+    "tempdir",
+    "pass_file",
+    "pass_db",
+    "do_zeo_server",
+    "zeo_server",
+    "db",
+]
+
 
 @pytest.fixture(scope="module")
 def tempdir(request):
@@ -52,7 +63,7 @@ def pass_file(request, tempdir):
 
 @pytest.fixture(scope="function")
 def pass_db(request, pass_file):
-    pdb = permissions_base.PermissionsDatabase(pass_file)
+    pdb = PermissionsDatabase(pass_file)
     request.addfinalizer(pdb.close)
     return pdb
 
