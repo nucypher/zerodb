@@ -2,7 +2,7 @@ import logging
 import mock
 import transaction
 from itertools import islice
-from .db import Page, Salary, Department
+from db import Page, Salary, Department
 from zerodb.catalog.query import Contains, InRange, Eq, Gt
 # Also need to test optimize, Lt(e), Gt(e)
 

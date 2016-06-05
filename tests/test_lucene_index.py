@@ -6,7 +6,7 @@ from zerodb.models import Model, fields
 from zerodb.query import Contains
 
 from zerodb.testing import TEST_PASSPHRASE, do_zeo_server
-from .db import WikiPage
+from db import WikiPage
 
 logging.basicConfig(level=logging.DEBUG)
 

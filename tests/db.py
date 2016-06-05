@@ -8,8 +8,9 @@ from zerodb.models import Model
 from zerodb.models import fields
 import zerodb
 
+import wiki
+
 from zerodb.testing import TEST_PASSPHRASE
-from zerodb.tests import wiki
 
 
 class Page(Model):

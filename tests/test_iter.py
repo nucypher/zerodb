@@ -5,7 +5,7 @@ from six.moves import map as imap
 
 from zerodb.util.iter import Sliceable
 from zerodb.catalog.query import Gt
-from .db import Salary
+from db import Salary
 
 
 def test_sliceable():

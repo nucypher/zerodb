@@ -3,8 +3,8 @@ import zerodb
 
 from zerodb.testing import *
 
-from .db import create_objects_and_close
-from .db import add_wiki_and_close
+from db import create_objects_and_close
+from db import add_wiki_and_close
 
 
 # Override zeo_server to populate the database

@@ -5,7 +5,7 @@ import gc
 
 from time import sleep
 
-from .db import Page
+from db import Page
 
 id_conn_child = None
 
