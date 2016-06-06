@@ -2,18 +2,12 @@ import logging
 import pytest
 import transaction
 import zerodb
-from zerodb.models import Model, fields
 from zerodb.query import Contains
 
 from zerodb.testing import TEST_PASSPHRASE, do_zeo_server
-from db import WikiPage
+from db import Page, WikiPage
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-class Page(Model):
-    title = fields.Field()
-    text = fields.Text()
 
 
 @pytest.fixture(scope="module")
@@ -33,7 +27,7 @@ def many_server(request, pass_file, tempdir):
 
 
 @pytest.fixture(scope="module")
-def manydb(request, many_server):
+def many_db(request, many_server):
     zdb = zerodb.DB(many_server, username="root", password=TEST_PASSPHRASE, debug=True)
 
     @request.addfinalizer
@@ -118,19 +112,19 @@ def test_search(wiki_db):
     assert len(list(index.search_glob("itisnotthere*"))) == 0
 
 
-def test_search_many(manydb):
-    index = manydb[Page]._catalog["text"].index
+def test_search_many(many_db):
+    index = many_db[Page]._catalog["text"].index
     it = index.search("something looking")
     ids = [x[0] for x in it]
     assert len(ids) == 1000
     # Longer docs for this query and our synthetic docs have higher score
-    lens = [len(manydb[Page]._objects[i].text) for i in ids]
+    lens = [len(many_db[Page]._objects[i].text) for i in ids]
     assert lens == sorted(lens, reverse=True)
 
 
-def test_search_query(manydb, wiki_db):
+def test_search_query(many_db, wiki_db):
     # High level search using .query interface
-    pages = manydb[Page].query(Contains("text", "something looking"))
+    pages = many_db[Page].query(Contains("text", "something looking"))
     assert len(pages) == 1000
     lens = [len(page.text) for page in pages]
     assert lens == sorted(lens, reverse=True)

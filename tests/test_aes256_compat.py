@@ -12,15 +12,15 @@ class DBAESv0(zerodb.DB):
 @pytest.fixture(scope="module")
 def zeo_server_aes_v0(request, pass_file, tempdir):
     # Use old pycryptodome encryption
-    sock = do_zeo_server(request, pass_file, tempdir, dbclass=DBAESv0)
-    create_objects_and_close(sock)
+    sock = do_zeo_server(request, pass_file, tempdir)
+    create_objects_and_close(sock, dbclass=DBAESv0)
     return sock
 
 
 @pytest.fixture(scope="module")
-def db_aes_v0(request, zeo_server):
+def db_aes_v0(request, zeo_server_aes_v0):
     # Use new zerodb.DB class here
-    zdb = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+    zdb = zerodb.DB(zeo_server_aes_v0, username="root", password=TEST_PASSPHRASE, debug=True)
 
     @request.addfinalizer
     def fin():
