@@ -1,6 +1,7 @@
-"""Pytest fixtures for zerodb tests
+"""
+Pytest fixtures for zerodb tests
 
-To activate the fixtures add this to your conftest.py:
+To activate the fixtures, add this to your conftest.py:
 
 from zerodb.testing import *
 """
