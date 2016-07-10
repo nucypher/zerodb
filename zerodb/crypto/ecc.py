@@ -3,7 +3,7 @@ import hashlib
 import ecdsa  # We can use pyelliptic (uses OpenSSL) but this is more cross-patform
 
 # We use curve standard for Bitcoin by default
-CURVE_ecdsa = ecdsa.SECP256k1
+CURVE = ecdsa.SECP256k1
 
 
 class SigningKey(ecdsa.SigningKey, object):
@@ -25,14 +25,18 @@ class VerifyingKey(ecdsa.VerifyingKey, object):
                 sigdecode=ecdsa.util.sigdecode_der)
 
 
-def private(passphrase):
-    if six.PY3 and isinstance(passphrase, six.string_types):
-        passphrase = passphrase.encode()
-    priv = hashlib.sha256(b"elliptic" + hashlib.sha256(passphrase).digest()).digest()
-    key = SigningKey.from_string(priv, curve=CURVE_ecdsa)
-    return key
+def private(seed, salt, kdf=None, curve=CURVE):
+    assert callable(kdf)
+    if six.PY3 and isinstance(seed, six.string_types):
+        seed = seed.encode()
+    if isinstance(salt, (list, tuple)):
+        salt = "|".join(salt)
+        if six.PY3:
+            salt = salt.encode()
+
+    return SigningKey.from_string(kdf(seed, salt), curve=curve)
 
 
-def public(pub):
+def public(pub, curve=CURVE):
     assert pub[0] == b'\x04'[0]
-    return VerifyingKey.from_string(pub[1:], curve=CURVE_ecdsa)
+    return VerifyingKey.from_string(pub[1:], curve=curve)

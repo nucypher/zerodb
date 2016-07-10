@@ -2,10 +2,11 @@
 Module for auth with elliptic curve cryptography
 """
 
+import ecdsa
 import hashlib
+import scrypt
 import struct
 
-import six
 from ZEO import auth
 from ZEO.auth.base import Client as BaseClient
 from ZEO.auth import register_module
@@ -17,10 +18,11 @@ from zerodb.crypto import rand
 from zerodb.crypto import ecc
 
 
-__module_name__ = "ecc_auth"
+__module_name__ = "auth_secp256k1_scrypt"
 
 
 class ServerStorageMixin(object):
+    curve = ecdsa.SECP256k1
 
     def auth_get_challenge(self):
         """Return realm, challenge, and nonce."""
@@ -35,7 +37,7 @@ class ServerStorageMixin(object):
         assert self._challenge == challenge
 
         user = self.database[username]
-        verkey = ecc.public(user.pubkey)
+        verkey = ecc.public(user.pubkey, curve=self.curve)
 
         h_up = hashlib.sha256(b"%s:%s:%s" % (username.encode(), self.database.realm.encode(), user.pubkey)).digest()
 
@@ -58,9 +60,15 @@ class StorageClass(ServerStorageMixin, subdb.StorageClass):
 
 class Client(BaseClient):
     extensions = ["auth_get_challenge", "auth_response", "get_root_id"]
+    curve = ecdsa.SECP256k1
+
+    @classmethod
+    def kdf(cls, seed, salt):
+        return scrypt.hash(seed, salt)[:cls.curve.baselen]
 
     def start(self, username, realm, password):
-        priv = ecc.private(password)
+        priv = ecc.private(password, [username, realm], kdf=self.kdf,
+                           curve=self.curve)
         _realm, challenge, nonce = self.stub.auth_get_challenge()
         # _realm is str, challenge is 32-byte hash, nonce as well
         if _realm != realm:

@@ -24,7 +24,8 @@ INSTALL_REQUIRES = [
     'ecdsa>=0.10',
     'zope.event>=4.0.0',
     'zope.lifecycleevent>=4.0.0',
-    'six>=1.7.0'
+    'six>=1.7.0',
+    'scrypt'
 ]
 
 TESTS_REQUIRE = [

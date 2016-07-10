@@ -20,9 +20,13 @@ from zerodb.permissions.base import PermissionsDatabase
 from zerodb.storage import ZEOServer
 from zerodb.util import encode_hex
 
+kdf = elliptic.Client.kdf
+
 TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
-TEST_PUBKEY = ecc.private(TEST_PASSPHRASE).get_pubkey()
-TEST_PUBKEY_3 = ecc.private(TEST_PASSPHRASE + " third").get_pubkey()
+TEST_PUBKEY = ecc.private(
+        TEST_PASSPHRASE, ("root", "ZERO"), kdf=kdf).get_pubkey()
+TEST_PUBKEY_3 = ecc.private(
+        TEST_PASSPHRASE + " third", ("third", "ZERO"), kdf=kdf).get_pubkey()
 
 TEST_PERMISSIONS = """realm ZERO
 root:%s
@@ -30,7 +34,7 @@ third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))
 
 ZEO_CONFIG = """<zeo>
   address %(sock)s
-  authentication-protocol ecc_auth
+  authentication-protocol auth_secp256k1_scrypt
   authentication-database %(pass_file)s
   authentication-realm ZERO
 </zeo>
