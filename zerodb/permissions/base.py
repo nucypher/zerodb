@@ -69,9 +69,9 @@ class PermissionsDatabase(object):
         self.db_root = self.db_conn.root()
         root = self.db_root
         with transaction.manager:
-            if not "users" in root:
+            if "users" not in root:
                 root["users"] = IdStore()  # uid -> user
-            if not "usernames" in root:
+            if "usernames" not in root:
                 root["usernames"] = self.family.OI.BTree()  # username -> uid
 
         self.filename = filename
@@ -158,9 +158,9 @@ class PermissionsDatabase(object):
         usernames = self.db_root["usernames"]
         if username in usernames:
             raise LookupError("User %s already exists" % username)
-        if True: #with transaction.manager:
-            user = User(username, pubkey, self.realm,
-                    administrator=administrator)
+        if True:  # with transaction.manager:
+            user = User(
+                    username, pubkey, self.realm, administrator=administrator)
             uid = users.add(user)
             usernames[username] = uid
 
@@ -175,7 +175,7 @@ class PermissionsDatabase(object):
         usernames = self.db_root["usernames"]
         if username not in usernames:
             raise LookupError("No such user: %s" % username)
-        if True: #with transaction.manager:
+        if True:  # with transaction.manager:
             uid = usernames[username]
             del users[uid]
             del usernames[username]
@@ -193,7 +193,7 @@ class PermissionsDatabase(object):
         usernames = self.db_root["usernames"]
         if username not in usernames:
             raise LookupError("No such user: %s" % username)
-        if True: #with transaction.manager:
+        if True:  # with transaction.manager:
             uid = usernames[username]
             users[uid].pubkey = pubkey
 
