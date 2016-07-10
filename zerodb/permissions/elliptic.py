@@ -1,6 +1,7 @@
 """
 Module for auth with elliptic curve cryptography
 """
+__module_name__ = "auth_secp256k1_scrypt"
 
 import ecdsa
 import hashlib
@@ -16,9 +17,6 @@ from . import base
 from . import subdb
 from zerodb.crypto import rand
 from zerodb.crypto import ecc
-
-
-__module_name__ = "auth_secp256k1_scrypt"
 
 
 class ServerStorageMixin(object):

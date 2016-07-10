@@ -7,9 +7,11 @@ import ZODB
 
 from os import path
 from ZODB import FileStorage
+from ZEO import auth
 
 from zerodb.crypto import rand
 from zerodb.intid import IdStore as BaseIdStore
+from zerodb.permissions.elliptic import __module_name__ as default_auth
 
 
 class IdStore(BaseIdStore):
@@ -21,7 +23,9 @@ class User(persistent.Persistent):
     Persistent class to store users
     """
 
-    def __init__(self, username, pubkey, realm="ZEO", administrator=False, root=None):
+    def __init__(
+            self, username, pubkey, realm="ZEO",
+            administrator=False, root=None, auth_method=None):
         """
         :param str username: Username
         :param str pubkey: ECC public key
@@ -35,6 +39,7 @@ class User(persistent.Persistent):
         self.realm = realm
         self.administrator = administrator
         self.root = root
+        self.auth_method = auth_method
 
 
 def session_key(h_up, nonce):
@@ -126,20 +131,23 @@ class PermissionsDatabase(object):
 
         with transaction.manager:
             for line in fd:
-                username, pub = line.strip().split(":", 1)
+                auth_method, username, pub = line.strip().split(":", 2)
                 username = username.strip()
                 if six.PY2:
                     pub = pub.strip().decode("hex")
                 else:
                     pub = bytes.fromhex(pub.strip())
                 if username not in usernames:
-                    user = User(username, pub, self.realm, administrator=True)
+                    user = User(
+                            username, pub, self.realm, administrator=True,
+                            auth_method=auth_method)
                     uid = users.add(user)
                     usernames[username] = uid
                 else:
                     uid = usernames[username]
                     users[uid].pub = pub
                     users[uid].realm = self.realm
+                    users[uid].auth_method = auth_method
 
     def save(self, fd=None):
         """No need to save to the file. Compatibility with how ZODB does it"""
@@ -154,13 +162,19 @@ class PermissionsDatabase(object):
 
         :raises LookupError: if username already exists
         """
+        # XXX when we start authenticating with certificates,
+        # we'll be more smart about this
+        assert default_auth in auth._auth_modules
+        auth_method = default_auth
+
         users = self.db_root["users"]
         usernames = self.db_root["usernames"]
         if username in usernames:
             raise LookupError("User %s already exists" % username)
         if True:  # with transaction.manager:
             user = User(
-                    username, pubkey, self.realm, administrator=administrator)
+                    username, pubkey, self.realm, administrator=administrator,
+                    auth_method=auth_method)
             uid = users.add(user)
             usernames[username] = uid
 

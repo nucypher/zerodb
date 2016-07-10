@@ -29,8 +29,8 @@ TEST_PUBKEY_3 = ecc.private(
         TEST_PASSPHRASE + " third", ("third", "ZERO"), kdf=kdf).get_pubkey()
 
 TEST_PERMISSIONS = """realm ZERO
-root:%s
-third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))
+auth_secp256k1_scrypt:root:%s
+auth_secp256k1_scrypt:third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))
 
 ZEO_CONFIG = """<zeo>
   address %(sock)s
