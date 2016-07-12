@@ -171,12 +171,21 @@ class PermissionsDatabase(object):
         usernames = self.db_root["usernames"]
         if username in usernames:
             raise LookupError("User %s already exists" % username)
-        if True:  # with transaction.manager:
-            user = User(
-                    username, pubkey, self.realm, administrator=administrator,
-                    auth_method=auth_method)
-            uid = users.add(user)
-            usernames[username] = uid
+
+        if transaction.manager._txn:
+            commit = False
+        else:
+            commit = True
+            transaction.begin()
+
+        user = User(
+                username, pubkey, self.realm, administrator=administrator,
+                auth_method=auth_method)
+        uid = users.add(user)
+        usernames[username] = uid
+
+        if commit:
+            transaction.commit()
 
     def del_user(self, username):
         """
@@ -189,10 +198,19 @@ class PermissionsDatabase(object):
         usernames = self.db_root["usernames"]
         if username not in usernames:
             raise LookupError("No such user: %s" % username)
-        if True:  # with transaction.manager:
-            uid = usernames[username]
-            del users[uid]
-            del usernames[username]
+
+        if transaction.manager._txn:
+            commit = False
+        else:
+            commit = True
+            transaction.begin()
+
+        uid = usernames[username]
+        del users[uid]
+        del usernames[username]
+
+        if commit:
+            transaction.commit()
 
     def change_key(self, username, pubkey):
         """
@@ -207,9 +225,18 @@ class PermissionsDatabase(object):
         usernames = self.db_root["usernames"]
         if username not in usernames:
             raise LookupError("No such user: %s" % username)
-        if True:  # with transaction.manager:
-            uid = usernames[username]
-            users[uid].pubkey = pubkey
+
+        if transaction.manager._txn:
+            commit = False
+        else:
+            commit = True
+            transaction.begin()
+
+        uid = usernames[username]
+        users[uid].pubkey = pubkey
+
+        if commit:
+            transaction.commit()
 
     def __getitem__(self, username):
         """

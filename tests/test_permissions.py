@@ -46,6 +46,8 @@ def test_db_users(pass_db, abort):
 
 
 def test_db_users_abort(pass_db, abort):
+    transaction.begin()
+
     pk4 = ecc.private("pass1", ("user4", "ZERO"), kdf=kdf).get_pubkey()
 
     pass_db.add_user("user4", pk4)
