@@ -103,8 +103,8 @@ admin console::
 
 This will launch an ipython terminal where you can manage users::
 
-    In [1]: useradd("jamesbond", "secure password")
-    In [2]: chpass("jamesbond", "even more secure password")
+    In [1]: pubkey = get_pubkey("jamesbond", "secure password")
+    In [2]: useradd("jamesbond", pubkey)
     In [3]: userdel("jamesbond")
 
 The users you create this way are not administrators and they cannot
