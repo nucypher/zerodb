@@ -149,7 +149,7 @@ which creates records for us would look like this::
 
     >>> db = zerodb.DB(("localhost", 8001), username="root", password="<your passphrase>")
     >>> e = models.Employee(name="John", surname="Smith", salary=150000,
-    >>>                     description="Coding power")
+    ...                     description="Coding power")
     >>> db.add(e)
     >>> transaction.commit()
 
