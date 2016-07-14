@@ -125,8 +125,12 @@ Let's start by writing a data model in ``demo/models.py`` first:
 
 .. literalinclude:: ../../../zerodb-server/demo/models.py
 
-Let's assume the database server we started before is still running. The simplest example
+Let's assume the database server we started before is still running.
+The simplest example
 which creates records for us would look like this::
+
+    import sys
+    sys.path.append(".")
 
     import transaction
     import zerodb
