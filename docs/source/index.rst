@@ -121,7 +121,8 @@ This will launch an ipython terminal where you can manage users::
 The users you create this way are not administrators and they cannot
 manage other users.
 
-Press ``Ctrl+D`` to exit the ipython terminal when you're done.
+.. note:: Press ``Ctrl+D`` to exit the ipython terminal when you're done. (The
+   following example code may not work in the admin console.)
 
 
 Using ZeroDB in Python
@@ -261,7 +262,8 @@ NotInRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
 
 JSON API
 ======================
-To start the api server, make sure you’ve activated the virtual environment and the ZeroDB server is running.
+
+To start the API server, make sure you’ve activated the virtual environment and the ZeroDB server is running.
 Navigate to the `api_server` directory, and run `python api_server.py`.
 
 Query examples (similar to http://docs.mongodb.org/manual/reference/operator/query/)::
