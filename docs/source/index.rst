@@ -140,9 +140,6 @@ Let's assume the database server we started before is still running.
 The simplest example
 which creates records for us would look like this::
 
-    >>> import sys
-    >>> sys.path.append(".")
-
     >>> import transaction
     >>> import zerodb
     >>> import models
@@ -160,8 +157,8 @@ data using the script ``create.py``:
 
 Let's play with that data in the Python terminal (or you can write your own
 script). We'll need to import ``zerodb`` and query operators from
-``zerodb.query`` (same syntax as in `repoze
-<http://docs.repoze.org/catalog/usage.html#comparators>`_)::
+``zerodb.query`` (same syntax as in 
+`repoze <http://docs.repoze.org/catalog/usage.html#comparators>`_)::
 
     >>> import zerodb
     >>> from zerodb.query import *
@@ -175,7 +172,7 @@ Let's connect to the database now::
     >>> PASSWORD = "very insecure passphrase - never use it"
     >>> db = zerodb.DB(("localhost", 8001), username="root", password=PASSWORD)
 
-Number of Employees in the database can be determined by just ``len``::
+The number of Employees in the database can be determined by just ``len``::
 
     >>> len(db[Employee])
     10001
