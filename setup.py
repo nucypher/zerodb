@@ -12,13 +12,15 @@ INSTALL_REQUIRES = [
     'BTrees',
     'zope.component>=4.0.0',
     'zodbpickle',
-    'ZODB>=4.0.0',
+    'ZODB>=5.0.0a5',
+    'ZEO>=5.0.0a0',
     'zope.index>=4.0.0',
     'zerodbext.catalog==0.8.4',
     'cachetools',
     'zc.zlibstorage',
     'flask-cors',
     'flask>=0.10',
+    'mock',
     'requests>=2.0',
     'jsonpickle',
     'ecdsa>=0.10',
@@ -35,9 +37,14 @@ TESTS_REQUIRE = [
     'mock',
     'wheel',
     'pytest-cov',
-    'pdbpp'
+    'pdbpp',
+    'zope.testing'
 ]
 
+entry_points = """
+[console_scripts]
+zerodb-initdb = zerodb.permissions.base:init_db_script
+"""
 
 # The following is to avoid build errors on brand new Amazon Ubuntu
 # instances which may not have libffi-dev installed.
@@ -166,4 +173,5 @@ setup(
     packages=find_packages(),
     install_requires=INSTALL_REQUIRES,
     extras_require={'testing': TESTS_REQUIRE},
+    entry_points=entry_points,
 )
