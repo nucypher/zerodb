@@ -9,7 +9,6 @@ from zerodb.util.debug import debug_loads
 class TransformingStorage(ZlibStorage):
     """
     Storage which can transform (encrypt and/or compress) data.
-    Also this storge is aware of our loadBulk method
     """
 
     def __init__(self, base, *args, **kw):
@@ -39,13 +38,12 @@ class TransformingStorage(ZlibStorage):
 
         self._root_oid = None
 
-    def load(self, oid, version=''):
-        """
-        Load object by oid
+    def loadBefore(self, oid, tid):
+        """Load last state for a given oid before a given tid
 
         :param str oid: Object ID
-        :param version: Version to load (when we have version control)
-        :return: Object and its serial number
+        :param str tid: Transaction timestamp
+        :return: Object and its serial number and following serial number
         :rtype: tuple
         """
         if self.debug:
@@ -54,51 +52,21 @@ class TransformingStorage(ZlibStorage):
             else:
                 in_cache = True
 
-        data, serial = self.base.load(oid, version)
+        data, serial, tend = self.base.loadBefore(oid, tid)
         out_data = self._untransform(data)
 
         if self.debug and not in_cache:
-            logging.debug("id:%s, type:%s, transform: %s->%s" % (encode_hex(oid), debug_loads(out_data), len(data), len(out_data)))
+            logging.debug(
+                "id:%s, type:%s, transform: %s->%s" % (
+                    encode_hex(oid),
+                    debug_loads(out_data),
+                    len(data),
+                    len(out_data),
+                    ))
             self._debug_download_size += len(data)
             self._debug_download_count += 1
 
-        return out_data, serial
-
-    def loadBulk(self, oids, returns=True):
-        """
-        Load multiple objects at once
-
-        :param list oids: Iterable of oids to load
-        :param bool returns: When False, we don't return objects but store them
-            in cache
-        :return: List of (object, serial) tuples
-        :rtype: list
-        """
-        if self.debug:
-            logging.debug("Loading: " + ", ".join([encode_hex(oid) for oid in oids]))
-            in_cache_before = {oid: oid in self._cache.current for oid in oids}
-        base_result = self.base.loadBulk(oids)
-        if self.debug:
-            in_cache_after = {oid: oid in self._cache.current for oid in oids}
-        if returns or self.debug:
-            datas, serials = zip(*base_result)
-            datas_out = map(self._untransform, datas)
-            out = list(zip(datas_out, serials))
-            if self.debug:
-                if datas:
-                    self._debug_download_count += 1
-                for data, out_data, oid in zip(datas, datas_out, oids):
-                    logline_prefix = ""
-                    if not in_cache_before[oid]:
-                        self._debug_download_size += len(data)
-                        if not in_cache_after[oid]:
-                            self._debug_download_count += 1
-                        else:
-                            logline_prefix = "(from bulk) "
-                        logging.debug("%sid:%s, type:%s, transform: %s->%s" %
-                                (logline_prefix, encode_hex(oid), debug_loads(out_data), len(data), len(out_data)))
-            if returns:
-                return out
+        return out_data, serial, tend
 
     def store(self, oid, serial, data, version, transaction):
         if oid == self._root_oid:
