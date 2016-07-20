@@ -1,5 +1,6 @@
 import itertools
 import os
+import ssl
 import threading
 
 import six
@@ -260,15 +261,16 @@ class SubConnection(ZODB.Connection.Connection):
             uid = obj._p_uid
         else:
             uid = None
-        super(Connection, self).setstate(obj)
+        super(SubConnection, self).setstate(obj)
         if uid is not None:
             obj._p_uid = uid
 
 class SubDB(ZODB.DB):
+    klass = SubConnection
 
     def __init__(self, storage, *a, **kw):
+        super(SubDB, self).__init__(storage, *a, **kw)
         self._root_oid = storage.get_root_id()
-        super(SubDB, self).__init__(*a, **kw)
 
 class DB(object):
     """
@@ -278,7 +280,7 @@ class DB(object):
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, ssl,
+    def __init__(self, sock, cert_file, key_file, server_cert, password,
                  debug=False, pool_timeout=3600, pool_size=7,
                  autoreindex=True, **kw):
         """
@@ -290,7 +292,10 @@ class DB(object):
         :param bool debug: Whether to log debug messages
         """
 
-        self.ssl = ssl
+        ssl_context = ssl.create_default_context(cafile=server_cert)
+        ssl_context.load_cert_chain(cert_file, key_file)
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
 
         if isinstance(sock, six.string_types):
             sock = str(sock)
@@ -311,7 +316,7 @@ class DB(object):
         # Store all the arguments necessary for login in this instance
         self.__storage_kwargs = {
                 "sock": sock,
-                "ssl": ssl,
+                "ssl": ssl_context,
                 "cache_size": 2 ** 30,
                 "debug": debug,
             }
