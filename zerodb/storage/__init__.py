@@ -1,6 +1,6 @@
 import six
 
-from ZEO.ClientStorage import ClientStorage
+import ZEO.ClientStorage
 from itertools import chain
 from persistent import Persistent
 
@@ -10,6 +10,11 @@ import logging
 # TODO when it comes to the point we need to,
 # we'll have to configure which classes to use
 # with Zope interfaces
+
+class ClientStorage(ZEO.ClientStorage.ClientStorage):
+
+    def get_root_id(self):
+        return self._call('get_root_id')
 
 def client_storage(sock, *args, **kw):
     """
