@@ -3,6 +3,7 @@ import ssl
 
 from ZODB.utils import maxtid, u64, z64
 from ZODB.POSException import POSKeyError, StorageError
+import ZEO.asyncio.mtacceptor
 import ZEO.runzeo
 import ZEO.StorageServer
 import ZODB
@@ -18,14 +19,15 @@ class Acceptor(ZEO.asyncio.mtacceptor.Acceptor):
         storage = storage_server.storages[self.cert_storage_id]
         self.cert_db = ZODB.DB(OwnerStorage(storage, z64))
         self.invalidate = self.cert_db._mvcc_storage.invalidate
+        with self.cert_db.transaction() as conn:
+            self.certs_oid = conn.root.certs._p_oid
 
     @property
     def ssl_context(self):
-        with self.cert_db.transaction() as conn:
-            certs = conn.root.certs
-
         context = self.storage_server.create_ssl_context()
-        context.load_verify_locations(cadata=certs)
+        with self.cert_db.transaction() as conn:
+            certs = conn.get(self.certs_oid)
+            context.load_verify_locations(cadata=certs.data)
         return context
 
     @ssl_context.setter
@@ -53,7 +55,12 @@ class OwnerStorage(object):
         return getattr(self.storage, name)
 
     def _check_permissions(self, data, oid=None):
-        if not data.endswith(self.user_id):
+        if not (
+            data.endswith(self.user_id) or
+            oid == self.user_id # User's id is their root folder id,
+                                # but root folder is initially created
+                                # by the root user
+            ):
             raise StorageError(
                 "Attempt to access encrypted data of others at <%s> by <%s>" % (
                     u64(oid), u64(self.user_id)))
@@ -123,16 +130,16 @@ class StorageServer(ZEO.StorageServer.StorageServer):
                 invq.pop()
             invq.insert(0, (tid, invalidated))
 
-        for p in self.connections[storage_id]:
-            if p.user_id == conn.user_id:
-                connection = p.connection
-                if invalidated and p is not conn:
-                    # p.client.invalidateTransaction(tid, invalidated)
+        for zs in self.zeo_storages_by_storage_id[storage_id]:
+            if zs.user_id == conn.user_id:
+                connection = zs.connection
+                if invalidated and zs is not conn:
+                    # zs.client.invalidateTransaction(tid, invalidated)
                     connection.call_soon_threadsafe(
                         connection.async,
                         'invalidateTransaction', tid, invalidated)
                 elif info is not None:
-                    # p.client.info(info)
+                    # zs.client.info(info)
                     connection.call_soon_threadsafe(
                         connection.async, 'info', info)
 
