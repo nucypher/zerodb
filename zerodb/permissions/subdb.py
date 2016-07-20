@@ -37,6 +37,16 @@ class Acceptor(ZEO.asyncio.mtacceptor.Acceptor):
 @zope.interface.implementer(ZODB.interfaces.IMultiCommitStorage)
 class OwnerStorage(object):
     """Storage wrapper that adds/stript/checks owner id in record
+
+    Some special considerations around bootstrapping:
+
+    - Except for the root users, users' ids are their root folder's
+      oids.  This allows us to grant access even when a user's root
+      folder was written by the root user.  Note that once a user
+      modified their root folder, the root user won't have access.
+
+    - All user can access object 0, but they can't access any
+      persistent subobjects of it.
     """
 
     # methods we punt on:
@@ -57,9 +67,8 @@ class OwnerStorage(object):
     def _check_permissions(self, data, oid=None):
         if not (
             data.endswith(self.user_id) or
-            oid == self.user_id # User's id is their root folder id,
-                                # but root folder is initially created
-                                # by the root user
+            oid == self.user_id or
+            oid == z64
             ):
             raise StorageError(
                 "Attempt to access encrypted data of others at <%s> by <%s>" % (
@@ -113,7 +122,7 @@ class ZEOStorage(ZEO.StorageServer.ZEOStorage):
 
     def setup_delegation(self):
         super(ZEOStorage, self).setup_delegation()
-        self.connection.registered_methods = self.registered_methods
+        self.connection.methods = self.registered_methods
 
     def get_root_id(self):
         return self.root_oid
