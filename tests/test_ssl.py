@@ -7,6 +7,7 @@ import pytest
 from ZODB.utils import z64, maxtid
 import transaction
 import ZEO
+import ZEO.Exceptions
 import ZEO.tests.testssl
 import ZODB.POSException
 
@@ -30,6 +31,8 @@ def test_basic():
     # a regular ZEO client.
     admin_db = ZEO.DB(addr, ssl = ZEO.tests.testssl.client_ssl())
     with admin_db.transaction() as conn:
+
+        # The get_admin function gets us an admin object with CRUD methods.
         admin = zerodb.permissions.base.get_admin(conn)
         [root] = admin.users.values()
         [root_der] = root.certs
@@ -92,11 +95,49 @@ def test_basic():
         assert ('Attempt to access encrypted data of others'
                 in str(exc_info.value))
 
-    admin_db.close()
+    # Note that we had to close and reopen the admin connection
+    # because invalidations aren't sent accross users. (Even clearing
+    # the cache doesn't work (maybe a misfeature))
 
     # The user's data are encrypted:
     server_server = zerodb.forker.last_server
     storage = server_server.server.storages['1']
     assert storage.loadBefore(uid0, maxtid)[0].startswith(b'.e')
 
+    # Let's change the user's cert:
+
+    with admin_db.transaction() as conn:
+        admin = zerodb.permissions.base.get_admin(conn)
+        admin.change_cert('user1', pem_data('cert1'))
+
+    # Now login with the old cert will fail:
+    with pytest.raises(ZEO.Exceptions.ClientDisconnected):
+        db = zerodb.DB(addr,
+                       cert_file=pem_path('cert0'), key_file=pem_path('key0'),
+                       server_cert=ZEO.tests.testssl.server_cert,
+                       password='5ecret', wait_timeout=1)
+
+    # But login with the new one will work:
+    db = zerodb.DB(addr,
+                   cert_file=pem_path('cert1'), key_file=pem_path('key1'),
+                   server_cert=ZEO.tests.testssl.server_cert,
+                   password='5ecret', wait_timeout=1)
+    assert len(db._root) == 2
+    db._db.close()
+
+    # Finally, let's remove the user:
+    with admin_db.transaction() as conn:
+        admin = zerodb.permissions.base.get_admin(conn)
+        admin.del_user('user1')
+
+    # Now, they can't log in at all:
+    for i in '01':
+        with pytest.raises(ZEO.Exceptions.ClientDisconnected):
+            db = zerodb.DB(
+                addr,
+                cert_file=pem_path('cert' + i), key_file=pem_path('key' + i),
+                server_cert=ZEO.tests.testssl.server_cert,
+                password='5ecret', wait_timeout=1)
+
+    admin_db.close()
     stop()

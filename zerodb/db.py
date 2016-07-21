@@ -282,7 +282,8 @@ class DB(object):
 
     def __init__(self, sock, cert_file, key_file, server_cert, password,
                  debug=False, pool_timeout=3600, pool_size=7,
-                 autoreindex=True, **kw):
+                 autoreindex=True, wait_timeout=30,
+                 **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
@@ -319,6 +320,7 @@ class DB(object):
                 "ssl": ssl_context,
                 "cache_size": 2 ** 30,
                 "debug": debug,
+                "wait_timeout": wait_timeout,
             }
 
         self.__db_kwargs = {

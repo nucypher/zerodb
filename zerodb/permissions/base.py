@@ -53,6 +53,7 @@ class User(persistent.Persistent):
         self.name = name
         self.root = root
         self.id = root._p_oid
+        # Today, TCBOO cert, but maybe later
         self.certs = {} # {cert_der -> cert_pem}
 
 class Certs(persistent.Persistent):
@@ -62,6 +63,9 @@ class Certs(persistent.Persistent):
 
     def add(self, pem_data):
         self.data += '\n\n' + pem_data
+
+    def remove(self, pem_data):
+        self.data = self.data.replace('\n\n' + pem_data, '')
 
 class Admin(persistent.Persistent):
 
@@ -82,7 +86,11 @@ class Admin(persistent.Persistent):
         user = User(uname, root)
         self.users[user.id] = user
         self.users_by_name[user.name] = user
+        self._add_user_cert(user, pem_data)
 
+        return user
+
+    def _add_user_cert(self, user, pem_data):
         cert_der = get_der(pem_data)
         if cert_der in self.uids or cert_der in user.certs:
             raise ValueError("SSL certificate id already used",
@@ -91,7 +99,23 @@ class Admin(persistent.Persistent):
         user.certs[cert_der] = pem_data
         self.certs.add(pem_data)
 
-        return user
+    def _del_user_certs(self, user):
+        for der, pem_data in user.certs.items():
+            del self.uids[der]
+            self.certs.remove(pem_data)
+
+    def del_user(self, name):
+        user = self.users_by_name.pop(name)
+        del self.users[user.id]
+        self._del_user_certs(user)
+
+    def change_cert(self, name, pem_data):
+        user = self.users_by_name[name]
+        self._del_user_certs(user)
+        user.certs.clear()
+
+        self._add_user_cert(user, pem_data)
+
 
 def get_admin(conn):
     return conn.get(ONE)
