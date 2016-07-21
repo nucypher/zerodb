@@ -10,6 +10,7 @@ import ZODB
 import ZODB.interfaces
 import zope.interface
 
+from .base import get_admin
 
 class Acceptor(ZEO.asyncio.mtacceptor.Acceptor):
 
@@ -17,10 +18,10 @@ class Acceptor(ZEO.asyncio.mtacceptor.Acceptor):
         super(Acceptor, self).__init__(storage_server, addr, ssl)
         [self.cert_storage_id] = storage_server.storages # TCBOO
         storage = storage_server.storages[self.cert_storage_id]
-        self.cert_db = ZODB.DB(OwnerStorage(storage, z64))
+        self.cert_db = ZODB.DB(storage)
         self.invalidate = self.cert_db._mvcc_storage.invalidate
         with self.cert_db.transaction() as conn:
-            self.certs_oid = conn.root.certs._p_oid
+            self.certs_oid = get_admin(conn).certs._p_oid
 
     @property
     def ssl_context(self):
@@ -113,10 +114,9 @@ class ZEOStorage(ZEO.StorageServer.ZEOStorage):
 
         der = self.connection.transport.get_extra_info(
             'ssl_object').getpeercert(1)
+
         with ZODB.DB(self.storage).transaction() as conn:
-            user = conn.root.users_by_der[der]
-            self.user_id = user.id
-            self.root_oid = user.root._p_oid
+            self.user_id = get_admin(conn).uids[der]
 
         self.storage = OwnerStorage(self.storage, self.user_id)
 
@@ -125,7 +125,7 @@ class ZEOStorage(ZEO.StorageServer.ZEOStorage):
         self.connection.methods = self.registered_methods
 
     def get_root_id(self):
-        return self.root_oid
+        return self.user_id
 
 class StorageServer(ZEO.StorageServer.StorageServer):
 

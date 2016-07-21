@@ -34,7 +34,6 @@ def runner(config, qin, qout, timeout=None,
         server.open_storages()
 
         if init:
-            [storage] = server.storages.values()
             if isinstance(init, str):
                 client_cert = init
             else:
@@ -43,8 +42,8 @@ def runner(config, qin, qout, timeout=None,
             with open(client_cert) as f:
                 pem_data = f.read()
 
-            db = ZODB.DB(subdb.OwnerStorage(storage, z64))
-            base.init_db(db, 'root', pem_data)
+            [storage] = server.storages.values()
+            base.init_db(storage, 'root', pem_data, False)
 
         server.clear_socket()
         server.create_server()

@@ -1,5 +1,10 @@
 """User database management
 
+The concept of"root" is a little tricky, so we try to avoid using it
+for admin purposes.  For this reason, we add an Admin object ro the
+root and assure that it has oid 1, allowing us to navigate to it
+without going through the root.
+
 Database root objects::
 
   users: {userid -> User}
@@ -22,7 +27,7 @@ of all of the user certs.
 import ssl
 
 from BTrees.OOBTree import BTree
-from ZODB.utils import z64
+from ZODB.utils import z64, p64
 import persistent
 import persistent.mapping
 import ZODB
@@ -30,15 +35,22 @@ import ZODB.FileStorage
 
 from . import subdb
 
+ONE = p64(1)
+
+def get_der(pem_data):
+    context = ssl.create_default_context(cadata=pem_data)
+    [cert_der] = context.get_ca_certs(1) # TCBOO
+    return cert_der
+
 class User(persistent.Persistent):
 
-    def __init__(self, username, root):
+    def __init__(self, name, root):
         """
         :param str od: User id
-        :param str username: User name
+        :param str name: User name
         :param PersistentMapping: User's database root
         """
-        self.username = username
+        self.name = name
         self.root = root
         self.id = root._p_oid
         self.certs = {} # {cert_der -> cert_pem}
@@ -51,38 +63,47 @@ class Certs(persistent.Persistent):
     def add(self, pem_data):
         self.data += '\n\n' + pem_data
 
-def get_der(pem_data):
-    context = ssl.create_default_context(cadata=pem_data)
-    [cert_der] = context.get_ca_certs(1) # TCBOO
-    return cert_der
+class Admin(persistent.Persistent):
 
-def add_user(conn, uname, pem_data, user_id=None):
-    root = persistent.mapping.PersistentMapping()
-    conn.add(root)
+    def __init__(self, conn):
+        conn.add(self)
+        assert self._p_oid == ONE
 
-    user = User(uname, root)
-    if user_id:
-        if user_id in conn.root.users:
-            raise ValueError("User id already used", user_id)
-        user.id = user_id # root user is special
+        self.users         = BTree() # {uid -> user}
+        self.users_by_name = BTree() # {uname -> user}
+        self.uids          = BTree() # {cert_der -> uid}
+        self.certs         = Certs() # Cert, persistent wrapper for
+                                     # concatinated cert data
 
-    conn.root.users[user.id] = user
+    def add_user(self, uname, pem_data):
+        root = persistent.mapping.PersistentMapping()
+        self._p_jar.add(root)
 
-    cert_der = get_der(pem_data)
-    if cert_der in conn.root.users_by_der or cert_der in user.certs:
-        raise ValueError("SSL certificate id already used",
-                         pem_data, user.id)
-    conn.root.users_by_der[cert_der] = user
-    user.certs[cert_der] = pem_data
-    conn.root.certs.add(pem_data)
+        user = User(uname, root)
+        self.users[user.id] = user
+        self.users_by_name[user.name] = user
 
-def init_db(db, uname, pem_data):
+        cert_der = get_der(pem_data)
+        if cert_der in self.uids or cert_der in user.certs:
+            raise ValueError("SSL certificate id already used",
+                             pem_data, user.id)
+        self.uids[cert_der] = user.id
+        user.certs[cert_der] = pem_data
+        self.certs.add(pem_data)
+
+        return user
+
+def get_admin(conn):
+    return conn.get(ONE)
+
+def init_db(storage, uname, pem_data, close=True):
+    db = ZODB.DB(subdb.OwnerStorage(storage, p64(2)))
     with db.transaction() as conn:
-        conn.root.users        = BTree()   # {uid -> user}
-        conn.root.users_by_der = BTree()   # {cert_der -> user}
-        conn.root.certs =        Certs()   # {cert_der -> user}
-
-        add_user(conn, uname, pem_data, z64)
+        conn.root.admin = Admin(conn)
+        user = conn.root.admin.add_user(uname, pem_data)
+        assert user.id == db.storage.user_id
+    if close:
+        db.close()
 
 def init_db_script():
     import argparse
@@ -101,10 +122,8 @@ def init_db_script():
     if os.path.exists(path):
         raise ValueError("Path exists", path)
 
-    db = ZODB.DB(subdb.OwnerStorage(ZODB.FileStorage.FileStorage(path), z64))
-
     with open(options.certificate) as f:
         pem_data = f.read()
 
-    init_db(db, options.user, pem_data)
+    init_db(ZODB.FileStorage.FileStorage(path), options.user, pem_data)
     db.close()

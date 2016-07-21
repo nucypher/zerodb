@@ -30,18 +30,19 @@ def test_basic():
     # a regular ZEO client.
     admin_db = ZEO.DB(addr, ssl = ZEO.tests.testssl.client_ssl())
     with admin_db.transaction() as conn:
-        root = conn.root.users[z64]
-        assert len(conn.root.users) == 1
+        admin = zerodb.permissions.base.get_admin(conn)
+        [root] = admin.users.values()
         [root_der] = root.certs
-        assert len(root.certs) == 1
-        assert conn.root.certs.data.strip() == root.certs[root_der].strip()
-        assert conn.root.users_by_der[root_der] is root
-        assert len(conn.root.users_by_der) == 1
+        assert admin.certs.data.strip() == root.certs[root_der].strip()
+        assert admin.uids[root_der] == root.id
+        assert len(admin.uids) == 1
+        assert len(admin.users_by_name) == 1
+        assert admin.users_by_name[root.name] is root
 
         # Let's add a user:
-        zerodb.permissions.base.add_user(conn, 'user1', pem_data('cert0'))
+        admin.add_user('user1', pem_data('cert0'))
 
-        [uid0] = [uid for uid in conn.root.users if uid != z64]
+        [uid0] = [uid for uid in admin.users if uid != root.id]
 
     admin_db.close()
 
@@ -83,9 +84,8 @@ def test_basic():
     # The admin user can no longer access the user's folder:
     admin_db = ZEO.DB(addr, ssl = ZEO.tests.testssl.client_ssl())
     with admin_db.transaction() as conn:
-        admin_db.storage._cache.clear()
-        conn.cacheMinimize()
-        user_root = conn.root.users[uid0].root
+        admin = zerodb.permissions.base.get_admin(conn)
+        user_root = admin.users[uid0].root
         with pytest.raises(ZODB.POSException.StorageError) as exc_info:
             len(user_root)
 
