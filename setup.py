@@ -12,8 +12,8 @@ INSTALL_REQUIRES = [
     'BTrees',
     'zope.component>=4.0.0',
     'zodbpickle',
-    'ZODB>=5.0.0a5',
-    'ZEO>=5.0.0a0',
+    'ZODB>=5.0.0a6',
+    'ZEO>=5.0.0a1',
     'zope.index>=4.0.0',
     'zerodbext.catalog==0.8.4',
     'cachetools',
@@ -53,7 +53,8 @@ zerodb-initdb = zerodb.permissions.base:init_db_script
 def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
     pkg_config = os.environ.get('PKG_CONFIG', 'pkg-config')
     try:
-        p = subprocess.Popen([pkg_config, option, 'libffi'], stdout=subprocess.PIPE)
+        p = subprocess.Popen([pkg_config, option, 'libffi'],
+                             stdout=subprocess.PIPE)
     except OSError as e:
         if e.errno not in [errno.ENOENT, errno.EACCES]:
             raise
@@ -62,7 +63,8 @@ def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
         p.stdout.close()
         if p.wait() == 0:
             res = t.split()
-            res = [x[len(result_prefix):] for x in res if x.startswith(result_prefix)]
+            res = [x[len(result_prefix):] for x in res
+                   if x.startswith(result_prefix)]
             sysroot = sysroot and os.environ.get('PKG_CONFIG_SYSROOT_DIR', '')
             if sysroot:
                 # old versions of pkg-config don't support this env var,
@@ -137,14 +139,8 @@ def have_aesni():
 
 
 def have_sodium_wheel():
-    return (platform.system() == "Darwin") and (platform.mac_ver()[0].startswith("10.10"))
-
-
-if platform.python_implementation() == "PyPy":
-    INSTALL_REQUIRES.append('ZEO>=4.2.0b1')
-else:
-    INSTALL_REQUIRES.append('ZEO>=4.0.0')
-
+    return ((platform.system() == "Darwin") and
+            (platform.mac_ver()[0].startswith("10.10")))
 
 if have_aesni():
     if have_sodium_wheel() or can_build_cffi():
@@ -156,7 +152,8 @@ if have_aesni():
 
     else:
         INSTALL_REQUIRES.append("pycryptodome")
-        log.warn("WARNING: ffi.h not found: aes256gcm-nacl optimization disabled")
+        log.warn(
+            "WARNING: ffi.h not found: aes256gcm-nacl optimization disabled")
 
 else:
     INSTALL_REQUIRES.append("pycryptodome")
@@ -164,7 +161,7 @@ else:
 
 setup(
     name="zerodb",
-    version="0.98.0",
+    version="0.99.0.dev0",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
