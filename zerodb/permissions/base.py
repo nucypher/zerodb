@@ -33,7 +33,7 @@ import persistent.mapping
 import ZODB
 import ZODB.FileStorage
 
-from . import subdb
+from .ownerstorage import OwnerStorage
 
 ONE = p64(1)
 
@@ -121,7 +121,7 @@ def get_admin(conn):
     return conn.get(ONE)
 
 def init_db(storage, uname, pem_data, close=True):
-    db = ZODB.DB(subdb.OwnerStorage(storage, p64(2)))
+    db = ZODB.DB(OwnerStorage(storage, p64(2)))
     with db.transaction() as conn:
         conn.root.admin = Admin(conn)
         user = conn.root.admin.add_user(uname, pem_data)
@@ -150,4 +150,3 @@ def init_db_script():
         pem_data = f.read()
 
     init_db(ZODB.FileStorage.FileStorage(path), options.user, pem_data)
-    db.close()
