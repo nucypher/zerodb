@@ -1,6 +1,8 @@
 from OpenSSL import crypto
 from zerodb.crypto import cert
+import ZEO.tests.testssl
 import ecdsa
+import pytest
 
 sample_key = b'x' * 32
 
@@ -26,3 +28,12 @@ def test_pkey_to_cert():
     pub0 = ecdsa.SigningKey.from_string(
             sample_key, ecdsa.curves.NIST256p).get_verifying_key()
     assert pub.to_string() == pub0.to_string()
+
+
+def test_ssl_context():
+    ctx = cert.ssl_context_from_key(sample_key, ZEO.tests.testssl.client_cert)
+    assert ctx is not None
+
+    bad_key = b'f' * 3
+    with pytest.raises(AssertionError):
+        cert.ssl_context_from_key(bad_key, ZEO.tests.testssl.client_cert)

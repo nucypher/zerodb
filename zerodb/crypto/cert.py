@@ -2,6 +2,9 @@
 from OpenSSL import crypto
 import ecdsa
 import hashlib
+import os
+import ssl
+import tempfile
 
 DEFAULT_CURVE = "NIST256p"
 
@@ -30,3 +33,25 @@ def pkey2cert(key, curve=DEFAULT_CURVE, CN="zerodb.com"):
     pub_pem = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
     return priv_pem, pub_pem
+
+
+def ssl_context_from_key(key, server_cert):
+    ssl_context = ssl.create_default_context(cafile=server_cert)
+
+    priv_pem, pub_pem = pkey2cert(key)
+    f_priv = tempfile.NamedTemporaryFile(delete=False)
+    f_priv.write(priv_pem)
+    f_priv.close()
+    f_pub = tempfile.NamedTemporaryFile(delete=False)
+    f_pub.write(pub_pem)
+    f_pub.close()
+
+    try:
+        ssl_context.load_cert_chain(f_pub.name, f_priv.name)
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+    finally:
+        os.remove(f_priv.name)
+        os.remove(f_pub.name)
+
+    return ssl_context
