@@ -15,47 +15,54 @@ Overview
 ========
 ZeroDB is an end-to-end encrypted database. It is based on
 `ZODB <http://en.wikipedia.org/wiki/Zope_Object_Database>`_ and written in
-`Python <https://www.python.org/>`_.
+`Python <https://www.python.org/>`_ (with some compiled C extensions).
 
 In ZeroDB, the client is responsible for the database logic. Data encryption,
 decryption, and compression also happen client side. Therefore, the server
 never has any knowledge about the data, its structure, or its order.
 
-Clients also have an adjustable cache which stores the most used parts of data
+Clients also have an adjustable cache which stores the most-used parts of data
 structures and greatly speeds up queries even when its size is small (e.g. 1
 megabyte).
 
-From a developer's perspective, ZeroDB's design is greatly inspired by the `Django
-<https://djangoproject.com>`_ ORM and `SQLAlchemy
-<http://www.sqlalchemy.org/>`_.
+From a developer's perspective, ZeroDB's design is greatly inspired by the
+`Django <https://djangoproject.com>`_ ORM and 
+`SQLAlchemy <http://www.sqlalchemy.org/>`_.
 
 Installation
 ============
+
 We supply ZeroDB as a Python Package ``zerodb-0.97``, installable via ``pip``.
+
+There may also be some system dependencies; on Debian, this will get the
+required packages::
+
+    $ sudo apt-get install python-pip python-dev libssl-dev libzmq-dev libffi-dev git python-virtualenv
 
 To run the server and test scripts, clone the ``zerodb-server`` repository,
 navigate to the resulting directory and (optionally) create a virtual environment::
 
-    virtualenv .demo
+    $ virtualenv .demo
 
-This creates a fresh virtual environment in the directory ``.demo``, which you can
-activate using::
+This creates a fresh virtual environment in the directory ``.demo``,
+which you can activate using::
 
-    source .demo/bin/activate
+    $ source .demo/bin/activate
 
 Navigate to the ``demo`` directory and install the necessary packages::
 
-    pip install -r requirements.txt
+    $ pip install -r requirements.txt
 
 
 Starting the ZeroDB server and creating users
 =============================================
-In the ``zerodbext/server`` directory, we supply Python scripts to run a server and
-manage users.
 
-    | api.py
-    | manage.py
-    | run.py
+In the ``zerodbext/server`` directory, we supply Python scripts to run a
+server and manage users::
+
+    api.py
+    manage.py
+    run.py
 
 Initializing and Running the ZeroDB server
 ------------------------------------------
@@ -68,11 +75,15 @@ When you ran ``pip install`` previously, the following console scripts were crea
 
 These map to the files in the ``zerodbext/server`` directory.
 
-So, to initialize a database, just run ``zerodb-manage init_db``.
+So, to initialize a database, just run::
+    
+    $ zerodb-manage init_db
+
 Enter your username (``root`` by default) and passphrase.
 
 This will create the appropriate database file structure and config file
-``authdb.conf`` located in the ``demo/conf`` directory. The default administrator
+``authdb.conf`` located in the ``demo/conf`` directory.
+The default administrator
 user can create and remove other users or change their public keys.
 However, it doesn't know any other user's private keys.
 
@@ -99,7 +110,7 @@ Instead of being stored in config files, users are normally stored in a
 database. In order to manage these users start the zerodb server and open the
 admin console::
 
-    zerodb-manage console
+    $ zerodb-manage console
 
 This will launch an ipython terminal where you can manage users::
 
@@ -110,7 +121,8 @@ This will launch an ipython terminal where you can manage users::
 The users you create this way are not administrators and they cannot
 manage other users.
 
-Press ``Ctrl+D`` to exit the ipython terminal when you're done.
+.. note:: Press ``Ctrl+D`` to exit the ipython terminal when you're done. (The
+   following example code may not work in the admin console.)
 
 
 Using ZeroDB in Python
@@ -125,18 +137,19 @@ Let's start by writing a data model in ``demo/models.py`` first:
 
 .. literalinclude:: ../../../zerodb-server/demo/models.py
 
-Let's assume the database server we started before is still running. The simplest example
+Let's assume the database server we started before is still running.
+The simplest example
 which creates records for us would look like this::
 
-    import transaction
-    import zerodb
-    import models
+    >>> import transaction
+    >>> import zerodb
+    >>> import models
 
-    db = zerodb.DB(("localhost", 8001), username="root", password="<your passphrase>")
-    e = models.Employee(name="John", surname="Smith", salary=150000,
-                        description="Coding power")
-    db.add(e)
-    transaction.commit()
+    >>> db = zerodb.DB(("localhost", 8001), username="root", password="<your passphrase>")
+    >>> e = models.Employee(name="John", surname="Smith", salary=150000,
+    ...                     description="Coding power")
+    >>> db.add(e)
+    >>> transaction.commit()
 
 Now, let's do something more advanced and populate the database with random
 data using the script ``create.py``:
@@ -145,8 +158,8 @@ data using the script ``create.py``:
 
 Let's play with that data in the Python terminal (or you can write your own
 script). We'll need to import ``zerodb`` and query operators from
-``zerodb.query`` (same syntax as in `repoze
-<http://docs.repoze.org/catalog/usage.html#comparators>`_)::
+``zerodb.query`` (same syntax as in 
+`repoze <http://docs.repoze.org/catalog/usage.html#comparators>`_)::
 
     >>> import zerodb
     >>> from zerodb.query import *
@@ -160,7 +173,7 @@ Let's connect to the database now::
     >>> PASSWORD = "very insecure passphrase - never use it"
     >>> db = zerodb.DB(("localhost", 8001), username="root", password=PASSWORD)
 
-Number of Employees in the database can be determined by just ``len``::
+The number of Employees in the database can be determined by just ``len``::
 
     >>> len(db[Employee])
     10001
@@ -249,7 +262,8 @@ NotInRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
 
 JSON API
 ======================
-To start the api server, make sure you’ve activated the virtual environment and the ZeroDB server is running.
+
+To start the API server, make sure you’ve activated the virtual environment and the ZeroDB server is running.
 Navigate to the `api_server` directory, and run `python api_server.py`.
 
 Query examples (similar to http://docs.mongodb.org/manual/reference/operator/query/)::
