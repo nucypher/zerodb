@@ -20,6 +20,8 @@ from zope import component
 
 from zerodb import models
 from zerodb.catalog.query import And, Eq
+from zerodb.crypto import elliptic
+from zerodb.crypto import cert
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
@@ -27,6 +29,8 @@ from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
 from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
 from zerodb.transform import init_crypto
+
+kdf = elliptic.kdf
 
 
 class AutoReindexQueueProcessor(PortalCatalogProcessor):
@@ -280,7 +284,8 @@ class DB(object):
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, cert_file, key_file, server_cert, password,
+    def __init__(self, sock, username, password,
+                 cert_file=None, key_file=None, server_cert=None,
                  debug=False, pool_timeout=3600, pool_size=7,
                  autoreindex=True, wait_timeout=30,
                  **kw):
@@ -293,10 +298,18 @@ class DB(object):
         :param bool debug: Whether to log debug messages
         """
 
-        ssl_context = ssl.create_default_context(cafile=server_cert)
-        ssl_context.load_cert_chain(cert_file, key_file)
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        salt = username + "|ZERO"
+        aes_key = kdf(password, salt)
+
+        if cert_file and key_file:
+            ssl_context = ssl.create_default_context(cafile=server_cert)
+            ssl_context.load_cert_chain(cert_file, key_file)
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+        elif username and password:
+            ssl_key = sha256(aes_key).digest()
+            ssl_context = cert.ssl_context_from_key(ssl_key, server_cert)
 
         if isinstance(sock, six.string_types):
             sock = str(sock)
@@ -312,7 +325,7 @@ class DB(object):
             IIndexQueueProcessor,
             'zerodb-indexer')
 
-        self._init_default_crypto(passphrase=password)
+        self._init_default_crypto(passphrase=aes_key)
 
         # Store all the arguments necessary for login in this instance
         self.__storage_kwargs = {
