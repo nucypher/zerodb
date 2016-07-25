@@ -53,7 +53,7 @@ def test_basic():
     db = zerodb.DB(addr,
                    cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   password='5ecret')
+                   username='user1', password='5ecret')
 
     # we can access the root object.
     assert db._root._p_oid == uid0
@@ -75,7 +75,7 @@ def test_basic():
     db = zerodb.DB(addr,
                    cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   password='5ecret')
+                   username='user1', password='5ecret')
 
     assert db._root._p_oid == uid0
     assert len(db._root) == 2
@@ -115,13 +115,13 @@ def test_basic():
         db = zerodb.DB(addr,
                        cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                        server_cert=ZEO.tests.testssl.server_cert,
-                       password='5ecret', wait_timeout=1)
+                       username='user1', password='5ecret', wait_timeout=1)
 
     # But login with the new one will work:
     db = zerodb.DB(addr,
                    cert_file=pem_path('cert1'), key_file=pem_path('key1'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   password='5ecret', wait_timeout=1)
+                   username='user1', password='5ecret', wait_timeout=1)
     assert len(db._root) == 2
     db._db.close()
 
@@ -137,7 +137,7 @@ def test_basic():
                 addr,
                 cert_file=pem_path('cert' + i), key_file=pem_path('key' + i),
                 server_cert=ZEO.tests.testssl.server_cert,
-                password='5ecret', wait_timeout=1)
+                username='user1', password='5ecret', wait_timeout=1)
 
     admin_db.close()
     stop()

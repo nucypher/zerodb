@@ -27,7 +27,8 @@ INSTALL_REQUIRES = [
     'zope.event>=4.0.0',
     'zope.lifecycleevent>=4.0.0',
     'six>=1.7.0',
-    'scrypt'
+    'scrypt',
+    'PyOpenSSL'
 ]
 
 TESTS_REQUIRE = [
