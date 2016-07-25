@@ -127,7 +127,7 @@ class ZEOServer(ZEO.runzeo.ZEOServer):
     @classmethod
     def run(cls, args=None):
         options = ZeroDBOptions()
-        options.realize(args=args)
+        options.realize(args)
 
         for o_storage in options.storages:
             if o_storage.config.pack_gc:
