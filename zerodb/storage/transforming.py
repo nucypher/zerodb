@@ -36,7 +36,7 @@ class TransformingStorage(ZlibStorage):
         self._transform_named = lambda data: encrypt(compress(data), no_cipher_name=False)
         self._untransform = lambda data: decompress(decrypt(data))
 
-        self._root_oid = None
+        self._root_oid = base.get_root_id()
 
     def loadBefore(self, oid, tid):
         """Load last state for a given oid before a given tid
