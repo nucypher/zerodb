@@ -28,13 +28,17 @@ import ssl
 
 from BTrees.OOBTree import BTree
 from ZODB.utils import z64, p64
+import hashlib
 import persistent
 import persistent.mapping
 import ZODB
 import ZODB.FileStorage
 
+from zerodb.crypto import elliptic
+from zerodb.crypto import cert
 from .ownerstorage import OwnerStorage
 
+kdf = elliptic.kdf  # TODO This should be configurable
 ONE = p64(1)
 
 def get_der(pem_data):
@@ -79,14 +83,20 @@ class Admin(persistent.Persistent):
         self.certs         = Certs() # Cert, persistent wrapper for
                                      # concatinated cert data
 
-    def add_user(self, uname, pem_data):
+    def add_user(self, uname, password=None, pem_data=None):
         root = persistent.mapping.PersistentMapping()
         self._p_jar.add(root)
 
         user = User(uname, root)
         self.users[user.id] = user
         self.users_by_name[user.name] = user
-        self._add_user_cert(user, pem_data)
+
+        if pem_data:
+            self._add_user_cert(user, pem_data)
+        elif password:
+            self._add_user_password(user, password)
+        else:
+            raise AttributeError("You should specify pem_data or password")
 
         return user
 
@@ -98,6 +108,13 @@ class Admin(persistent.Persistent):
         self.uids[cert_der] = user.id
         user.certs[cert_der] = pem_data
         self.certs.add(pem_data)
+
+    def _add_user_password(self, user, password):
+        salt = user.name + "|ZERO"
+        aes_key = kdf(password, salt)
+        ssl_key = hashlib.sha256(aes_key).digest()
+        _, pub_pem = cert.pkey2cert(ssl_key)
+        self._add_user_cert(user, pub_pem)
 
     def _del_user_certs(self, user):
         for der, pem_data in user.certs.items():
@@ -115,6 +132,13 @@ class Admin(persistent.Persistent):
         user.certs.clear()
 
         self._add_user_cert(user, pem_data)
+
+    def change_password(self, name, password):
+        user = self.users_by_name[name]
+        self._del_user_certs(user)
+        user.certs.clear()
+
+        self._add_user_password(user, password)
 
 
 def get_admin(conn):

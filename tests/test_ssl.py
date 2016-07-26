@@ -15,6 +15,11 @@ import zerodb
 import zerodb.forker
 import zerodb.permissions.base
 
+##
+import logging
+logging.basicConfig(level=logging.DEBUG)
+##
+
 here = os.path.dirname(__file__)
 pem_path = lambda name: os.path.join(here, name + '.pem')
 def pem_data(name):
@@ -43,7 +48,8 @@ def test_basic():
         assert admin.users_by_name[root.name] is root
 
         # Let's add a user:
-        admin.add_user('user1', pem_data('cert0'))
+        admin.add_user('user1', pem_data=pem_data('cert0'))
+        admin.add_user('user2', password='much secret wow')
 
         [uid0] = [uid for uid in admin.users if uid != root.id]
 
@@ -140,4 +146,11 @@ def test_basic():
                 username='user1', password='5ecret', wait_timeout=1)
 
     admin_db.close()
+
+    # Authentification by password
+    raise
+    db = zerodb.DB(addr, username='user2', password='much secret wow',
+                   server_cert=ZEO.tests.testssl.server_cert, wait_timeout=1)
+    db._db.close()
+
     stop()

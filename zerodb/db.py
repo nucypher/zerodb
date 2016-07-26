@@ -325,7 +325,7 @@ class DB(object):
             IIndexQueueProcessor,
             'zerodb-indexer')
 
-        self._init_default_crypto(passphrase=aes_key)
+        self._init_default_crypto(key=aes_key)
 
         # Store all the arguments necessary for login in this instance
         self.__storage_kwargs = {

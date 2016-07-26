@@ -14,7 +14,7 @@ def test_pkey_to_cert():
     assert len(priv_pem) > 0
     assert len(cert_pem) > 0
 
-    cert_ssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem.decode())
+    cert_ssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem)
     pub_ssl = cert_ssl.get_pubkey()
 
     # Certificate has only EC public key

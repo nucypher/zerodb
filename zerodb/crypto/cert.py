@@ -29,8 +29,8 @@ def pkey2cert(key, curve=DEFAULT_CURVE, CN="zerodb.com"):
     cert.set_pubkey(k)
     cert.sign(k, 'sha256')
 
-    priv_pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
-    pub_pem = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+    priv_pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, k).decode()
+    pub_pem = crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode()
 
     return priv_pem, pub_pem
 
@@ -40,10 +40,10 @@ def ssl_context_from_key(key, server_cert):
 
     priv_pem, pub_pem = pkey2cert(key)
     f_priv = tempfile.NamedTemporaryFile(delete=False)
-    f_priv.write(priv_pem)
+    f_priv.write(priv_pem.encode())
     f_priv.close()
     f_pub = tempfile.NamedTemporaryFile(delete=False)
-    f_pub.write(pub_pem)
+    f_pub.write(pub_pem.encode())
     f_pub.close()
 
     try:
