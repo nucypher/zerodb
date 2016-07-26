@@ -96,7 +96,11 @@ def start_server(storage_conf=None, zeo_conf=None, port=None, keep=False,
     """
 
     if not storage_conf:
-        storage_conf = '<filestorage>\npath %s\n</filestorage>' % path
+        storage_conf = '''
+        <filestorage>
+          path %s
+          pack-gc false
+        </filestorage>''' % path
 
     if blob_dir:
         storage_conf = '<blobstorage>\nblob-dir %s\n%s\n</blobstorage>' % (
