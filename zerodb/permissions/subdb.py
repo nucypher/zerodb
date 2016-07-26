@@ -70,7 +70,7 @@ class StorageServer(ZEO.StorageServer.StorageServer):
             invq.insert(0, (tid, invalidated))
 
         for zs in self.zeo_storages_by_storage_id[storage_id]:
-            if zs.user_id == conn.user_id:
+            if conn and zs.user_id == conn.user_id:
                 connection = zs.connection
                 if invalidated and zs is not conn:
                     # zs.client.invalidateTransaction(tid, invalidated)
