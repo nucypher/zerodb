@@ -5,13 +5,15 @@ To activate the fixtures, add this to your conftest.py:
 
 from zerodb.testing import *
 """
-
+import os
 import pytest
 import shutil
 import tempfile
 from time import sleep
 from multiprocessing import Process
 from os import path
+
+import ZEO.tests.testssl
 
 import zerodb
 from zerodb.crypto import ecc, elliptic
@@ -45,6 +47,7 @@ __all__ = [
     "TEST_PASSPHRASE",
     "TEST_PUBKEY",
     "tempdir",
+    "do_zeo_server",
     "db",
 ]
 
@@ -64,11 +67,23 @@ def pass_file(request, tempdir):
     return filename
 
 @pytest.fixture(scope="module")
-def db(request, zeo_server):
-    zdb = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+def db(request, zeo_server, dbclass=zerodb.DB):
+    zdb = dbclass(zeo_server,
+                  cert_file=ZEO.tests.testssl.client_cert,
+                  key_file=ZEO.tests.testssl.client_key,
+                  server_cert=ZEO.tests.testssl.server_cert,
+                  username='root', password=TEST_PASSPHRASE, debug=True,
+                  wait_timeout=11)
 
-    @request.addfinalizer
-    def fin():
-        zdb.disconnect()  # I suppose, it's not really required
+    if request is not None:
+        @request.addfinalizer
+        def fin():
+            zdb.disconnect()  # I suppose, it's not really required
 
     return zdb
+
+def do_zeo_server(request, tempdir, name=None, fsname='db.fs'):
+    sock, stop = zerodb.server(name=name, path=os.path.join(tempdir, fsname))
+    request.addfinalizer(stop)
+    return sock
+

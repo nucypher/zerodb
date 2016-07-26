@@ -7,7 +7,8 @@ import zerodb
 import zerodb.db
 from zerodb.models import fields
 from zerodb.models.exceptions import ModelException
-from zerodb.testing import TEST_PASSPHRASE
+import zerodb.testing
+
 
 
 class ExampleModel(models.Model):
@@ -54,7 +55,7 @@ def test_model():
 
 
 def test_db(zeo_server):
-    db = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+    db = zerodb.testing.db(None, zeo_server)
     assert len(db._models) == 0
     assert isinstance(db[ExampleModel], zerodb.db.DbModel)
     assert len(db._models) == 1
@@ -63,7 +64,7 @@ def test_db(zeo_server):
 
 
 def test_dbmodel(zeo_server):
-    db = zerodb.DB(zeo_server, username="root", password=TEST_PASSPHRASE, debug=True)
+    db = zerodb.testing.db(None, zeo_server)
     assert db[ExampleModel]._model == ExampleModel
     assert db[ExampleModel]._db == db
     assert db[ExampleModel]._catalog_name == "catalog__examplemodel"
