@@ -1,10 +1,15 @@
 from zc.zlibstorage import ZlibStorage
+from ZODB.utils import maxtid
 import logging
+import zope.component
 import zope.interface
 from zerodb.transform import encrypt, decrypt, compress, decompress
+from zerodb.transform import get_encryption_signature
 from zerodb.util import encode_hex
 from zerodb.util.debug import debug_loads
+import zerodb.transform.interfaces
 
+_gsm = zope.component.getGlobalSiteManager()
 
 class TransformingStorage(ZlibStorage):
     """
@@ -37,6 +42,17 @@ class TransformingStorage(ZlibStorage):
         self._untransform = lambda data: decompress(decrypt(data))
 
         self._root_oid = base.get_root_id()
+
+        # configure default encrytion based on root encryption:
+        data = base.loadBefore(self._root_oid, maxtid)[0]
+        sig = get_encryption_signature(data)
+        if sig:
+            _gsm.registerUtility(
+                _gsm.getUtility(
+                    zerodb.transform.interfaces.IEncrypter,
+                    sig.decode(),
+                    )
+                )
 
     def loadBefore(self, oid, tid):
         """Load last state for a given oid before a given tid
