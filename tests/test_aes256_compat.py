@@ -1,7 +1,7 @@
 import pytest
 import zerodb
 from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
-from zerodb.testing import TEST_PASSPHRASE, do_zeo_server
+from zerodb.testing import do_zeo_server, db
 from db import Page, create_objects_and_close
 
 
@@ -10,9 +10,9 @@ class DBAESv0(zerodb.DB):
 
 
 @pytest.fixture(scope="module")
-def zeo_server_aes_v0(request, pass_file, tempdir):
+def zeo_server_aes_v0(request, tempdir):
     # Use old pycryptodome encryption
-    sock = do_zeo_server(request, pass_file, tempdir)
+    sock = do_zeo_server(request, tempdir)
     create_objects_and_close(sock, dbclass=DBAESv0)
     return sock
 
@@ -20,14 +20,8 @@ def zeo_server_aes_v0(request, pass_file, tempdir):
 @pytest.fixture(scope="module")
 def db_aes_v0(request, zeo_server_aes_v0):
     # Use new zerodb.DB class here
-    zdb = zerodb.DB(zeo_server_aes_v0, username="root", password=TEST_PASSPHRASE, debug=True)
-
-    @request.addfinalizer
-    def fin():
-        zdb.disconnect()
-
+    zdb = db(request, zeo_server_aes_v0)
     return zdb
-
 
 def test_compat(db_aes_v0):
     # Test whether we can still read the DB

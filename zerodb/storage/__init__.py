@@ -32,14 +32,15 @@ def client_storage(sock, *args, **kw):
     TransformingStorage = kw.pop(
         'transforming_storage', transforming.TransformingStorage)
     debug = kw.pop("debug", False)
-    return TransformingStorage(ClientStorage(sock, *args, **kw))
+    return TransformingStorage(ClientStorage(sock, *args, **kw),
+                               debug=debug)
 
 
 def prefetch(objs):
     """
     Bulk-fetch ZODB objects
     """
-    objs = [o for o in objs if hasattr(o, "_p_oid")]
+    objs = [o for o in objs if getattr(o, "_p_oid", None)]
     if objs and objs[0]._p_jar:
         objs[0]._p_jar.prefetch(objs)
 
@@ -107,7 +108,7 @@ def parallel_traversal(trees, keys):
     else:
         to_fetch = list(set(
             t for t in trees
-            if isinstance(t, Persistent) and hasattr(t, "_p_oid")
+            if isinstance(t, Persistent) and getattr(t, "_p_oid", None)
             ))
 
     prefetch(to_fetch)

@@ -2,6 +2,7 @@
 
 import random
 import transaction
+import ZEO.tests.testssl
 
 from os.path import abspath, join, dirname
 from zerodb.models import Model
@@ -11,6 +12,7 @@ import zerodb
 import wiki
 
 from zerodb.testing import TEST_PASSPHRASE
+import zerodb.testing
 
 
 class Page(Model):
@@ -50,8 +52,14 @@ class Salary(Model):
     department_id = fields.Field(virtual=lambda o: o.department._p_uid)  # Department ID
 
 
-def create_objects_and_close(sock, count=200, dbclass=zerodb.DB):
-    db = dbclass(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+def create_objects_and_close(addr, count=200, dbclass=zerodb.DB):
+    db = dbclass(addr,
+                 cert_file=ZEO.tests.testssl.client_cert,
+                 key_file=ZEO.tests.testssl.client_key,
+                 server_cert=ZEO.tests.testssl.server_cert,
+                 username='root', password=TEST_PASSPHRASE, debug=True,
+                 wait_timeout=1)
+
     with transaction.manager:
         # Initialize departments
         departments = [Department(name="Mobile"), Department(name="Web"), Department(name="Tools"),
@@ -87,7 +95,7 @@ class WikiPage(Model):
 
 
 def add_wiki_and_close(sock, count=200, dbclass=zerodb.DB):
-    db = dbclass(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+    db = zerodb.testing.db(None, sock, dbclass=dbclass)
     with transaction.manager:
         for doc in wiki.read_docs(join(dirname(abspath(__file__)), "wiki_sample")):
             p = WikiPage(**doc)
