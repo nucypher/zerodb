@@ -14,7 +14,7 @@ def pkey2cert(key, curve=DEFAULT_CURVE, CN="zerodb.com"):
     if not isinstance(key, bytes):
         key = key.encode()
     serial = int.from_bytes(
-            hashlib.sha1(key).digest()[:8], byteorder="little")
+            hashlib.sha256(key).digest()[:8], byteorder="little")
 
     ecdsa_key = ecdsa.SigningKey.from_string(key, curve)
     k = crypto.load_privatekey(crypto.FILETYPE_PEM, ecdsa_key.to_pem())
@@ -39,6 +39,7 @@ def ssl_context_from_key(key, server_cert):
     ssl_context = ssl.create_default_context(cafile=server_cert)
 
     priv_pem, pub_pem = pkey2cert(key)
+
     f_priv = tempfile.NamedTemporaryFile(delete=False)
     f_priv.write(priv_pem.encode())
     f_priv.close()

@@ -147,11 +147,11 @@ def test_basic():
                 server_cert=ZEO.tests.testssl.server_cert,
                 username='user1', password='5ecret', wait_timeout=1)
 
-    admin_db.close()
-
     # Authentification by password
     db = zerodb.DB(addr, username='user2', password='much secret wow',
-                   server_cert=ZEO.tests.testssl.server_cert, wait_timeout=1)
+                   server_cert=ZEO.tests.testssl.server_cert, wait_timeout=3)
     db._db.close()
+
+    admin_db.close()
 
     stop()

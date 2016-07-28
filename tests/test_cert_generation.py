@@ -30,6 +30,14 @@ def test_pkey_to_cert():
     assert pub.to_string() == pub0.to_string()
 
 
+def test_cert_stability():
+    priv_pem0, cert_pem0 = cert.pkey2cert(sample_key)
+    priv_pem1, cert_pem1 = cert.pkey2cert(sample_key)
+
+    assert priv_pem0 == priv_pem1
+    assert cert_pem0 == cert_pem1
+
+
 def test_ssl_context():
     ctx = cert.ssl_context_from_key(sample_key, ZEO.tests.testssl.client_cert)
     assert ctx is not None
