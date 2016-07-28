@@ -34,16 +34,24 @@ def runner(config, qin, qout, timeout=None,
         server.open_storages()
 
         if init:
+            password=None
             if isinstance(init, str):
                 client_cert = init
+            elif isinstance(init, dict):
+                client_cert = init.get('cert')
+                password = init.get('password')
             else:
+                assert init is True
                 client_cert = ZEO.tests.testssl.client_cert
 
-            with open(client_cert) as f:
-                pem_data = f.read()
+            if client_cert:
+                with open(client_cert) as f:
+                    pem_data = f.read()
+            else:
+                pem_data = None
 
             [storage] = server.storages.values()
-            base.init_db(storage, 'root', pem_data, False)
+            base.init_db(storage, 'root', pem_data, False, password=password)
 
         server.clear_socket()
         server.create_server()

@@ -2,6 +2,7 @@ import mock
 import ssl
 
 import ZEO.asyncio.mtacceptor
+import ZEO.Exceptions
 import ZEO.runzeo
 import ZEO.StorageServer
 import ZODB
@@ -39,16 +40,30 @@ class ZEOStorage(ZEO.StorageServer.ZEOStorage):
     registered_methods = frozenset(
         ZEO.StorageServer.registered_methods | set(['get_root_id']))
 
-    def register(self, storage_id, read_only):
+    def register(self, storage_id, read_only, credentials=None):
         super(ZEOStorage, self).register(storage_id, read_only)
 
         der = self.connection.transport.get_extra_info(
             'ssl_object').getpeercert(1)
 
         with ZODB.DB(self.storage).transaction() as conn:
-            self.user_id = get_admin(conn).uids[der]
+            admin = get_admin(conn)
+            self.user_id = admin.uids[der]
+            if self.user_id is None:
+                # Nobody cert.
+                if not credentials:
+                    raise ZEO.Exceptions.AuthError()
+
+            if credentials:
+                user = admin.users_by_name[credentials['name']]
+                if ((user.id != self.user_id and self.user_id is not None) or
+                    not user.check_password(credentials['password'])
+                    ):
+                    raise ZEO.Exceptions.AuthError()
 
         self.storage = OwnerStorage(self.storage, self.user_id)
+
+    def check_credentials(self, credentials)
 
     def setup_delegation(self):
         super(ZEOStorage, self).setup_delegation()

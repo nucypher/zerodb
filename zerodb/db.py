@@ -284,7 +284,7 @@ class DB(object):
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, username, password,
+    def __init__(self, sock, username, key, password=None,
                  cert_file=None, key_file=None, server_cert=None,
                  debug=False, pool_timeout=3600, pool_size=7,
                  autoreindex=True, wait_timeout=30,
@@ -293,23 +293,25 @@ class DB(object):
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
         :param str username: Username. Derived from password if not set
-        :param str password: Password or seed for private key
+        :param str key: Password or seed for private key
         :param str realm: ZODB's realm
         :param bool debug: Whether to log debug messages
         """
 
         salt = username + "|ZERO"
-        aes_key = kdf(password, salt)
+        aes_key = kdf(key, salt)
 
-        if cert_file and key_file:
-            ssl_context = ssl.create_default_context(cafile=server_cert)
-            ssl_context.load_cert_chain(cert_file, key_file)
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
+        if cert_file or key_file and not (cert_file and key_file):
+            raise TypeError("If you specify a cert file or a key file,"
+                            " you must specify both.")
 
-        elif username and password:
-            ssl_key = sha256(aes_key).digest()
-            ssl_context = cert.ssl_context_from_key(ssl_key, server_cert)
+        ssl_context = make_ssl(cert_file, key_file, server_cert)
+
+        if password:
+            credentials = dict(name=username, password=password)
+        else:
+            credentials = None
+
 
         if isinstance(sock, six.string_types):
             sock = str(sock)
@@ -334,6 +336,7 @@ class DB(object):
                 "cache_size": 2 ** 30,
                 "debug": debug,
                 "wait_timeout": wait_timeout,
+                "credentials": credentials,
             }
 
         self.__db_kwargs = {
@@ -496,3 +499,13 @@ class DB(object):
         if enabled:
             subscribers.init()
         self._reindex_queue_processor.enabled = enabled
+
+def make_ssl(cert_file=None, key_file=None, server_cert=None):
+    ssl_context = ssl.create_default_context(cafile=server_cert)
+    here = os.path.dirname(__file__)
+    ssl_context.load_cert_chain(
+        cert_file or os.path.join(here, 'permissions/nobody.pem'),
+        key_file or os.path.join(here, 'permissions/nobody-key.pem'),
+        )
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_REQUIRED
