@@ -148,7 +148,7 @@ def init_db(storage, uname, pem_data, close=True):
     db = ZODB.DB(OwnerStorage(storage, p64(2)))
     with db.transaction() as conn:
         conn.root.admin = Admin(conn)
-        user = conn.root.admin.add_user(uname, pem_data)
+        user = conn.root.admin.add_user(uname, pem_data=pem_data)
         assert user.id == db.storage.user_id
     if close:
         db.close()

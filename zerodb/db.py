@@ -350,7 +350,7 @@ class DB(object):
         self._models = {}
 
     @classmethod
-    def _init_default_crypto(self, passphrase=None):
+    def _init_default_crypto(self, passphrase=None, key=None):
         encrypters = self.encrypter
         if not isinstance(encrypters, (list, tuple)):
             encrypters = [self.encrypter]
@@ -364,7 +364,7 @@ class DB(object):
         if self.compressor:
             self.compressor.register(default=True)
 
-        init_crypto(passphrase=passphrase)
+        init_crypto(passphrase=passphrase, key=key)
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""

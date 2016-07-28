@@ -51,7 +51,9 @@ def test_basic():
         admin.add_user('user1', pem_data=pem_data('cert0'))
         admin.add_user('user2', password='much secret wow')
 
-        [uid0] = [uid for uid in admin.users if uid != root.id]
+        assert len([uid for uid in admin.users if uid != root.id]) == 2
+        [uid0] = [uid for uid, user in admin.users.items()
+                  if user.name == 'user1']
 
     admin_db.close()
 
@@ -148,7 +150,6 @@ def test_basic():
     admin_db.close()
 
     # Authentification by password
-    raise
     db = zerodb.DB(addr, username='user2', password='much secret wow',
                    server_cert=ZEO.tests.testssl.server_cert, wait_timeout=1)
     db._db.close()
