@@ -98,7 +98,7 @@ class Admin(persistent.Persistent):
             nobody_pem = f.read()
 
         self.certs.add(nobody_pem)
-        self.uids[get_der(nobody_pem)]
+        self.uids[get_der(nobody_pem)] = None
 
     def add_user(self, uname, pem_data=None, password=None):
         root = persistent.mapping.PersistentMapping()

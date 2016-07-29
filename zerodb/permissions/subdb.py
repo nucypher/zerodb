@@ -55,6 +55,7 @@ class ZEOStorage(ZEO.StorageServer.ZEOStorage):
                     raise ZEO.Exceptions.AuthError()
 
             if credentials:
+                import pdb; pdb.set_trace()
                 user = admin.users_by_name[credentials['name']]
                 if ((user.id != self.user_id and self.user_id is not None) or
                     not user.check_password(credentials['password'])
@@ -62,8 +63,6 @@ class ZEOStorage(ZEO.StorageServer.ZEOStorage):
                     raise ZEO.Exceptions.AuthError()
 
         self.storage = OwnerStorage(self.storage, self.user_id)
-
-    def check_credentials(self, credentials)
 
     def setup_delegation(self):
         super(ZEOStorage, self).setup_delegation()

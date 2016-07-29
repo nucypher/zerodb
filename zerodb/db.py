@@ -301,7 +301,7 @@ class DB(object):
         salt = username + "|ZERO"
         aes_key = kdf(key, salt)
 
-        if cert_file or key_file and not (cert_file and key_file):
+        if (cert_file or key_file) and not (cert_file and key_file):
             raise TypeError("If you specify a cert file or a key file,"
                             " you must specify both.")
 
@@ -501,11 +501,13 @@ class DB(object):
         self._reindex_queue_processor.enabled = enabled
 
 def make_ssl(cert_file=None, key_file=None, server_cert=None):
-    ssl_context = ssl.create_default_context(cafile=server_cert)
+    ssl_context = ssl.create_default_context(
+        ssl.Purpose.CLIENT_AUTH, cafile=server_cert)
     here = os.path.dirname(__file__)
     ssl_context.load_cert_chain(
-        cert_file or os.path.join(here, 'permissions/nobody.pem'),
-        key_file or os.path.join(here, 'permissions/nobody-key.pem'),
+        cert_file,# or os.path.join(here, 'permissions/nobody.pem'),
+        key_file,# or os.path.join(here, 'permissions/nobody-key.pem'),
         )
-    ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_REQUIRED
+    ssl_context.check_hostname = False
+    return ssl_context

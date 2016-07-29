@@ -24,7 +24,7 @@ def pem_data(name):
 nobody_dir = os.path.dirname(zerodb.permissions.__file__)
 nobody_cert = os.path.join(nobody_dir, 'nobody.pem')
 nobody_key = os.path.join(nobody_dir, 'nobody-key.pem')
-nobody_pem = pem_path(nobody_cert)
+nobody_pem = pem_data(nobody_cert[:-4])
 
 def test_basic():
     # zerodb.server took care of setting up a databasw with a root
@@ -54,17 +54,17 @@ def test_basic():
         assert admin.users_by_name[root.name] is root
 
         # Let's add a user:
-        admin.add_user('user1', pem_data('cert0'))
+        admin.add_user('user0', pem_data('cert0'))
 
         [uid0] = [uid for uid in admin.users if uid != root.id]
 
     admin_db.close()
 
     # Now, let's try connecting
-    db = zerodb.DB(addr,
+    db = zerodb.DB(addr, username='user0', key='5ecret',
                    cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   username='user1', password='5ecret')
+                   )
 
     # we can access the root object.
     assert db._root._p_oid == uid0
@@ -83,10 +83,10 @@ def test_basic():
     db._db.close()
 
     # Reopen, and make sure the data are there:
-    db = zerodb.DB(addr,
+    db = zerodb.DB(addr, username='user0', key='5ecret',
                    cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   username='user1', password='5ecret')
+                   )
 
     assert db._root._p_oid == uid0
     assert len(db._root) == 2
@@ -119,42 +119,44 @@ def test_basic():
 
     with admin_db.transaction() as conn:
         admin = zerodb.permissions.base.get_admin(conn)
-        admin.change_cert('user1', pem_data('cert1'))
+        admin.change_cert('user0', pem_data('cert1'))
 
     # Now login with the old cert will fail:
     with pytest.raises(ZEO.Exceptions.ClientDisconnected):
-        db = zerodb.DB(addr,
+        db = zerodb.DB(addr, username='user0', key='5ecret',
                        cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                        server_cert=ZEO.tests.testssl.server_cert,
-                       username='user1', password='5ecret', wait_timeout=1)
+                       wait_timeout=1,
+                       )
 
     # But login with the new one will work:
-    db = zerodb.DB(addr,
+    db = zerodb.DB(addr, username='user0', key='5ecret',
                    cert_file=pem_path('cert1'), key_file=pem_path('key1'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   username='user1', password='5ecret', wait_timeout=1)
+                   )
     assert len(db._root) == 2
     db._db.close()
 
     # Finally, let's remove the user:
     with admin_db.transaction() as conn:
         admin = zerodb.permissions.base.get_admin(conn)
-        admin.del_user('user1')
+        admin.del_user('user0')
 
     # Now, they can't log in at all:
     for i in '01':
         with pytest.raises(ZEO.Exceptions.ClientDisconnected):
-            db = zerodb.DB(
-                addr,
-                cert_file=pem_path('cert' + i), key_file=pem_path('key' + i),
-                server_cert=ZEO.tests.testssl.server_cert,
-                username='user1', password='5ecret', wait_timeout=1)
+            db = zerodb.DB(addr, username='user0', key='5ecret',
+                           cert_file=pem_path('cert' + i),
+                           key_file=pem_path('key' + i),
+                           server_cert=ZEO.tests.testssl.server_cert,
+                           wait_timeout=1,
+                           )
 
     admin_db.close()
     stop()
 
 
-def test_password():
+def _test_password():
     # zerodb.server took care of setting up a databasw with a root
     # user and starting a server for it.  The root user's cert is from
     # ZEO.testing.  The server is using a server cert from ZEO.tests.
@@ -182,7 +184,7 @@ def test_password():
         assert admin.users_by_name[root.name] is root
 
         # Let's add a user:
-        admin.add_user('user1', password='passwor')
+        admin.add_user('user0', password='password0')
 
         [uid0] = [uid for uid in admin.users if uid != root.id]
 
@@ -190,9 +192,8 @@ def test_password():
 
     # Now, let's try connecting
     db = zerodb.DB(addr,
-                   cert_file=pem_path('cert0'), key_file=pem_path('key0'),
                    server_cert=ZEO.tests.testssl.server_cert,
-                   username='user1', password='5ecret')
+                   username='user1', password='password1')
 
     # we can access the root object.
     assert db._root._p_oid == uid0
