@@ -57,7 +57,7 @@ def create_objects_and_close(addr, count=200, dbclass=zerodb.DB):
                  cert_file=ZEO.tests.testssl.client_cert,
                  key_file=ZEO.tests.testssl.client_key,
                  server_cert=ZEO.tests.testssl.server_cert,
-                 username='root', password=TEST_PASSPHRASE, debug=True,
+                 username='root', key=TEST_PASSPHRASE, debug=True,
                  wait_timeout=1)
 
     with transaction.manager:
