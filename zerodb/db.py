@@ -505,8 +505,8 @@ def make_ssl(cert_file=None, key_file=None, server_cert=None):
         ssl.Purpose.CLIENT_AUTH, cafile=server_cert)
     here = os.path.dirname(__file__)
     ssl_context.load_cert_chain(
-        cert_file,# or os.path.join(here, 'permissions/nobody.pem'),
-        key_file,# or os.path.join(here, 'permissions/nobody-key.pem'),
+        cert_file or os.path.join(here, 'permissions/nobody.pem'),
+        key_file or os.path.join(here, 'permissions/nobody-key.pem'),
         )
     ssl_context.verify_mode = ssl.CERT_REQUIRED
     ssl_context.check_hostname = False

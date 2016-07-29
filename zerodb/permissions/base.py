@@ -45,7 +45,7 @@ def get_der(pem_data):
     return cert_der
 
 def hash_password(password):
-    return 'sha256::' + hashlib.sha256(password).digest()
+    return b'sha256::' + hashlib.sha256(password).digest()
 
 class User(persistent.Persistent):
 
@@ -64,11 +64,18 @@ class User(persistent.Persistent):
         self.certs = {} # {cert_der -> cert_pem}
 
         if password:
-            self.salt = uuid.uuid4().hex
-            self.password = hash_password(password + self.salt)
+            self.salt = uuid.uuid4().hex.encode()
+            self.password = hash_password(password.encode() + self.salt)
 
     def check_password(self, password):
-        return hash_password(password + self.salt) == self.password
+        return hash_password(password.encode() + self.salt) == self.password
+
+    def change_password(self, password):
+        if password is not None:
+            if password:
+                self.password = hash_password(password.encode() + self.salt)
+            else:
+                self.password = None
 
 class Certs(persistent.Persistent):
 
@@ -104,7 +111,7 @@ class Admin(persistent.Persistent):
         root = persistent.mapping.PersistentMapping()
         self._p_jar.add(root)
 
-        user = User(uname, root)
+        user = User(uname, root, password)
         self.users[user.id] = user
         self.users_by_name[user.name] = user
 
@@ -132,13 +139,16 @@ class Admin(persistent.Persistent):
         del self.users[user.id]
         self._del_user_certs(user)
 
-    def change_cert(self, name, pem_data):
+    def change_cert(self, name, pem_data=None, password=None):
         user = self.users_by_name[name]
-        self._del_user_certs(user)
-        user.certs.clear()
 
-        self._add_user_cert(user, pem_data)
+        if pem_data is not None:
+            self._del_user_certs(user)
+            user.certs.clear()
+            if pem_data:
+                self._add_user_cert(user, pem_data)
 
+        user.change_password(password)
 
 def get_admin(conn):
     return conn.get(ONE)
