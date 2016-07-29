@@ -11,7 +11,6 @@ import transaction
 import ZODB
 import ZODB.Connection
 
-from hashlib import sha256
 from zerodbext.catalog.query import optimize
 from zerodb.collective.indexing.indexer import PortalCatalogProcessor
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
@@ -21,7 +20,6 @@ from zope import component
 from zerodb import models
 from zerodb.catalog.query import And, Eq
 from zerodb.crypto import elliptic
-from zerodb.crypto import cert
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
@@ -38,7 +36,8 @@ class AutoReindexQueueProcessor(PortalCatalogProcessor):
         self.db = db
         self.enabled = enabled
 
-    def reindex(self, obj, attributes=None):   # execute reindex in before_commit hook when commit
+    # execute reindex in before_commit hook when commit
+    def reindex(self, obj, attributes=None):
         if self.enabled:
             self.db.reindex(obj, attributes)
 
@@ -254,6 +253,7 @@ class DbModel(object):
     def __len__(self):
         return len(self._objects)
 
+
 class SubConnection(ZODB.Connection.Connection):
 
     @property
@@ -269,12 +269,14 @@ class SubConnection(ZODB.Connection.Connection):
         if uid is not None:
             obj._p_uid = uid
 
+
 class SubDB(ZODB.DB):
     klass = SubConnection
 
     def __init__(self, storage, *a, **kw):
         super(SubDB, self).__init__(storage, *a, **kw)
         self._root_oid = storage.get_root_id()
+
 
 class DB(object):
     """
@@ -284,7 +286,7 @@ class DB(object):
     encrypter = [AES256Encrypter, AES256EncrypterV0]
     compressor = None
 
-    def __init__(self, sock, username, key, password=None,
+    def __init__(self, sock, key, username=None, password=None,
                  cert_file=None, key_file=None, server_cert=None,
                  debug=False, pool_timeout=3600, pool_size=7,
                  autoreindex=True, wait_timeout=30,
@@ -311,7 +313,6 @@ class DB(object):
             credentials = dict(name=username, password=password)
         else:
             credentials = None
-
 
         if isinstance(sock, six.string_types):
             sock = str(sock)
@@ -499,6 +500,7 @@ class DB(object):
         if enabled:
             subscribers.init()
         self._reindex_queue_processor.enabled = enabled
+
 
 def make_ssl(cert_file=None, key_file=None, server_cert=None):
     ssl_context = ssl.create_default_context(
