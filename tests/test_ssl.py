@@ -4,8 +4,7 @@ import os
 
 import pytest
 
-from ZODB.utils import z64, maxtid
-import transaction
+from ZODB.utils import maxtid
 import ZEO
 import ZEO.Exceptions
 import ZEO.tests.testssl
@@ -20,9 +19,12 @@ from zerodb.crypto import kdf
 
 here = os.path.dirname(__file__)
 pem_path = lambda name: os.path.join(here, name + '.pem')
+
+
 def pem_data(name):
     with open(pem_path(name)) as f:
         return f.read()
+
 
 root_key = b'r' * 32
 user_key = b'x' * 32
@@ -30,8 +32,11 @@ user_key = b'x' * 32
 nobody_dir = os.path.dirname(zerodb.permissions.__file__)
 nobody_cert = os.path.join(nobody_dir, 'nobody.pem')
 nobody_pem = pem_data(nobody_cert[:-4])
+
+
 def nobody_ssl():
     return zerodb.db.make_ssl(server_cert=ZEO.tests.testssl.server_cert)
+
 
 def _test_basic(root_cert=True, root_password=False,
                 user_cert=True, user_password=False,
@@ -48,7 +53,7 @@ def _test_basic(root_cert=True, root_password=False,
     # ZEO.testing.  The server is using a server cert from ZEO.tests.
     addr, stop = zerodb.server(
         init=dict(
-            cert = ZEO.tests.testssl.client_cert if root_cert else None,
+            cert=ZEO.tests.testssl.client_cert if root_cert else None,
             password='root_password' if root_password else None,
             ),
         )
@@ -60,9 +65,8 @@ def _test_basic(root_cert=True, root_password=False,
     def admin_db_factory():
         return ZEO.DB(
             addr,
-            ssl = ZEO.tests.testssl.client_ssl() if root_cert else nobody_ssl(),
-            credentials =
-            dict(name='root', password=root_pwd)
+            ssl=ZEO.tests.testssl.client_ssl() if root_cert else nobody_ssl(),
+            credentials=dict(name='root', password=root_pwd)
             if root_password else None,
             wait_timeout=19999,
             )
@@ -77,8 +81,7 @@ def _test_basic(root_cert=True, root_password=False,
             [root_der] = root.certs
 
             assert (set(pem.strip()
-                        for pem in admin.certs.data.strip().split('\n\n'))
-                    ==
+                        for pem in admin.certs.data.strip().split('\n\n')) ==
                     set(pem.strip()
                         for pem in (nobody_pem, root.certs[root_der]))
                     )
@@ -91,8 +94,8 @@ def _test_basic(root_cert=True, root_password=False,
 
         # Let's add a user:
         admin.add_user('user0',
-                       pem_data = pem_data('cert0') if user_cert else None,
-                       password = 'password0' if user_password else None,
+                       pem_data=(pem_data('cert0') if user_cert else None),
+                       password=('password0' if user_password else None),
                        )
 
         [uid0] = [uid for uid in admin.users if uid != root.id]
@@ -103,8 +106,8 @@ def _test_basic(root_cert=True, root_password=False,
     def user_db_factory(n='0'):
         return zerodb.DB(
             addr, username='user0', key=user_key,
-            cert_file=pem_path('cert'+n) if user_cert else None,
-            key_file=pem_path('key'+n) if user_cert else None,
+            cert_file=pem_path('cert' + n) if user_cert else None,
+            key_file=pem_path('key' + n) if user_cert else None,
             server_cert=ZEO.tests.testssl.server_cert,
             password='password' + n if user_password else None,
             wait_timeout=1
@@ -135,7 +138,6 @@ def _test_basic(root_cert=True, root_password=False,
     assert len(db._root) == 2
     assert db._root['x'] == 1
     assert db._root['s']['x'] == 2
-    s0 = db._root._p_serial
     db._db.close()
 
     # The admin user can no longer access the user's folder:
@@ -203,17 +205,22 @@ def _test_basic(root_cert=True, root_password=False,
 
     stop()
 
+
 def test_cert_auth():
     _test_basic()
+
 
 def test_pw_auth():
     _test_basic(False, True, False, True)
 
+
 def test_mixed_auth():
     _test_basic(True, False, False, True)
 
+
 def test_both():
     _test_basic(True, True, True, True)
+
 
 def test_user_cred_crud_edge_cases():
 

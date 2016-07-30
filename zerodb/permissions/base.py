@@ -29,7 +29,7 @@ import ssl
 import uuid
 
 from BTrees.OOBTree import BTree
-from ZODB.utils import z64, p64
+from ZODB.utils import p64
 import persistent
 import persistent.mapping
 import ZODB
@@ -41,10 +41,12 @@ from .ownerstorage import OwnerStorage
 
 ONE = p64(1)
 
+
 def get_der(pem_data):
     context = ssl.create_default_context(cadata=pem_data)
-    [cert_der] = context.get_ca_certs(1) # TCBOO
+    [cert_der] = context.get_ca_certs(1)  # TCBOO
     return cert_der
+
 
 def hash_password(password, salt):
     if not isinstance(password, bytes):
@@ -52,6 +54,7 @@ def hash_password(password, salt):
     if not isinstance(salt, bytes):
         salt = salt.encode()
     return b'sha256::' + hashlib.sha256(password + salt).digest()
+
 
 class User(persistent.Persistent):
 
@@ -67,7 +70,7 @@ class User(persistent.Persistent):
         self.root = root
         self.id = root._p_oid
         # Today, TCBOO cert, but maybe later
-        self.certs = {} # {cert_der -> cert_pem}
+        self.certs = {}  # {cert_der -> cert_pem}
 
         if password:
             self.salt = uuid.uuid4().hex.encode()
@@ -83,6 +86,7 @@ class User(persistent.Persistent):
             else:
                 self.password = None
 
+
 class Certs(persistent.Persistent):
 
     def __init__(self):
@@ -94,17 +98,18 @@ class Certs(persistent.Persistent):
     def remove(self, pem_data):
         self.data = self.data.replace('\n\n' + pem_data, '')
 
+
 class Admin(persistent.Persistent):
 
     def __init__(self, conn):
         conn.add(self)
         assert self._p_oid == ONE
 
-        self.users         = BTree() # {uid -> user}
-        self.users_by_name = BTree() # {uname -> user}
-        self.uids          = BTree() # {cert_der -> uid}
-        self.certs         = Certs() # Cert, persistent wrapper for
-                                     # concatinated cert data
+        self.users         = BTree()  # {uid -> user}
+        self.users_by_name = BTree()  # {uname -> user}
+        self.uids          = BTree()  # {cert_der -> uid}
+        self.certs         = Certs()  # Cert, persistent wrapper for
+                                      # concatinated cert data
 
         # Add nobody placeholder
         with open(os.path.join(os.path.dirname(__file__), 'nobody.pem')) as f:
@@ -114,7 +119,7 @@ class Admin(persistent.Persistent):
         self.uids[get_der(nobody_pem)] = None
 
     def add_user(self, uname, pem_data=None, password=None,
-            security=kdf.hash_password, appname='zerodb.com'):
+                 security=kdf.hash_password, appname='zerodb.com'):
         root = persistent.mapping.PersistentMapping()
         self._p_jar.add(root)
 
@@ -152,7 +157,7 @@ class Admin(persistent.Persistent):
         self._del_user_certs(user)
 
     def change_cert(self, name, pem_data=None, password=None,
-            security=kdf.hash_password, appname='zerodb.com'):
+                    security=kdf.hash_password, appname='zerodb.com'):
         user = self.users_by_name[name]
 
         if pem_data is not None:
@@ -168,8 +173,10 @@ class Admin(persistent.Persistent):
                     appname=appname, key=None)
             user.change_password(password)
 
+
 def get_admin(conn):
     return conn.get(ONE)
+
 
 def init_db(storage, uname, pem_data=None, close=True, password=None):
     db = ZODB.DB(OwnerStorage(storage, p64(2)))
@@ -179,6 +186,7 @@ def init_db(storage, uname, pem_data=None, close=True, password=None):
         assert user.id == db.storage.user_id
     if close:
         db.close()
+
 
 def init_db_script():
     import argparse
