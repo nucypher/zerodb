@@ -9,8 +9,6 @@ import os
 import pytest
 import shutil
 import tempfile
-from time import sleep
-from multiprocessing import Process
 from os import path
 
 import ZEO.tests.testssl
@@ -64,6 +62,7 @@ def pass_file(request, tempdir):
         f.write(TEST_PERMISSIONS)
     return filename
 
+
 @pytest.fixture(scope="module")
 def db(request, zeo_server, dbclass=zerodb.DB):
     zdb = dbclass(zeo_server,
@@ -80,9 +79,12 @@ def db(request, zeo_server, dbclass=zerodb.DB):
 
     return zdb
 
+
 def do_zeo_server(request, tempdir, name=None, fsname='db.fs'):
-    sock, stop = zerodb.server(name=name, path=os.path.join(tempdir, fsname),
-            init=dict(password=TEST_PASSPHRASE, cert=ZEO.tests.testssl.client_cert))
+    sock, stop = zerodb.server(
+            name=name, path=os.path.join(tempdir, fsname),
+            init=dict(
+                password=TEST_PASSPHRASE, cert=ZEO.tests.testssl.client_cert
+                ))
     request.addfinalizer(stop)
     return sock
-
