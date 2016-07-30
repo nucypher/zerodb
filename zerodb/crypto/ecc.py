@@ -1,6 +1,6 @@
 import six
 import hashlib
-import ecdsa  # We can use pyelliptic (uses OpenSSL) but this is more cross-patform
+import ecdsa  # We can use pyelliptic (uses OpenSSL) but this is more cross-platform
 
 # We use curve standard for Bitcoin by default
 CURVE = ecdsa.SECP256k1
