@@ -16,6 +16,8 @@ import zerodb.db
 import zerodb.forker
 import zerodb.permissions.base
 
+from zerodb.crypto import kdf
+
 here = os.path.dirname(__file__)
 pem_path = lambda name: os.path.join(here, name + '.pem')
 def pem_data(name):
@@ -34,6 +36,13 @@ def nobody_ssl():
 def _test_basic(root_cert=True, root_password=False,
                 user_cert=True, user_password=False,
                 ):
+
+    if root_password:
+        root_pwd, _ = kdf.hash_password(
+                'root', 'root_password',
+                key_file=None, cert_file=None,
+                appname='zerodb.com', key=None)
+
     # zerodb.server took care of setting up a databasw with a root
     # user and starting a server for it.  The root user's cert is from
     # ZEO.testing.  The server is using a server cert from ZEO.tests.
@@ -46,12 +55,14 @@ def _test_basic(root_cert=True, root_password=False,
 
     # Create an admin client.  Admin data aren't encrypted, so we use
     # a regular ZEO client.
+    # XXX this should be in zerodb.db
+    # XXX along with kdf
     def admin_db_factory():
         return ZEO.DB(
             addr,
             ssl = ZEO.tests.testssl.client_ssl() if root_cert else nobody_ssl(),
             credentials =
-            dict(name='root', password='root_password')
+            dict(name='root', password=root_pwd)
             if root_password else None,
             wait_timeout=19999,
             )
@@ -95,7 +106,7 @@ def _test_basic(root_cert=True, root_password=False,
             cert_file=pem_path('cert'+n) if user_cert else None,
             key_file=pem_path('key'+n) if user_cert else None,
             server_cert=ZEO.tests.testssl.server_cert,
-            password='password'+n if user_password else None,
+            password='password' + n if user_password else None,
             wait_timeout=1
             )
 

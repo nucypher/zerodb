@@ -25,7 +25,9 @@ def key_from_password(username, password, key_file, cert_file, appname, key):
     """
     salt = "|".join([username, appname, 'key'])
     key = scrypt.hash(password, salt, **scrypt_kw)
-    new_password = hashlib.sha256(key).digest()
+    # Calculate hash so that server cannot derive key from new_password
+    # b'auth' is added so that we don't use hash(key) by mistake
+    new_password = hashlib.sha256(key + b'auth').digest()
     return new_password, key
 
 
@@ -40,16 +42,19 @@ def key_from_cert(username, password, key_file, cert_file, appname, key):
     if password is not None:
         salt = "|".join([username, appname, 'key'])
         password = scrypt.hash(password, salt, **scrypt_kw)
+        password = hashlib.sha256(password + b'auth').digest()
 
     return password, key
 
 
 def hash_password(username, password, key_file, cert_file, appname, key):
     """
-    Password is hashed, encryption key is left untouched
+    Password is hashed, encryption key is left untouched.
+    Password is compatible with other functions
     """
     if password:
         salt = "|".join([username, appname, 'key'])
         password = scrypt.hash(password, salt, **scrypt_kw)
+        password = hashlib.sha256(password + b'auth').digest()
 
     return password, key

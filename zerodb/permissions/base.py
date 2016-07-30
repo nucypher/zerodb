@@ -39,9 +39,6 @@ from zerodb.crypto import kdf
 
 from .ownerstorage import OwnerStorage
 
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
 ONE = p64(1)
 
 def get_der(pem_data):
@@ -154,7 +151,8 @@ class Admin(persistent.Persistent):
         del self.users[user.id]
         self._del_user_certs(user)
 
-    def change_cert(self, name, pem_data=None, password=None):
+    def change_cert(self, name, pem_data=None, password=None,
+            security=kdf.hash_password, appname='zerodb.com'):
         user = self.users_by_name[name]
 
         if pem_data is not None:
@@ -163,7 +161,12 @@ class Admin(persistent.Persistent):
             if pem_data:
                 self._add_user_cert(user, pem_data)
 
-        user.change_password(password)
+        if password is not None:
+            password, _ = security(
+                    name, password,
+                    key_file=None, cert_file=None,
+                    appname=appname, key=None)
+            user.change_password(password)
 
 def get_admin(conn):
     return conn.get(ONE)
