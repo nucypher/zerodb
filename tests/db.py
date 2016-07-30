@@ -11,6 +11,7 @@ import zerodb
 
 import wiki
 
+from zerodb.crypto import kdf
 from zerodb.testing import TEST_PASSPHRASE
 import zerodb.testing
 
@@ -57,8 +58,8 @@ def create_objects_and_close(addr, count=200, dbclass=zerodb.DB):
                  cert_file=ZEO.tests.testssl.client_cert,
                  key_file=ZEO.tests.testssl.client_key,
                  server_cert=ZEO.tests.testssl.server_cert,
-                 username='root', key=TEST_PASSPHRASE, debug=True,
-                 wait_timeout=1)
+                 username='root', password=TEST_PASSPHRASE, debug=True,
+                 security=kdf.key_from_password, wait_timeout=1)
 
     with transaction.manager:
         # Initialize departments

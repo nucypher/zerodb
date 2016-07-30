@@ -16,16 +16,14 @@ from os import path
 import ZEO.tests.testssl
 
 import zerodb
-from zerodb.crypto import ecc, elliptic
+from zerodb.crypto import ecc, elliptic, kdf
 from zerodb.util import encode_hex
-
-kdf = elliptic.kdf
 
 TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
 TEST_PUBKEY = ecc.private(
-        TEST_PASSPHRASE, ("root", "ZERO"), kdf=kdf).get_pubkey()
+        TEST_PASSPHRASE, ("root", "ZERO"), kdf=elliptic.kdf).get_pubkey()
 TEST_PUBKEY_3 = ecc.private(
-        TEST_PASSPHRASE + " third", ("third", "ZERO"), kdf=kdf).get_pubkey()
+        TEST_PASSPHRASE + " third", ("third", "ZERO"), kdf=elliptic.kdf).get_pubkey()
 
 TEST_PERMISSIONS = """realm ZERO
 auth_secp256k1_scrypt:root:%s
@@ -72,8 +70,8 @@ def db(request, zeo_server, dbclass=zerodb.DB):
                   cert_file=ZEO.tests.testssl.client_cert,
                   key_file=ZEO.tests.testssl.client_key,
                   server_cert=ZEO.tests.testssl.server_cert,
-                  username='root', key=TEST_PASSPHRASE, debug=True,
-                  wait_timeout=11)
+                  username='root', password=TEST_PASSPHRASE, debug=True,
+                  security=kdf.key_from_password, wait_timeout=11)
 
     if request is not None:
         @request.addfinalizer
@@ -83,7 +81,8 @@ def db(request, zeo_server, dbclass=zerodb.DB):
     return zdb
 
 def do_zeo_server(request, tempdir, name=None, fsname='db.fs'):
-    sock, stop = zerodb.server(name=name, path=os.path.join(tempdir, fsname))
+    sock, stop = zerodb.server(name=name, path=os.path.join(tempdir, fsname),
+            init=dict(password=TEST_PASSPHRASE, cert=ZEO.tests.testssl.client_cert))
     request.addfinalizer(stop)
     return sock
 

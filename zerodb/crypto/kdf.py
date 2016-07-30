@@ -14,7 +14,7 @@ We use scrypt to derive the key on the client side
 import scrypt
 import hashlib
 
-scrypt_kw = dict(N=16384, r=8, p=1, buflen=64)
+scrypt_kw = dict(N=16384, r=8, p=1, buflen=32)
 
 
 def key_from_password(username, password, key_file, cert_file, appname, key):
