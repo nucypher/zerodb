@@ -35,7 +35,12 @@ import persistent.mapping
 import ZODB
 import ZODB.FileStorage
 
+from zerodb.crypto import kdf
+
 from .ownerstorage import OwnerStorage
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 ONE = p64(1)
 
@@ -44,8 +49,12 @@ def get_der(pem_data):
     [cert_der] = context.get_ca_certs(1) # TCBOO
     return cert_der
 
-def hash_password(password):
-    return b'sha256::' + hashlib.sha256(password).digest()
+def hash_password(password, salt):
+    if not isinstance(password, bytes):
+        password = password.encode()
+    if not isinstance(salt, bytes):
+        salt = salt.encode()
+    return b'sha256::' + hashlib.sha256(password + salt).digest()
 
 class User(persistent.Persistent):
 
@@ -65,15 +74,15 @@ class User(persistent.Persistent):
 
         if password:
             self.salt = uuid.uuid4().hex.encode()
-            self.password = hash_password(password.encode() + self.salt)
+            self.password = hash_password(password, self.salt)
 
     def check_password(self, password):
-        return hash_password(password.encode() + self.salt) == self.password
+        return hash_password(password, self.salt) == self.password
 
     def change_password(self, password):
         if password is not None:
             if password:
-                self.password = hash_password(password.encode() + self.salt)
+                self.password = hash_password(password, self.salt)
             else:
                 self.password = None
 
@@ -107,9 +116,15 @@ class Admin(persistent.Persistent):
         self.certs.add(nobody_pem)
         self.uids[get_der(nobody_pem)] = None
 
-    def add_user(self, uname, pem_data=None, password=None):
+    def add_user(self, uname, pem_data=None, password=None,
+            security=kdf.hash_password, appname='zerodb.com'):
         root = persistent.mapping.PersistentMapping()
         self._p_jar.add(root)
+
+        password, _ = security(
+                uname, password,
+                key_file=None, cert_file=None,
+                appname=appname, key=None)
 
         user = User(uname, root, password)
         self.users[user.id] = user

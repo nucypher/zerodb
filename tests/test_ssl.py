@@ -22,6 +22,9 @@ def pem_data(name):
     with open(pem_path(name)) as f:
         return f.read()
 
+root_key = b'r' * 32
+user_key = b'x' * 32
+
 nobody_dir = os.path.dirname(zerodb.permissions.__file__)
 nobody_cert = os.path.join(nobody_dir, 'nobody.pem')
 nobody_pem = pem_data(nobody_cert[:-4])
@@ -88,7 +91,7 @@ def _test_basic(root_cert=True, root_password=False,
     # Now, let's try connecting
     def user_db_factory(n='0'):
         return zerodb.DB(
-            addr, username='user0', key='secret0',
+            addr, username='user0', key=user_key,
             cert_file=pem_path('cert'+n) if user_cert else None,
             key_file=pem_path('key'+n) if user_cert else None,
             server_cert=ZEO.tests.testssl.server_cert,
@@ -177,7 +180,7 @@ def _test_basic(root_cert=True, root_password=False,
 
     # The admin user can login as an ordinary ZeroDB user:
     db = zerodb.DB(
-        addr, username='root', key='root_secret',
+        addr, username='root', key=root_key,
         cert_file=ZEO.tests.testssl.client_cert if root_cert else None,
         key_file=ZEO.tests.testssl.client_key if root_cert else None,
         server_cert=ZEO.tests.testssl.server_cert,
