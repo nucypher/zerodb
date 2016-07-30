@@ -66,11 +66,10 @@ def pass_file(request, tempdir):
 @pytest.fixture(scope="module")
 def db(request, zeo_server, dbclass=zerodb.DB):
     zdb = dbclass(zeo_server,
-                  cert_file=ZEO.tests.testssl.client_cert,
-                  key_file=ZEO.tests.testssl.client_key,
+                  username='root', password=TEST_PASSPHRASE,
+                  security=kdf.key_from_password,
                   server_cert=ZEO.tests.testssl.server_cert,
-                  username='root', password=TEST_PASSPHRASE, debug=True,
-                  security=kdf.key_from_password, wait_timeout=11)
+                  debug=True, wait_timeout=11)
 
     if request is not None:
         @request.addfinalizer
