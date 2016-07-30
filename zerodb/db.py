@@ -511,5 +511,9 @@ def make_ssl(cert_file=None, key_file=None, server_cert=None):
         key_file or os.path.join(here, 'permissions/nobody-key.pem'),
         )
     ssl_context.verify_mode = ssl.CERT_REQUIRED
-    ssl_context.check_hostname = False
+    if server_cert is None:
+        ssl_context.check_hostname = True
+        ssl_context.load_default_certs()
+    else:
+        ssl_context.check_hostname = False
     return ssl_context
