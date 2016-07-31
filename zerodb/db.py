@@ -287,7 +287,7 @@ class DB(object):
 
     def __init__(self, sock, key=None, username=None, password=None,
                  cert_file=None, key_file=None, server_cert=None,
-                 security=kdf.hash_password,
+                 security=None,
                  debug=False, pool_timeout=3600, pool_size=7,
                  autoreindex=True, wait_timeout=30,
                  **kw):
