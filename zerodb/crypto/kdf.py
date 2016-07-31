@@ -64,4 +64,13 @@ def guess(username, password, key_file, cert_file, appname, key):
     """
     Guess which function to use from values arguments
     """
-    return
+    if key is None:
+        if password is not None:
+            return key_from_password
+        elif key_file is not None:
+            return key_from_cert
+        else:
+            raise AttributeError("Not enough attributes to guess KDF")
+
+    else:
+        return hash_password
