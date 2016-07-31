@@ -9,39 +9,17 @@ import os
 import pytest
 import shutil
 import tempfile
-from os import path
 
 import ZEO.tests.testssl
 
 import zerodb
-from zerodb.crypto import ecc, elliptic, kdf
-from zerodb.util import encode_hex
+from zerodb.crypto import kdf
 
 TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
-TEST_PUBKEY = ecc.private(
-        TEST_PASSPHRASE, ("root", "ZERO"), kdf=elliptic.kdf).get_pubkey()
-TEST_PUBKEY_3 = ecc.private(
-        TEST_PASSPHRASE + " third", ("third", "ZERO"), kdf=elliptic.kdf).get_pubkey()
 
-TEST_PERMISSIONS = """realm ZERO
-auth_secp256k1_scrypt:root:%s
-auth_secp256k1_scrypt:third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))
-
-ZEO_CONFIG = """<zeo>
-  address %(sock)s
-  authentication-protocol auth_secp256k1_scrypt
-  authentication-database %(pass_file)s
-  authentication-realm ZERO
-</zeo>
-
-<filestorage>
-  path %(dbfile)s
-  pack-gc false
-</filestorage>"""
 
 __all__ = [
     "TEST_PASSPHRASE",
-    "TEST_PUBKEY",
     "tempdir",
     "do_zeo_server",
     "db",
@@ -53,14 +31,6 @@ def tempdir(request):
     tmpdir = tempfile.mkdtemp()
     request.addfinalizer(lambda: shutil.rmtree(tmpdir))
     return tmpdir
-
-
-@pytest.fixture(scope="module")
-def pass_file(request, tempdir):
-    filename = path.join(tempdir, "authdb.conf")
-    with open(filename, "w") as f:
-        f.write(TEST_PERMISSIONS)
-    return filename
 
 
 @pytest.fixture(scope="module")
