@@ -8,12 +8,14 @@ import tempfile
 from distutils import ccompiler, log
 from setuptools import setup, find_packages
 
+version = '0.99.0a1'
+
 INSTALL_REQUIRES = [
     'BTrees',
     'zope.component>=4.0.0',
     'zodbpickle',
     'ZODB>=5.0.0a6',
-    'ZEO>=5.0.0a1',
+    'ZEO>=5.0.0a2',
     'zope.index>=4.0.0',
     'zerodbext.catalog==0.8.4',
     'cachetools',
@@ -23,12 +25,10 @@ INSTALL_REQUIRES = [
     'mock',
     'requests>=2.0',
     'jsonpickle',
-    'ecdsa>=0.10',
     'zope.event>=4.0.0',
     'zope.lifecycleevent>=4.0.0',
     'six>=1.7.0',
-    'scrypt',
-    'PyOpenSSL'
+    'scrypt'
 ]
 
 TESTS_REQUIRE = [
@@ -49,6 +49,7 @@ zerodb-initdb = zerodb.permissions.base:init_db_script
 
 # The following is to avoid build errors on brand new Amazon Ubuntu
 # instances which may not have libffi-dev installed.
+
 
 # Function copied from cffi 1.5.2
 def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
@@ -162,13 +163,15 @@ else:
 
 setup(
     name="zerodb",
-    version="0.99.0.dev0",
+    version=version,
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
     license="AGPLv3",
     url="http://zerodb.io",
     packages=find_packages(),
+    package_data={'zerodb.permissions': ['nobody-key.pem', 'nobody.pem']},
+    include_package_data=True,
     install_requires=INSTALL_REQUIRES,
     extras_require={'testing': TESTS_REQUIRE},
     entry_points=entry_points,

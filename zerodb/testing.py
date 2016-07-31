@@ -9,43 +9,17 @@ import os
 import pytest
 import shutil
 import tempfile
-from time import sleep
-from multiprocessing import Process
-from os import path
 
 import ZEO.tests.testssl
 
 import zerodb
-from zerodb.crypto import ecc, elliptic
-from zerodb.util import encode_hex
-
-kdf = elliptic.kdf
+from zerodb.crypto import kdf
 
 TEST_PASSPHRASE = "v3ry 53cr3t pa$$w0rd"
-TEST_PUBKEY = ecc.private(
-        TEST_PASSPHRASE, ("root", "ZERO"), kdf=kdf).get_pubkey()
-TEST_PUBKEY_3 = ecc.private(
-        TEST_PASSPHRASE + " third", ("third", "ZERO"), kdf=kdf).get_pubkey()
 
-TEST_PERMISSIONS = """realm ZERO
-auth_secp256k1_scrypt:root:%s
-auth_secp256k1_scrypt:third:%s""" % (encode_hex(TEST_PUBKEY), encode_hex(TEST_PUBKEY_3))
-
-ZEO_CONFIG = """<zeo>
-  address %(sock)s
-  authentication-protocol auth_secp256k1_scrypt
-  authentication-database %(pass_file)s
-  authentication-realm ZERO
-</zeo>
-
-<filestorage>
-  path %(dbfile)s
-  pack-gc false
-</filestorage>"""
 
 __all__ = [
     "TEST_PASSPHRASE",
-    "TEST_PUBKEY",
     "tempdir",
     "do_zeo_server",
     "db",
@@ -60,20 +34,12 @@ def tempdir(request):
 
 
 @pytest.fixture(scope="module")
-def pass_file(request, tempdir):
-    filename = path.join(tempdir, "authdb.conf")
-    with open(filename, "w") as f:
-        f.write(TEST_PERMISSIONS)
-    return filename
-
-@pytest.fixture(scope="module")
 def db(request, zeo_server, dbclass=zerodb.DB):
     zdb = dbclass(zeo_server,
-                  cert_file=ZEO.tests.testssl.client_cert,
-                  key_file=ZEO.tests.testssl.client_key,
+                  username='root', password=TEST_PASSPHRASE,
+                  security=kdf.key_from_password,
                   server_cert=ZEO.tests.testssl.server_cert,
-                  username='root', password=TEST_PASSPHRASE, debug=True,
-                  wait_timeout=11)
+                  debug=True, wait_timeout=11)
 
     if request is not None:
         @request.addfinalizer
@@ -82,8 +48,12 @@ def db(request, zeo_server, dbclass=zerodb.DB):
 
     return zdb
 
+
 def do_zeo_server(request, tempdir, name=None, fsname='db.fs'):
-    sock, stop = zerodb.server(name=name, path=os.path.join(tempdir, fsname))
+    sock, stop = zerodb.server(
+            name=name, path=os.path.join(tempdir, fsname),
+            init=dict(
+                password=TEST_PASSPHRASE, cert=ZEO.tests.testssl.client_cert
+                ))
     request.addfinalizer(stop)
     return sock
-

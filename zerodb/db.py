@@ -11,7 +11,6 @@ import transaction
 import ZODB
 import ZODB.Connection
 
-from hashlib import sha256
 from zerodbext.catalog.query import optimize
 from zerodb.collective.indexing.indexer import PortalCatalogProcessor
 from zerodb.collective.indexing.interfaces import IIndexQueueProcessor
@@ -20,8 +19,6 @@ from zope import component
 
 from zerodb import models
 from zerodb.catalog.query import And, Eq
-from zerodb.crypto import elliptic
-from zerodb.crypto import cert
 from zerodb.models.exceptions import ModelException
 from zerodb.storage import client_storage
 from zerodb.util.thread_watcher import ThreadWatcher
@@ -29,8 +26,7 @@ from zerodb.util.iter import DBList, DBListPrefetch, Sliceable
 
 from zerodb.transform.encrypt_aes import AES256Encrypter, AES256EncrypterV0
 from zerodb.transform import init_crypto
-
-kdf = elliptic.kdf
+from zerodb.crypto import kdf
 
 
 class AutoReindexQueueProcessor(PortalCatalogProcessor):
@@ -38,7 +34,8 @@ class AutoReindexQueueProcessor(PortalCatalogProcessor):
         self.db = db
         self.enabled = enabled
 
-    def reindex(self, obj, attributes=None):   # execute reindex in before_commit hook when commit
+    # execute reindex in before_commit hook when commit
+    def reindex(self, obj, attributes=None):
         if self.enabled:
             self.db.reindex(obj, attributes)
 
@@ -254,6 +251,7 @@ class DbModel(object):
     def __len__(self):
         return len(self._objects)
 
+
 class SubConnection(ZODB.Connection.Connection):
 
     @property
@@ -269,6 +267,7 @@ class SubConnection(ZODB.Connection.Connection):
         if uid is not None:
             obj._p_uid = uid
 
+
 class SubDB(ZODB.DB):
     klass = SubConnection
 
@@ -276,40 +275,56 @@ class SubDB(ZODB.DB):
         super(SubDB, self).__init__(storage, *a, **kw)
         self._root_oid = storage.get_root_id()
 
+
 class DB(object):
     """
     Database for this user. Everything is used through this class
     """
 
     encrypter = [AES256Encrypter, AES256EncrypterV0]
+    appname = 'zerodb.com'
     compressor = None
 
-    def __init__(self, sock, username, password,
+    def __init__(self, sock, key=None, username=None, password=None,
                  cert_file=None, key_file=None, server_cert=None,
+                 security=None,
                  debug=False, pool_timeout=3600, pool_size=7,
                  autoreindex=True, wait_timeout=30,
                  **kw):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
-        :param str username: Username. Derived from password if not set
-        :param str password: Password or seed for private key
-        :param str realm: ZODB's realm
+        :param str username: Username
+        :param str password: Password
+        :param bytes key: Encryption key
+
+        :param cert_file: Client certificate for authentication (pem)
+        :param key_file: Private key for that certificate (pem)
+        :param server_cert: Server certitificate if not registered with CA
+
+        :param function security: Key derivation function from
+                                  zerodb.crypto.kdf
+
         :param bool debug: Whether to log debug messages
         """
 
-        salt = username + "|ZERO"
-        aes_key = kdf(password, salt)
+        if (cert_file or key_file) and not (cert_file and key_file):
+            raise TypeError("If you specify a cert file or a key file,"
+                            " you must specify both.")
 
-        if cert_file and key_file:
-            ssl_context = ssl.create_default_context(cafile=server_cert)
-            ssl_context.load_cert_chain(cert_file, key_file)
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
+        ssl_context = make_ssl(cert_file, key_file, server_cert)
 
-        elif username and password:
-            ssl_key = sha256(aes_key).digest()
-            ssl_context = cert.ssl_context_from_key(ssl_key, server_cert)
+        if security is None:
+            security = kdf.guess(
+                    username, password, key_file, cert_file, self.appname, key)
+
+        password, key = security(
+                username, password, key_file, cert_file, self.appname, key)
+
+        if password:
+            credentials = dict(name=username, password=password)
+        else:
+            credentials = None
 
         if isinstance(sock, six.string_types):
             sock = str(sock)
@@ -325,7 +340,7 @@ class DB(object):
             IIndexQueueProcessor,
             'zerodb-indexer')
 
-        self._init_default_crypto(passphrase=aes_key)
+        self._init_default_crypto(key=key)
 
         # Store all the arguments necessary for login in this instance
         self.__storage_kwargs = {
@@ -334,6 +349,7 @@ class DB(object):
                 "cache_size": 2 ** 30,
                 "debug": debug,
                 "wait_timeout": wait_timeout,
+                "credentials": credentials,
             }
 
         self.__db_kwargs = {
@@ -350,7 +366,7 @@ class DB(object):
         self._models = {}
 
     @classmethod
-    def _init_default_crypto(self, passphrase=None):
+    def _init_default_crypto(self, **kw):
         encrypters = self.encrypter
         if not isinstance(encrypters, (list, tuple)):
             encrypters = [self.encrypter]
@@ -364,7 +380,7 @@ class DB(object):
         if self.compressor:
             self.compressor.register(default=True)
 
-        init_crypto(passphrase=passphrase)
+        init_crypto(**kw)
 
     def _init_db(self):
         """We need this to be executed each time we are in a new process"""
@@ -496,3 +512,20 @@ class DB(object):
         if enabled:
             subscribers.init()
         self._reindex_queue_processor.enabled = enabled
+
+
+def make_ssl(cert_file=None, key_file=None, server_cert=None):
+    ssl_context = ssl.create_default_context(
+        ssl.Purpose.CLIENT_AUTH, cafile=server_cert)
+    here = os.path.dirname(__file__)
+    ssl_context.load_cert_chain(
+        cert_file or os.path.join(here, 'permissions/nobody.pem'),
+        key_file or os.path.join(here, 'permissions/nobody-key.pem'),
+        )
+    ssl_context.verify_mode = ssl.CERT_REQUIRED
+    if server_cert is None:
+        ssl_context.check_hostname = True
+        ssl_context.load_default_certs()
+    else:
+        ssl_context.check_hostname = False
+    return ssl_context
