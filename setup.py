@@ -161,13 +161,15 @@ else:
 
 setup(
     name="zerodb",
-    version="0.99.0.dev0",
+    version="0.99.0.dev1",
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",
     license="AGPLv3",
     url="http://zerodb.io",
     packages=find_packages(),
+    package_data={'zerodb.permissions': ['nobody-key.pem', 'nobody.pem']},
+    include_package_data=True,
     install_requires=INSTALL_REQUIRES,
     extras_require={'testing': TESTS_REQUIRE},
     entry_points=entry_points,
