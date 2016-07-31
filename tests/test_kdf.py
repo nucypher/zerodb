@@ -47,3 +47,27 @@ def test_kdfs():
 
     assert kfp_password != test_args_1['password']
     assert kfp_password_2 != test_args_2['password']
+
+
+def test_guess():
+    assert kdf.key_from_password == kdf.guess(
+            username='x', password='y',
+            key_file=None, cert_file=None,
+            appname='zerodb.com', key=None)
+
+    assert kdf.key_from_cert == kdf.guess(
+            username=None, password=None,
+            key_file=ZEO.tests.testssl.client_key,
+            cert_file=ZEO.tests.testssl.client_cert,
+            appname='zerodb.com', key=None)
+
+    assert kdf.hash_password == kdf.guess(
+            username='x', password='y',
+            key_file=None, cert_file=None,
+            appname='zerodb.com', key=test_key)
+
+    assert kdf.hash_password == kdf.guess(
+            username=None, password=None,
+            key_file=ZEO.tests.testssl.client_key,
+            cert_file=ZEO.tests.testssl.client_cert,
+            appname='zerodb.com', key=test_key)

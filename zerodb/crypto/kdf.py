@@ -58,3 +58,10 @@ def hash_password(username, password, key_file, cert_file, appname, key):
         password = hashlib.sha256(password + b'auth').digest()
 
     return password, key
+
+
+def guess(username, password, key_file, cert_file, appname, key):
+    """
+    Guess which function to use from values arguments
+    """
+    return

@@ -306,6 +306,10 @@ class DB(object):
 
         ssl_context = make_ssl(cert_file, key_file, server_cert)
 
+        if security is None:
+            security = kdf.guess(
+                    username, password, key_file, cert_file, self.appname, key)
+
         password, key = security(
                 username, password, key_file, cert_file, self.appname, key)
 
