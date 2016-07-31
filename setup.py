@@ -8,6 +8,8 @@ import tempfile
 from distutils import ccompiler, log
 from setuptools import setup, find_packages
 
+version = '0.99.0a1'
+
 INSTALL_REQUIRES = [
     'BTrees',
     'zope.component>=4.0.0',
@@ -161,7 +163,7 @@ else:
 
 setup(
     name="zerodb",
-    version="0.99.0.dev1",
+    version=version,
     description="End-to-end encrypted database",
     author="ZeroDB Inc.",
     author_email="michael@zerodb.io",

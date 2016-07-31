@@ -294,9 +294,17 @@ class DB(object):
         """
         :param str sock: UNIX (str) or TCP ((str, int)) socket
         :type sock: str or tuple
-        :param str username: Username. Derived from password if not set
-        :param str key: Password or seed for private key
-        :param str realm: ZODB's realm
+        :param str username: Username
+        :param str password: Password
+        :param bytes key: Encryption key
+
+        :param cert_file: Client certificate for authentication (pem)
+        :param key_file: Private key for that certificate (pem)
+        :param server_cert: Server certitificate if not registered with CA
+
+        :param function security: Key derivation function from
+                                  zerodb.crypto.kdf
+
         :param bool debug: Whether to log debug messages
         """
 
