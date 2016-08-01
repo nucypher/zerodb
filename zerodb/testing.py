@@ -10,7 +10,7 @@ import pytest
 import shutil
 import tempfile
 
-import ZEO.tests.testssl
+import ZEO.tests.testssl    # FIXME Adds zope.testing requirement
 
 import zerodb
 from zerodb.crypto import kdf
@@ -22,6 +22,7 @@ __all__ = [
     "TEST_PASSPHRASE",
     "tempdir",
     "do_zeo_server",
+    "zeo_server",
     "db",
 ]
 
@@ -31,6 +32,22 @@ def tempdir(request):
     tmpdir = tempfile.mkdtemp()
     request.addfinalizer(lambda: shutil.rmtree(tmpdir))
     return tmpdir
+
+
+def do_zeo_server(request, tempdir, name=None, fsname='db.fs'):
+    sock, stop = zerodb.server(
+            name=name, path=os.path.join(tempdir, fsname),
+            init=dict(
+                password=TEST_PASSPHRASE, cert=ZEO.tests.testssl.client_cert
+                ))
+    request.addfinalizer(stop)
+    return sock
+
+
+@pytest.fixture(scope="module")
+def zeo_server(request, tempdir):
+    sock = do_zeo_server(request, tempdir, name="zeo_server")
+    return sock
 
 
 @pytest.fixture(scope="module")
@@ -47,13 +64,3 @@ def db(request, zeo_server, dbclass=zerodb.DB):
             zdb.disconnect()  # I suppose, it's not really required
 
     return zdb
-
-
-def do_zeo_server(request, tempdir, name=None, fsname='db.fs'):
-    sock, stop = zerodb.server(
-            name=name, path=os.path.join(tempdir, fsname),
-            init=dict(
-                password=TEST_PASSPHRASE, cert=ZEO.tests.testssl.client_cert
-                ))
-    request.addfinalizer(stop)
-    return sock
