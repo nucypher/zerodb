@@ -64,3 +64,16 @@ def db(request, zeo_server, dbclass=zerodb.DB):
             zdb.disconnect()  # I suppose, it's not really required
 
     return zdb
+
+
+@pytest.fixture(scope="module")
+def admin_db(request, zeo_server):
+    h, _ = kdf.hash_password(
+            'root', TEST_PASSPHRASE,
+            key_file=None, cert_file=None, appname='zerodb.com', key=None)
+    return ZEO.DB(
+            zeo_server,
+            ssl=zerodb.db.make_ssl(
+                server_cert=ZEO.tests.testssl.server_cert),
+            credentials=dict(name='root', password=h),
+            wait_timeout=11)
