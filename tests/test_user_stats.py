@@ -56,8 +56,8 @@ def test_userstats(tempdir):
 
     assert sorted(stats) == [
         (b'\x00\x00\x00\x00\x00\x00\x00\x02', 'root', 23759),
-        (b'\x00\x00\x00\x00\x00\x00\x00\x08', 'user0', 1151),
-        (b'\x00\x00\x00\x00\x00\x00\x00\t', 'user1', 2669),
+        (b'\x00\x00\x00\x00\x00\x00\x00\x08', 'user0', 1120),
+        (b'\x00\x00\x00\x00\x00\x00\x00\t', 'user1', 1154),
         ]
 
     stop()
