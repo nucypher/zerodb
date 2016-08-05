@@ -8,7 +8,7 @@ import tempfile
 from distutils import ccompiler, log
 from setuptools import setup, find_packages
 
-version = '0.99.0a2'
+version = '0.99.0a3'
 
 INSTALL_REQUIRES = [
     'BTrees',
