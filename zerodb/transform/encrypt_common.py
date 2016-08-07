@@ -67,10 +67,10 @@ def get_encryption_signature(data):
 
 
 def decrypt(data):
-    sig = get_encryption_signature(data).decode()
+    sig = get_encryption_signature(data)
     if sig is not None:
         # Named utility if encrypter name is known, default if ''
-        return _gsm.getUtility(IEncrypter, sig).decrypt(data)
+        return _gsm.getUtility(IEncrypter, sig.decode()).decrypt(data)
     else:
         return data
 

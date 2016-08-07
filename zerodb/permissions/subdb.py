@@ -1,304 +1,156 @@
-import hashlib
-import six
-import struct
-import threading
-import time
-import transaction
-import warnings
-from copy import copy
-from ZODB.DB import Pickler, BytesIO, _protocol, z64,\
-        ConnectionPool, KeyedConnectionPool, IMVCCStorage
-from ZODB.DB import DB as BaseDB
-from ZEO.Exceptions import StorageError
-from ZODB.POSException import POSKeyError
-from ZODB.Connection import Connection as BaseConnection
-from ZODB.Connection import RootConvenience
+import mock
+import ssl
 
-from zerodb.util import encode_hex
-from . import base
-from zerodb.storage import ServerStorage
-from zerodb.transform.encrypt_common import get_encryption_signature, _gsm, IEncrypter
+import ZEO.asyncio.mtacceptor
+import ZEO.Exceptions
+import ZEO.runzeo
+import ZEO.StorageServer
+import ZODB
 
+from .base import get_admin
+from .ownerstorage import OwnerStorage
 
-def create_root(storage, oid=z64, check_new=True):
-    """
-    Creates public or private root in storage.
-    Root has the type PersistentMapping.
+class Acceptor(ZEO.asyncio.mtacceptor.Acceptor):
 
-    :param storage: ZODB storage to create the root in
-    :param str oid: Object id to give to the root (z64 is global root)
-    :param bool check_new: If True, do nothing if the root exists
-    """
+    def __init__(self, storage_server, addr, ssl):
+        super(Acceptor, self).__init__(storage_server, addr, ssl)
+        [self.cert_storage_id] = storage_server.storages # TCBOO
+        storage = storage_server.storages[self.cert_storage_id]
+        self.cert_db = ZODB.DB(storage)
+        self.invalidate = self.cert_db._mvcc_storage.invalidate
+        with self.cert_db.transaction() as conn:
+            self.certs_oid = get_admin(conn).certs._p_oid
 
-    if check_new:
-        try:
-            storage.load(oid, '')
-            return
-        except KeyError:
-            pass
-    # Create the database's root in the storage if it doesn't exist
-    from persistent.mapping import PersistentMapping
-    root = PersistentMapping()
-    # Manually create a pickle for the root to put in the storage.
-    # The pickle must be in the special ZODB format.
-    file = BytesIO()
-    p = Pickler(file, _protocol)
-    p.dump((root.__class__, None))
-    p.dump(root.__getstate__())
-    t = transaction.Transaction()
-    t.description = 'initial database creation'
-    storage.tpc_begin(t)
-    storage.store(oid, None, file.getvalue(), '', t)
-    storage.tpc_vote(t)
-    storage.tpc_finish(t)
+    @property
+    def ssl_context(self):
+        context = self.storage_server.create_ssl_context()
+        with self.cert_db.transaction() as conn:
+            certs = conn.get(self.certs_oid)
+            context.load_verify_locations(cadata=certs.data)
+        return context
 
+    @ssl_context.setter
+    def ssl_context(self, context):
+        pass
 
-class StorageClass(ServerStorage):
-    def set_database(self, database):
-        """
-        :param zerodb.permissions.base.PermissionsDatabase database: Database
-        """
-        assert isinstance(database, base.PermissionsDatabase)
-        self.database = database
-        self.noncekey = database.noncekey
+class ZEOStorage(ZEO.StorageServer.ZEOStorage):
 
-    def _get_time(self):
-        """Return a string representing the current time."""
-        t = int(time.time())
-        return struct.pack("i", t)
+    user_id = None
 
-    def _get_nonce(self):
-        s = b":".join([
-            str(self.connection.addr).encode(),
-            self._get_time(),
-            self.noncekey])
-        return hashlib.sha256(s).digest()
+    registered_methods = frozenset(
+        ZEO.StorageServer.registered_methods | set(['get_root_id']))
+
+    def register(self, storage_id, read_only, credentials=None):
+        super(ZEOStorage, self).register(storage_id, read_only)
+
+        der = self.connection.transport.get_extra_info(
+            'ssl_object').getpeercert(1)
+
+        with ZODB.DB(self.storage).transaction() as conn:
+            admin = get_admin(conn)
+            self.user_id = admin.uids[der]
+            if self.user_id is None:
+                # Nobody cert.
+                if not credentials:
+                    raise ZEO.Exceptions.AuthError()
+
+            if credentials:
+                user = admin.users_by_name[credentials['name']]
+                if ((user.id != self.user_id and self.user_id is not None) or
+                    not user.check_password(credentials['password'])
+                    ):
+                    raise ZEO.Exceptions.AuthError()
+                self.user_id = user.id
+
+        self.storage = OwnerStorage(self.storage, self.user_id)
 
     def setup_delegation(self):
-        # We use insert a hook to create a no-write root here
-        super(StorageClass, self).setup_delegation()
-        create_root(self.storage)
-
-    def _check_permissions(self, data, oid=None):
-        if not data.endswith(self.user_id):
-            raise StorageError("Attempt to access encrypted data of others at <%s> by <%s>" % (oid, encode_hex(self.user_id)))
-
-    def _check_admin(self):
-        uid = struct.unpack(self.database.uid_pack, self.user_id)[0]
-        user = self.database.db_root["users"][uid]
-        assert user.administrator
-
-    def loadEx(self, oid):
-        data, tid = ServerStorage.loadEx(self, oid)
-        self._check_permissions(data, oid)
-        return data[:-len(self.user_id)], tid
-
-    def load(self, oid, version=''):
-        data, tid = ServerStorage.load(self, oid, version)
-        self._check_permissions(data, oid)
-        return data[:-len(self.user_id)], tid
-
-    def loadBefore(self, oid, tid):
-        r = ServerStorage.loadBefore(self, oid, tid)
-        if r is not None:
-            data, serial, after = r
-            self._check_permissions(data, oid)
-            return data[:-len(self.user_id)], serial, after
-        else:
-            return r
-
-    def loadSerial(self, oid, serial):
-        data = ServerStorage.loadSerial(self, oid, serial)
-        self._check_permissions(data, oid)
-        return data[:-len(self.user_id)]
-
-    def storea(self, oid, serial, data, id):
-        try:
-            old_data, old_tid = ServerStorage.loadEx(self, oid)
-            self._check_permissions(old_data, oid)
-        except POSKeyError:
-            pass  # We store a new one
-        data += self.user_id
-        return ServerStorage.storea(self, oid, serial, data, id)
+        super(ZEOStorage, self).setup_delegation()
+        self.connection.methods = self.registered_methods
 
     def get_root_id(self):
-        """
-        Gets 8-byte private root ID. Creates it if it doesn't exist.
-        :return: <root_id>, <is root new>?
-        :rtype: str, bool
-        """
-        uid = struct.unpack(self.database.uid_pack, self.user_id)[0]
-        user = self.database.db_root["users"][uid]
-        if user.root:
-            try:
-                self.storage.load(user.root, '')
-                return user.root, False
-            except KeyError:
-                pass
+        return self.user_id
 
-        oid = self.storage.new_oid()
-        with transaction.manager:
-            user.root = oid
-        return oid, True
+class StorageServer(ZEO.StorageServer.StorageServer):
 
-    def add_user(self, username, pubkey, administrator=False):
-        """
-        Adminstrator can add a user
-        """
-        self._check_admin()
-        self.database.add_user(username, pubkey, administrator=administrator)
+    def invalidate(self, conn, storage_id, tid, invalidated=(), info=None):
+        """ Internal: broadcast info and invalidations to clients. """
 
-    def del_user(self, username):
-        """
-        Adminstrator can remove a user
-        """
-        self._check_admin()
-        self.database.del_user(username)
+        # Same as in the base class
+        if invalidated:
+            invq = self.invq[storage_id]
+            if len(invq) >= self.invq_bound:
+                invq.pop()
+            invq.insert(0, (tid, invalidated))
 
-    def change_key(self, username, pubkey):
-        """
-        Administrator can change user's key (not reencrypting the data though!)
-        """
-        self._check_admin()
-        self.database.change_key(username, pubkey)
+        for zs in self.zeo_storages_by_storage_id[storage_id]:
+            if conn and zs.user_id == conn.user_id:
+                connection = zs.connection
+                if invalidated and zs is not conn:
+                    # zs.client.invalidateTransaction(tid, invalidated)
+                    connection.call_soon_threadsafe(
+                        connection.async,
+                        'invalidateTransaction', tid, invalidated)
+                elif info is not None:
+                    # zs.client.info(info)
+                    connection.call_soon_threadsafe(
+                        connection.async, 'info', info)
 
-    extensions = [get_root_id, add_user, del_user, change_key]
+        # Update the cert storage db:
+        if storage_id == self.acceptor.cert_storage_id:
+            self.acceptor.invalidate(tid, invalidated)
 
-    # TODO
-    # We certainly need to implement more methods for storage in here
-    # (or check if they re-use loadEx):
-    # deleteObject, storea, restorea, storeBlobEnd, storeBlobShared,
-    # sendBlob, loadBulk
+    def create_client_handler(self):
+        return ZEOStorage(self, self.read_only)
 
 
-class Connection(BaseConnection):
-    @property
-    def root(self):
-        return RootConvenience(self.get(self._db._root_oid))
+class ZeroDBOptions(ZEO.runzeo.ZEOOptions):
 
-    def setstate(self, obj):
-        if hasattr(obj, "_p_uid"):
-            uid = obj._p_uid
-        else:
-            uid = None
-        super(Connection, self).setstate(obj)
-        if uid is not None:
-            obj._p_uid = uid
+    def realize(self, *args):
+        # Evil evil hack, but ZConfig schemas hurt and we need to
+        # ovverride the way ssl configuration is handled. :(
+        with mock.patch('ssl.create_default_context'):
+            super(ZeroDBOptions, self).realize(*args)
 
 
-class DB(BaseDB):
-    klass = Connection
+class ZEOServer(ZEO.runzeo.ZEOServer):
+    def create_server(self):
+        storages = self.storages
+        options = self.options
+        self.server = StorageServer(
+            options.address,
+            storages,
+            read_only=options.read_only,
+            client_conflict_resolution=True,
+            invalidation_queue_size=options.invalidation_queue_size,
+            invalidation_age=options.invalidation_age,
+            transaction_timeout=options.transaction_timeout,
+            Acceptor=Acceptor,
+            )
 
-    # The __init__ method is largely replication of original ZODB.DB.DB.__init__
-    # with the exception of root creation
-    def __init__(self, storage,
-                 pool_size=7,
-                 pool_timeout=(1 << 31),
-                 cache_size=400,
-                 cache_size_bytes=0,
-                 historical_pool_size=3,
-                 historical_cache_size=1000,
-                 historical_cache_size_bytes=0,
-                 historical_timeout=300,
-                 database_name='unnamed',
-                 databases=None,
-                 xrefs=True,
-                 large_record_size=(1 << 24),
-                 **storage_args):
-        """Create an object database.
+        # See evil evil mock hack above :(
+        ssl_args, ssl_kw_args = options.ssl.load_cert_chain.call_args
+        def create_ssl_context():
+            context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            context.load_cert_chain(*ssl_args, **ssl_kw_args)
+            context.verify_mode = ssl.CERT_REQUIRED
+            return context
 
-        :Parameters:
-          - `storage`: the storage used by the database, e.g. FileStorage
-          - `pool_size`: expected maximum number of open connections
-          - `cache_size`: target size of Connection object cache
-          - `cache_size_bytes`: target size measured in total estimated size
-               of objects in the Connection object cache.
-               "0" means unlimited.
-          - `historical_pool_size`: expected maximum number of total
-            historical connections
-          - `historical_cache_size`: target size of Connection object cache for
-            historical (`at` or `before`) connections
-          - `historical_cache_size_bytes` -- similar to `cache_size_bytes` for
-            the historical connection.
-          - `historical_timeout`: minimum number of seconds that
-            an unused historical connection will be kept, or None.
-          - `xrefs` - Boolian flag indicating whether implicit cross-database
-            references are allowed
-        """
-        storage_args = copy(storage_args)
+        self.server.create_ssl_context = create_ssl_context
 
-        if isinstance(storage, six.string_types):
-            import ZODB.FileStorage
-            storage = ZODB.FileStorage.FileStorage(storage, **storage_args)
-        elif storage is None:
-            import ZODB.MappingStorage
-            storage = ZODB.MappingStorage.MappingStorage(**storage_args)
-        import ZODB  # Where did it go??
+    @classmethod
+    def run(cls, args=None):
+        options = ZeroDBOptions()
+        options.realize(args)
 
-        # Allocate lock.
-        x = threading.RLock()
-        self._a = x.acquire
-        self._r = x.release
+        for o_storage in options.storages:
+            if o_storage.config.pack_gc:
+                logging.warn(
+                    "Packing with GC and end-to-end encryption"
+                    " removes all the data")
+                logging.warn("Turining GC off!")
+                o_storage.config.pack_gc = False
 
-        # pools and cache sizes
-        self.pool = ConnectionPool(pool_size, pool_timeout)
-        self.historical_pool = KeyedConnectionPool(historical_pool_size,
-                                                   historical_timeout)
-        self._cache_size = cache_size
-        self._cache_size_bytes = cache_size_bytes
-        self._historical_cache_size = historical_cache_size
-        self._historical_cache_size_bytes = historical_cache_size_bytes
+        s = cls(options)
+        s.main()
 
-        # Setup storage
-        self.storage = storage
-        self.references = ZODB.serialize.referencesf
-        try:
-            storage.registerDB(self)
-        except TypeError:
-            storage.registerDB(self, None)  # Backward compat
-
-        if (not hasattr(storage, 'tpc_vote')) and not storage.isReadOnly():
-            warnings.warn(
-                "Storage doesn't have a tpc_vote and this violates "
-                "the storage API. Violently monkeypatching in a do-nothing "
-                "tpc_vote.",
-                DeprecationWarning, 2)
-            storage.tpc_vote = lambda *args: None
-
-        if IMVCCStorage.providedBy(storage):
-            temp_storage = storage.new_instance()
-        else:
-            temp_storage = storage
-        try:
-            self._init_root(temp_storage, **storage_args)
-        finally:
-            if IMVCCStorage.providedBy(temp_storage):
-                temp_storage.release()
-
-        # Multi-database setup.
-        if databases is None:
-            databases = {}
-        self.databases = databases
-        self.database_name = database_name
-        if database_name in databases:
-            raise ValueError("database_name %r already in databases" %
-                             database_name)
-        databases[database_name] = self
-        self.xrefs = xrefs
-
-        self.large_record_size = large_record_size
-
-    def _init_root(self, storage, **kw):
-        oid, new = storage.get_root_id()
-        storage._root_oid = oid
-        if new:
-            create_root(storage, oid=oid, check_new=False)
-        elif hasattr(storage, "base"):
-            # If a different encryption was used for this DB,
-            # use that as default
-            edata, _ = storage.base.load(oid)
-            sig = get_encryption_signature(edata)
-            utility = _gsm.getUtility(IEncrypter, name=sig.decode())
-            if _gsm.getUtility(IEncrypter) is not utility:
-                _gsm.registerUtility(utility)
-        self._root_oid = oid

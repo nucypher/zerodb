@@ -4,16 +4,17 @@ import transaction
 import zerodb
 from zerodb.query import Contains
 
-from zerodb.testing import TEST_PASSPHRASE, do_zeo_server
+from zerodb.testing import do_zeo_server
+import zerodb.testing
 from db import Page, WikiPage
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture(scope="module")
-def many_server(request, pass_file, tempdir):
-    sock = do_zeo_server(request, pass_file, tempdir, name="many_server")
-    db = zerodb.DB(sock, username="root", password=TEST_PASSPHRASE, debug=True)
+def many_server(request, tempdir):
+    sock = do_zeo_server(request, tempdir, name="many_server", fsname='many.fs')
+    db = zerodb.testing.db(None, sock)
     with transaction.manager:
         for i in range(2000):
             db.add(Page(title="hello %s" % i, text="lorem ipsum dolor sit amet" * 2))
@@ -28,14 +29,7 @@ def many_server(request, pass_file, tempdir):
 
 @pytest.fixture(scope="module")
 def many_db(request, many_server):
-    zdb = zerodb.DB(many_server, username="root", password=TEST_PASSPHRASE, debug=True)
-
-    @request.addfinalizer
-    def fin():
-        zdb.disconnect()  # I suppose, it's not really required
-
-    return zdb
-
+    return zerodb.testing.db(request, many_server)
 
 def get_one(db):
     key = db[WikiPage]._objects.tree.keys()[0]
