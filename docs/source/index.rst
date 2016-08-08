@@ -181,7 +181,7 @@ which creates records for us would look like this::
     >>> import zerodb
     >>> import models
 
-    >>> db = zerodb.DB(("localhost", 8001), username="root", password="<your passphrase>")
+    >>> db = zerodb.DB(("db.zerodb.com", 8001), username="your@email.com", password="<your passphrase>")
     >>> e = models.Employee(name="John", surname="Smith", salary=150000,
     ...                     description="Coding power")
     >>> db.add(e)
@@ -206,8 +206,7 @@ And we also import our data models::
 
 Let's connect to the database now::
 
-    >>> PASSWORD = "very insecure passphrase - never use it"
-    >>> db = zerodb.DB(("localhost", 8001), username="root", password=PASSWORD)
+    >>> db = zerodb.DB(("localhost", 8001), username="root", password="root-password")
 
 The number of Employees in the database can be determined by just ``len``::
 
@@ -296,72 +295,6 @@ InRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
 NotInRange(index_name, start, end, start_exclusive=False, end_exclusive=False)
     Index value falls outside a range.
 
-JSON API
-======================
-
-To start the API server, make sure you’ve activated the virtual environment and the ZeroDB server is running.
-Navigate to the `api_server` directory, and run `python api_server.py`.
-
-Query examples (similar to http://docs.mongodb.org/manual/reference/operator/query/)::
-
-    {"$and": [{"field1": {"$gt": 10}}, {"field2": {"$text": "hello"}}]}
-    {field: {"$range": [1, 10]}}
-
-logical_operators
------------------
-"$and": And
-    Joins query clauses with a logical AND returns all documents that match the conditions of both clauses.
-
-"$or": Or
-    Joins query clauses with a logical OR returns all documents that match the conditions of either clause.
-
-"$not": Not
-    Inverts the effect of a query expression and returns documents that do not match the query expression.
-
-field_operators
----------------
-"$eq": Eq
-    Matches values that are equal to a specified value.
-
-"$ne": NotEq
-    Matches all values that are not equal to a specified value.
-
-"$lt": Lt
-    Matches values that are less than a specified value.
-
-"$lte": Le
-    Matches values that are less than or equal to a specified value.
-
-"$gt": Gt
-    Matches values that are greater than a specified value.
-
-"$gte": Ge
-    Matches values that are greater than or equal to a specified value.
-
-"$range": InRange
-    Matches values that fall within a specified range.
-    
-"$nrange": NotInRange
-    Matches values that do not fall within a specified range.
-    
-"$text": Contains
-    Performs text search for a specified value..
-
-"$ntext": DoesNotContain
-    Performs text search for the lack of a specified value.
-    
-"$in": Any
-    Matches any of the values specified in an array.
-
-"$all": All
-    Matches arrays that contain all elements specified in the query.
-
-"$nany": NotAny
-    Matches none of the values specified in an array.
-
-"$nin": NotAll
-    Matches arrays that contain all elements specified in the query.
-    
 
 Indices and tables
 ==================
