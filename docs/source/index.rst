@@ -87,23 +87,16 @@ which you can activate using::
 
 Install packages necessary for the demo::
 
-    $ pip install -r requirements.txt
+    $ pip3 install -r requirements.txt
 
 
 Starting the ZeroDB server and creating users
 =============================================
 
-In the ``zerodbext/server`` directory, we supply Python scripts to run a
-server and manage users::
-
-    api.py
-    manage.py
-    run.py
-
 Initializing and Running the ZeroDB server
 ------------------------------------------
 
-When you ran ``pip install`` previously, the following console scripts were created::
+When you ran ``pip3 install`` previously, the following console scripts were created::
 
     zerodb-server
     zerodb-manage
@@ -112,35 +105,42 @@ When you ran ``pip install`` previously, the following console scripts were crea
 These map to the files in the ``zerodbext/server`` directory.
 
 So, to initialize a database, just run::
-    
+
     $ zerodb-manage init_db
 
-Enter your username (``root`` by default) and passphrase.
+The server runs over TLS. So you have to supply server key and
+certificate. If those are not supplied, self-signed certificates will be
+generated and stored in `conf/server.pem` and `conf/server_key.pem`.
 
-This will create the appropriate database file structure and config file
-``authdb.conf`` located in the ``demo/conf`` directory.
+For authentication, you can use key/certificate pair or username/passphrase.
+
+The simplest is to supply username/passphrase and press <enter> for all other
+questions: this will generate server key/certificate pair and create root user.
+
+As a result, the command will create the appropriate database file structure in
+``db`` directory and config file
+``server.conf`` located in the ``conf`` directory, along with generated
+certificate files.
 The default administrator
 user can create and remove other users or change their public keys.
-However, it doesn't know any other user's private keys.
+However, it doesn't have to know any other user's private keys.
 
 Run ``zerodb-server`` and you'll get the ZeroDB server running on the host specified
-in the file ``demo/conf/server.zcml``.
+in the file ``conf/server.conf``.
 
 Healthy output of the running server appears as follows::
 
     ------
-    2015-05-16T16:01:53 INFO ZEO.runzeo (6580) opening storage '1' using FileStorage
+    2016-08-08T02:08:04 INFO ZEO.runzeo (8384) opening storage '1' using FileStorage
     ------
-    2015-05-16T16:01:53 INFO ZEO.StorageServer StorageServer created RW with
-    storages: 1:RW:db/db.fs
+    2016-08-08T02:08:04 INFO ZEO.StorageServer StorageServer created RW with storages: 1:RW:db/db.fs
     ------
-    2015-05-16T16:01:53 INFO ZEO.StorageServer StorageServer: using auth protocol:
-    ecc_auth
-    ------
-    2015-05-16T16:01:53 INFO ZEO.zrpc (6580) listening on ('localhost', 8001)
+    2016-08-08T02:08:04 INFO ZEO.asyncio.mtacceptor listening on ('localhost', 8001)
 
 Adding more users
 -----------------
+
+*Warning, this section has to be updated, as well as this section of the code*
 
 Instead of being stored in config files, users are normally stored in a
 database. In order to manage these users start the zerodb server and open the
