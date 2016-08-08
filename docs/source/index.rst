@@ -32,24 +32,60 @@ From a developer's perspective, ZeroDB's design is greatly inspired by the
 Installation
 ============
 
-We supply ZeroDB as a Python Package ``zerodb-0.97``, installable via ``pip``.
+We supply ZeroDB as a Python Package ``zerodb``, installable via ``pip``.
+Starting at version 0.99, zerodb asyncio and, hence, requires Python 3.5.
 
-There may also be some system dependencies; on Debian, this will get the
-required packages::
+Dependencies
+-------------
+Firstly, you need Python 3.5. If you are using OS X or Windows, check
+`Official Python website <https://www.python.org>`_.
+If you are using Ubuntu with version earlier than 16.04, you may find useful
+`Deadsnakes PPA <https://launchpad.net/~fkrull/+archive/ubuntu/deadsnakes>`_.
 
-    $ sudo apt-get install python-pip python-dev libssl-dev libzmq-dev libffi-dev git python-virtualenv
+Next, you need to make sure you have pip installed, as well as some dev headers
+and compilers. In Ubuntu::
 
-To run the server and test scripts, clone the ``zerodb-server`` repository,
-navigate to the resulting directory and (optionally) create a virtual environment::
+    $ sudo apt-get install python3-pip build-essential \
+                           python3-dev libffi-dev libssl-dev
 
-    $ virtualenv .demo
+On some systems you may also need to install ``libzmq-dev`` to get IPython
+working properly.
+With this, you have necessary dependencies. If you want to install only client
+library globally in your system (convenient in Docker images or AWS
+instances)::
+
+    $ sudo pip3 install zerodb==0.99.0a3
+
+If you want to install the server, you can also do::
+
+    $ sudo pip3 install zerodb-server==0.2.0a2
+
+If you install everything on your local machine, you may want to do so in
+virtualenv instead. So, for zerodb server::
+
+    $ sudo pip3 install virtualenv
+    $ virtualenv -p python3.5 server_env
+    $ source server_env/bin/activate
+    $ pip3 install zerodb-server==0.2.0a2
+
+Demo files
+------------
+
+You can find demo files in `zerodb-server git repository <https://github.com/zerodb/zerodb-server/>`_::
+
+    $ git clone https://github.com/zerodb/zerodb-server.git
+    $ cd zerodb-server/demo
+
+Optionally, create a virtual environment::
+
+    $ virtualenv -p python3.5 .demo
 
 This creates a fresh virtual environment in the directory ``.demo``,
 which you can activate using::
 
     $ source .demo/bin/activate
 
-Navigate to the ``demo`` directory and install the necessary packages::
+Install packages necessary for the demo::
 
     $ pip install -r requirements.txt
 
