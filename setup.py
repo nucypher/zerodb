@@ -8,7 +8,7 @@ import tempfile
 from distutils import ccompiler, log
 from setuptools import setup, find_packages
 
-version = '0.99.0a3'
+version = '0.99.0b1'
 
 INSTALL_REQUIRES = [
     'BTrees',
@@ -20,11 +20,8 @@ INSTALL_REQUIRES = [
     'zerodbext.catalog==0.8.4',
     'cachetools',
     'zc.zlibstorage>=1.1.0',
-    'flask-cors',
-    'flask>=0.10',
     'mock',
     'requests>=2.0',
-    'jsonpickle',
     'zope.event>=4.0.0',
     'zope.lifecycleevent>=4.0.0',
     'six>=1.7.0',
