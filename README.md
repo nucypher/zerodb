@@ -7,9 +7,6 @@ without downloading it or suffering an excessive performance hit.
 
 Special thanks to ZODB community on which ZeroDB is based.
 
-### Technical white paper: [http://opensource.zerodb.io/zerodb.pdf](http://opensource.zerodb.io/zerodb.pdf)
+### Technical white paper: [https://arxiv.org/abs/1602.07168](https://arxiv.org/abs/1602.07168)
 
-### Documentation: [https://docs.zerodb.io/](https://docs.zerodb.io/)
-
-### OpenSource Community: [https://slack.zerodb.io/](https://slack.zerodb.io/)
-
+### Documentation: [https://github.com/zerodb/zerodb/blob/master/docs/source/index.rst](https://github.com/zerodb/zerodb/blob/master/docs/source/index.rst)
